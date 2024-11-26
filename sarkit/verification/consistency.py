@@ -326,8 +326,8 @@ class ConsistencyChecker(object):
     def skips(self, include_partial=False):
         """Returns passed checks that are No-Op.
 
-        Args
-        ----
+        Parameters
+        ----------
         include_partial : bool, optional
             Include checks that are partially No-Op? False by default.
 
