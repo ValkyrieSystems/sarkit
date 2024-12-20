@@ -11,9 +11,8 @@ import dataclasses
 import datetime
 import importlib.resources
 import itertools
-import os
 import warnings
-from typing import Any, BinaryIO, Self, cast
+from typing import Any, Self
 
 import lxml.etree
 import numpy as np
@@ -425,21 +424,21 @@ class SicdNitfReader:
 
     Parameters
     ----------
-    file : file-like or path-like
+    file : `file object`
         SICD NITF file to read
 
     Examples
     --------
-    >>> with SicdNitfReader(sicd_filename) as reader:
+    >>> with sicd_path.open('rb') as file, SicdNitfReader(file) as reader:
     ...     sicd_xmltree = reader.sicd_xmltree
     ...     pixels = reader.read_image()
 
     Attributes
     ----------
-    sicd_xmltree
-    header_fields
-    is_fields
-    des_fields
+    sicd_xmltree : lxml.etree.ElementTree
+    header_fields : SicdNitfHeaderFields
+    is_fields : SicdNitfImageSegmentFields
+    des_fields : SicdNitfDESegmentFields
     nitf_plan : :py:class:`SicdNitfPlan`
         A SicdNitfPlan object suitable for use in a SicdNitfWriter
 
@@ -449,14 +448,8 @@ class SicdNitfReader:
     SicdNitfWriter
     """
 
-    def __init__(self, file: BinaryIO | str | os.PathLike):
-        if sarkit.standards.general.utils.is_file_like(file):
-            self._file_owned = False
-            self._file_object = file
-        else:
-            file = cast(str | os.PathLike, file)
-            self._file_owned = True
-            self._file_object = open(file, "rb")
+    def __init__(self, file):
+        self._file_object = file
 
         self._initial_offset = self._file_object.tell()
         if self._initial_offset != 0:
@@ -556,16 +549,15 @@ class SicdNitfReader:
         # TODO update XML
         raise NotImplementedError()
 
-    def close(self):
-        """Close any files opened by the reader"""
-        if self._file_owned:
-            self._file_object.close()
+    def done(self):
+        "Indicates to the reader that the user is done with it"
+        self._file_object = None
 
     def __enter__(self):
         return self
 
     def __exit__(self, *args, **kwargs):
-        self.close()
+        self.done()
 
 
 def _create_des_manager(sicd_xmltree, des_fields):
@@ -607,7 +599,7 @@ class SicdNitfWriter:
 
     Parameters
     ----------
-    file : file-like
+    file : `file object`
         SICD NITF file to write
     nitf_plan : :py:class:`SicdNitfPlan`
         NITF plan object
@@ -624,7 +616,7 @@ class SicdNitfWriter:
     ...                     is_fields=SicdNitfImageSegmentFields(isorce='my sensor',
     ...                                                          security=SicdNitfSecurityFields(clas='U')),
     ...                     des_fields=SicdNitfDESegmentFields(security=SicdNitfSecurityFields(clas='U')))
-    >>> with SicdNitfWriter(output_filename, plan) as writer:
+    >>> with output_path.open('wb') as file, SicdNitfWriter(file, plan) as writer:
     ...     writer.write_image(pixel_array)
 
     See Also
@@ -634,12 +626,7 @@ class SicdNitfWriter:
     """
 
     def __init__(self, file, nitf_plan: SicdNitfPlan):
-        if sarkit.standards.general.utils.is_file_like(file):
-            self._file_owned = False
-            self._file_object = file
-        else:
-            self._file_owned = True
-            self._file_object = open(file, "wb")
+        self._file_object = file
 
         self._initial_offset = self._file_object.tell()
         if self._initial_offset != 0:
@@ -822,34 +809,9 @@ class SicdNitfWriter:
         Called automatically when SicdNitfWriter is used as a context manager
         """
         self._nitf_writer.close()
-        if self._file_owned:
-            self._file_object.close()
 
     def __enter__(self):
         return self
 
     def __exit__(self, *args, **kwargs):
         self.close()
-
-
-def read_sicd_xml(file: str | os.PathLike | BinaryIO) -> lxml.etree.ElementTree:
-    """Convenience function for reading SICD XML from a file
-
-    Parameters
-    ----------
-    file : file-like or path-like
-        SICD XML or NITF file
-
-    Returns
-    -------
-    lxml.etree.ElementTree
-        SICD XML ElementTree
-    """
-
-    try:
-        return lxml.etree.parse(file)
-    except lxml.etree.XMLSyntaxError:
-        pass
-
-    with SicdNitfReader(file) as reader:
-        return reader.sicd_xmltree

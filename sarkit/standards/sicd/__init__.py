@@ -23,7 +23,6 @@ Reading and Writing
 .. autosummary::
    :toctree: generated/
 
-   read_sicd_xml
    SicdNitfReader
    SicdNitfWriter
 
@@ -145,7 +144,6 @@ from .io import (
     SicdNitfReader,
     SicdNitfSecurityFields,
     SicdNitfWriter,
-    read_sicd_xml,
 )
 from .projection.derived import (
     image_to_constant_hae_surface,
@@ -162,7 +160,6 @@ __all__ = [
     "SicdNitfReader",
     "SicdNitfSecurityFields",
     "SicdNitfWriter",
-    "read_sicd_xml",
 ]
 
 # Projections

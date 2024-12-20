@@ -10,13 +10,10 @@ import dataclasses
 import importlib.resources
 import logging
 import os
-from typing import BinaryIO, cast
 
 import lxml.etree
 import numpy as np
 import numpy.typing as npt
-
-import sarkit.standards.general.utils
 
 SCHEMA_DIR = importlib.resources.files("sarkit.standards.cphd.schemas")
 CPHD_SECTION_TERMINATOR = b"\f\n"
@@ -285,12 +282,12 @@ class CphdReader:
 
     Parameters
     ----------
-    file : file-like or path-like
+    file : `file object`
         CPHD file to read
 
     Examples
     --------
-    >>> with cphd_io.CphdReader(file) as reader:
+    >>> with cphd_path.open('rb') as file, CphdReader(file) as reader:
     ...     cphd_xmltree = reader.cphd_xmltree
     ...     signal, pvp = reader.read_channel(<chan_id>)
 
@@ -302,14 +299,14 @@ class CphdReader:
         CPHD XML ElementTree
     plan : :py:class:`CphdPlan`
         A CphdPlan object suitable for use in a CphdWriter
-    xml_block_size
-    xml_block_byte_offset
-    pvp_block_size
-    pvp_block_byte_offset
-    signal_block_size
-    signal_block_byte_offset
-    support_block_size
-    support_block_byte_offset
+    xml_block_size : int
+    xml_block_byte_offset : int
+    pvp_block_size : int
+    pvp_block_byte_offset : int
+    signal_block_size : int
+    signal_block_byte_offset : int
+    support_block_size : int or None
+    support_block_byte_offset : int or None
 
     See Also
     --------
@@ -317,14 +314,8 @@ class CphdReader:
     CphdWriter
     """
 
-    def __init__(self, file: BinaryIO | str | os.PathLike):
-        if sarkit.standards.general.utils.is_file_like(file):
-            self._file_owned = False
-            self._file_object = file
-        else:
-            file = cast(str | os.PathLike, file)
-            self._file_owned = True
-            self._file_object = open(file, "rb")
+    def __init__(self, file):
+        self._file_object = file
 
         # skip the version line and read header
         _, self._kvp_list = read_file_header(self._file_object)
@@ -347,37 +338,37 @@ class CphdReader:
         )
 
     @property
-    def xml_block_byte_offset(self):
+    def xml_block_byte_offset(self) -> int:
         """Offset to the XML block"""
         return int(self._kvp_list["XML_BLOCK_BYTE_OFFSET"])
 
     @property
-    def xml_block_size(self):
+    def xml_block_size(self) -> int:
         """Size of the XML block"""
         return int(self._kvp_list["XML_BLOCK_SIZE"])
 
     @property
-    def pvp_block_byte_offset(self):
+    def pvp_block_byte_offset(self) -> int:
         """Offset to the PVP block"""
         return int(self._kvp_list["PVP_BLOCK_BYTE_OFFSET"])
 
     @property
-    def pvp_block_size(self):
+    def pvp_block_size(self) -> int:
         """Size of the PVP block"""
         return int(self._kvp_list["PVP_BLOCK_SIZE"])
 
     @property
-    def signal_block_byte_offset(self):
+    def signal_block_byte_offset(self) -> int:
         """Offset to the Signal block"""
         return int(self._kvp_list["SIGNAL_BLOCK_BYTE_OFFSET"])
 
     @property
-    def signal_block_size(self):
+    def signal_block_size(self) -> int:
         """Size of the Signal block"""
         return int(self._kvp_list["SIGNAL_BLOCK_SIZE"])
 
     @property
-    def support_block_byte_offset(self):
+    def support_block_byte_offset(self) -> int | None:
         """Offset to the Support block"""
         if "SUPPORT_BLOCK_BYTE_OFFSET" in self._kvp_list:
             return int(self._kvp_list["SUPPORT_BLOCK_BYTE_OFFSET"])
@@ -385,7 +376,7 @@ class CphdReader:
             return None
 
     @property
-    def support_block_size(self):
+    def support_block_size(self) -> int | None:
         """Size of the Support block"""
         if "SUPPORT_BLOCK_SIZE" in self._kvp_list:
             return int(self._kvp_list["SUPPORT_BLOCK_SIZE"])
@@ -490,16 +481,15 @@ class CphdReader:
             shape
         )
 
-    def close(self):
-        """Close any files opened by the reader"""
-        if self._file_owned:
-            self._file_object.close()
+    def done(self):
+        "Indicates to the reader that the user is done with it"
+        self._file_object = None
 
     def __enter__(self):
         return self
 
     def __exit__(self, *args, **kwargs):
-        self.close()
+        self.done()
 
 
 class CphdWriter:
@@ -509,7 +499,7 @@ class CphdWriter:
 
     Parameters
     ----------
-    file : file-like or path-like
+    file : `file object`
         CPHD file to write
     plan : :py:class:`CphdPlan`
         A CphdPlan object
@@ -520,7 +510,7 @@ class CphdWriter:
 
     Examples
     --------
-    >>> with cphd_io.CphdWriter(file, plan) as writer:
+    >>> with output_path.open('wb') as file, CphdWriter(file, plan) as writer:
     ...     writer.write_signal("1", signal)
     ...     writer.write_pvp("1", pvp)
 
@@ -531,12 +521,7 @@ class CphdWriter:
     """
 
     def __init__(self, file, plan):
-        if sarkit.standards.general.utils.is_file_like(file):
-            self._file_owned = False
-            self._file_object = file
-        else:
-            self._file_owned = True
-            self._file_object = open(file, "wb")
+        self._file_object = file
 
         self._plan = plan
 
@@ -756,15 +741,8 @@ class CphdWriter:
         output_dtype = support_array.dtype.newbyteorder(">")
         support_array.astype(output_dtype, copy=False).tofile(self._file_object)
 
-    def close(self):
-        """Close any files opened by the writer"""
-        if self._file_owned:
-            self._file_object.close()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *args, **kwargs):
+    def done(self):
+        """Warn about unwritten arrays declared in the XML"""
         channel_names = set(
             node.text
             for node in self._plan.cphd_xmltree.findall(
@@ -793,4 +771,8 @@ class CphdWriter:
         if missing_sa:
             logging.warning(f"Not all Support Arrays written.  Missing {missing_sa}")
 
-        self.close()
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        self.done()

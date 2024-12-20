@@ -436,15 +436,14 @@ class SiddNitfReader:
 
     Parameters
     ----------
-    file : file-like
+    file : `file object`
         SIDD NITF file to read
 
     Examples
     --------
-    >>> with sidd_filename.open('rb') as file:
-    ...     with SiddNitfReader(file) as reader:
-    ...         sidd_xmltree = reader.images[0].sidd_xmltree
-    ...         pixels = reader.read_image(0)
+    >>> with sidd_path.open('rb') as file, SiddNitfReader(file) as reader:
+    ...     sidd_xmltree = reader.images[0].sidd_xmltree
+    ...     pixels = reader.read_image(0)
 
     Attributes
     ----------
@@ -593,7 +592,7 @@ class SiddNitfWriter:
 
     Parameters
     ----------
-    file : file-like
+    file : `file object`
         SIDD NITF file to write
     nitf_plan : :py:class:`SiddNitfPlan`
         NITF plan object
@@ -608,9 +607,8 @@ class SiddNitfWriter:
     ...                                                        security=SiddNitfSecurityFields(clas='U')))
     >>> image_index = plan.add_image(is_fields=SiddNitfImageSegmentFields(security=SiddNitfSecurityFields(clas='U')),
     ...                              des_fields=SiddNitfDESegmentFields(security=SiddNitfSecurityFields(clas='U')))
-    >>> with output_filename.open('wb') as file:
-    ...     with SiddNitfWriter(file, plan) as writer:
-    ...         writer.write_image(image_index, pixel_array)
+    >>> with output_path.open('wb') as file, SiddNitfWriter(file, plan) as writer:
+    ...     writer.write_image(image_index, pixel_array)
 
     See Also
     --------

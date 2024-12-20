@@ -121,16 +121,21 @@ def test_roundtrip(tmp_path, sicd_xml):
             "desshabs": "desshabs",
         },
     )
-    with sarkit.standards.sicd.io.SicdNitfWriter(out_sicd, nitf_plan) as writer:
-        half_rows, half_cols = np.asarray(basis_array.shape) // 2
-        writer.write_image(basis_array[:half_rows, :half_cols], start=(0, 0))
-        writer.write_image(basis_array[:half_rows, half_cols:], start=(0, half_cols))
-        writer.write_image(
-            basis_array[half_rows:, half_cols:], start=(half_rows, half_cols)
-        )
-        writer.write_image(basis_array[half_rows:, :half_cols], start=(half_rows, 0))
+    with out_sicd.open("wb") as f:
+        with sarkit.standards.sicd.io.SicdNitfWriter(f, nitf_plan) as writer:
+            half_rows, half_cols = np.asarray(basis_array.shape) // 2
+            writer.write_image(basis_array[:half_rows, :half_cols], start=(0, 0))
+            writer.write_image(
+                basis_array[:half_rows, half_cols:], start=(0, half_cols)
+            )
+            writer.write_image(
+                basis_array[half_rows:, half_cols:], start=(half_rows, half_cols)
+            )
+            writer.write_image(
+                basis_array[half_rows:, :half_cols], start=(half_rows, 0)
+            )
 
-    with sarkit.standards.sicd.io.SicdNitfReader(out_sicd) as reader:
+    with out_sicd.open("rb") as f, sarkit.standards.sicd.io.SicdNitfReader(f) as reader:
         read_array = reader.read_image()
 
     schema.assertValid(reader.sicd_xmltree)
@@ -141,47 +146,6 @@ def test_roundtrip(tmp_path, sicd_xml):
     assert nitf_plan.is_fields == reader.is_fields
     assert nitf_plan.des_fields == reader.des_fields
     assert np.array_equal(basis_array, read_array)
-
-
-def test_file_objects(tmp_path):
-    sicd_xml = DATAPATH / "example-sicd-1.3.0.xml"
-    basis_etree = lxml.etree.parse(sicd_xml)
-    basis_array = _random_image(basis_etree)
-
-    plan = sarkit.standards.sicd.io.SicdNitfPlan(
-        sicd_xmltree=basis_etree,
-        header_fields={"ostaid": "testing", "security": {"clas": "U"}},
-        is_fields={
-            "isorce": basis_etree.findtext(".//{*}CollectorName"),
-            "security": {"clas": "U"},
-        },
-        des_fields={"security": {"clas": "U"}},
-    )
-    out_with_path = tmp_path / "filename.sicd"
-    with sarkit.standards.sicd.io.SicdNitfWriter(out_with_path, plan) as writer:
-        writer.write_image(basis_array)
-
-    out_with_obj = tmp_path / "file_obj.sicd"
-    with out_with_obj.open("wb") as file:
-        with sarkit.standards.sicd.io.SicdNitfWriter(file, plan) as writer:
-            writer.write_image(basis_array)
-
-    with out_with_path.open("rb") as file:
-        with sarkit.standards.sicd.io.SicdNitfReader(file) as path_reader:
-            array_from_path = path_reader.read_image()
-    with sarkit.standards.sicd.io.SicdNitfReader(out_with_obj) as obj_reader:
-        array_from_obj = obj_reader.read_image()
-
-    assert lxml.etree.tostring(
-        path_reader.sicd_xmltree, method="c14n"
-    ) == lxml.etree.tostring(basis_etree, method="c14n")
-    assert lxml.etree.tostring(
-        path_reader.sicd_xmltree, method="c14n"
-    ) == lxml.etree.tostring(obj_reader.sicd_xmltree, method="c14n")
-    assert path_reader.header_fields == obj_reader.header_fields
-    assert path_reader.is_fields == obj_reader.is_fields
-    assert path_reader.des_fields == obj_reader.des_fields
-    np.testing.assert_array_equal(array_from_path, array_from_obj)
 
 
 def test_nitfheaderfields_from_header():
@@ -322,37 +286,6 @@ def test_nitfdesegmentfields_from_header():
     assert fields.security.crsn == header.Security.CRSN
     assert fields.security.srdt == header.Security.SRDT
     assert fields.security.ctln == header.Security.CTLN
-
-
-def test_read_sicd_xml(tmp_path):
-    sicd_xml = DATAPATH / "example-sicd-1.3.0.xml"
-    basis_etree = lxml.etree.parse(sicd_xml)
-    basis_array = _random_image(basis_etree)
-
-    direct_etree = sarkit.standards.sicd.io.read_sicd_xml(sicd_xml)
-    assert isinstance(direct_etree, lxml.etree._ElementTree)
-    assert lxml.etree.tostring(basis_etree, method="c14n") == lxml.etree.tostring(
-        direct_etree, method="c14n"
-    )
-
-    plan = sarkit.standards.sicd.io.SicdNitfPlan(
-        sicd_xmltree=basis_etree,
-        header_fields={"ostaid": "testing", "security": {"clas": "U"}},
-        is_fields={
-            "isorce": basis_etree.findtext(".//{*}CollectorName"),
-            "security": {"clas": "U"},
-        },
-        des_fields={"security": {"clas": "U"}},
-    )
-    out_filename = tmp_path / "filename.sicd"
-    with sarkit.standards.sicd.io.SicdNitfWriter(out_filename, plan) as writer:
-        writer.write_image(basis_array)
-
-    nitf_etree = sarkit.standards.sicd.io.read_sicd_xml(out_filename)
-    assert isinstance(nitf_etree, lxml.etree._ElementTree)
-    assert lxml.etree.tostring(basis_etree, method="c14n") == lxml.etree.tostring(
-        nitf_etree, method="c14n"
-    )
 
 
 def test_version_info():
