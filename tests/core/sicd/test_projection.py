@@ -78,18 +78,24 @@ def test_image_plane_parameters_roundtrip(example_proj_metadata):
         low=-24, high=24, size=(3, 4, 5, 2)
     )
     image_plane_points = sicdproj.image_grid_to_image_plane_point(
-        example_proj_metadata, image_grid_locations
+        example_proj_metadata.SCP,
+        example_proj_metadata.uRow,
+        example_proj_metadata.uCol,
+        image_grid_locations,
     )
     re_image_grid_locations = sicdproj.image_plane_point_to_image_grid(
-        example_proj_metadata, image_plane_points
+        example_proj_metadata.SCP,
+        example_proj_metadata.uRow,
+        example_proj_metadata.uCol,
+        image_plane_points,
     )
     assert image_grid_locations == pytest.approx(re_image_grid_locations)
 
 
 def test_compute_coa_time(example_proj_metadata):
-    assert sicdproj.compute_coa_time(example_proj_metadata, [0, 0]) == pytest.approx(
-        example_proj_metadata.t_SCP_COA
-    )
+    assert sicdproj.compute_coa_time(
+        example_proj_metadata.cT_COA, [0, 0]
+    ) == pytest.approx(example_proj_metadata.t_SCP_COA)
 
 
 def test_compute_coa_pos_vel_mono(example_proj_metadata):
@@ -174,7 +180,7 @@ def test_compute_pt_r_rdot_parameters_mono(example_proj_metadata):
     """
 
     pt_r_rdot_params = sicdproj.compute_pt_r_rdot_parameters(
-        example_proj_metadata,
+        example_proj_metadata.LOOK,
         sicdproj.CoaPosVels(
             Xmt_COA=example_proj_metadata.ARP_SCP_COA,
             VXmt_COA=example_proj_metadata.VARP_SCP_COA,
@@ -195,7 +201,7 @@ def test_r_rdot_to_ground_plane(example_proj_metadata):
     proj_sets_mono = sicdproj.compute_projection_sets(example_proj_metadata, im_coords)
     scp_spn = sicdproj.compute_scp_coa_slant_plane_normal(example_proj_metadata)
     gpp_tgt_mono = sicdproj.r_rdot_to_ground_plane_mono(
-        example_proj_metadata,
+        example_proj_metadata.LOOK,
         proj_sets_mono,
         example_proj_metadata.SCP,
         scp_spn,
@@ -203,7 +209,8 @@ def test_r_rdot_to_ground_plane(example_proj_metadata):
 
     # Per Volume 3: The bistatic function defined may also be used for a monostatic image.
     gpp_tgt_bi, delta_gp, success = sicdproj.r_rdot_to_ground_plane_bi(
-        example_proj_metadata,
+        example_proj_metadata.LOOK,
+        example_proj_metadata.SCP,
         sicdproj.ProjectionSets(
             t_COA=proj_sets_mono.t_COA,
             Xmt_COA=proj_sets_mono.ARP_COA,
@@ -234,7 +241,9 @@ def test_r_rdot_to_hae_surface(mdata_name, scalar_hae, request):
         hae0 += rng.uniform(low=-24.0, high=24.0, size=im_coords.shape[:-1])
     proj_sets = sicdproj.compute_projection_sets(proj_metadata, im_coords)
     spp_tgt, _, success = sicdproj.r_rdot_to_constant_hae_surface(
-        proj_metadata,
+        proj_metadata.LOOK,
+        proj_metadata.SCP,
+        proj_metadata.Collect_Type,
         proj_sets,
         hae0,
     )
@@ -249,7 +258,9 @@ def test_r_rdot_to_hae_surface(mdata_name, scalar_hae, request):
         proj_sets.R_Avg_COA[bad_index] *= 1e6
 
     spp_tgt_w_bad, _, success = sicdproj.r_rdot_to_constant_hae_surface(
-        proj_metadata,
+        proj_metadata.LOOK,
+        proj_metadata.SCP,
+        proj_metadata.Collect_Type,
         proj_sets,
         hae0,
     )

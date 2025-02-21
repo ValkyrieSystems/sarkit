@@ -93,6 +93,17 @@ class MetadataParams:
     R_CA_SCP: Optional[float] = None
     cDRSF: Optional[np.ndarray] = None  # noqa N815
 
+    @property
+    def LOOK(self):  # noqa N802
+        """+1 if SideOfTrack = L, -1 if SideOfTrack = R"""
+        if self.SideOfTrack == "L":
+            return +1
+        if self.SideOfTrack == "R":
+            return -1
+        raise ValueError(
+            f"Unrecognized SideOfTrack: {self.SideOfTrack}; must be L or R"
+        )
+
     def is_monostatic(self) -> bool:
         """Returns True if MONOSTATIC, False if BISTATIC. Otherwise raises exception."""
         Collect_Type = self.Collect_Type  # noqa N802

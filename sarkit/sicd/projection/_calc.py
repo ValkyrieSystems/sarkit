@@ -18,15 +18,19 @@ def _xyzpolyval(x, c):
 
 
 def image_grid_to_image_plane_point(
-    proj_metadata: params.MetadataParams,
+    scp: npt.ArrayLike,
+    urow: npt.ArrayLike,
+    ucol: npt.ArrayLike,
     image_grid_locations: npt.ArrayLike,
 ) -> npt.NDArray:
     """Convert image pixel grid locations to corresponding image plane positions.
 
     Parameters
     ----------
-    proj_metadata : MetadataParams
-        Metadata parameters relevant to projection.
+    scp : (..., 3) array_like
+        SCP position in ECEF coordinates (m).
+    urow, ucol : (..., 3) array_like
+        Unit vectors in the increasing row and column directions in ECEF coordinates.
     image_grid_locations : (..., 2) array_like
         N-D array of image coordinates with xrow/ycol in meters in the last dimension.
 
@@ -41,25 +45,26 @@ def image_grid_to_image_plane_point(
     xrow = image_grid_locations[..., 0]
     ycol = image_grid_locations[..., 1]
     # Compute displacement from SCP to image plane points
-    delta_ip_pts = (
-        xrow[..., np.newaxis] * proj_metadata.uRow
-        + ycol[..., np.newaxis] * proj_metadata.uCol
-    )
+    delta_ip_pts = xrow[..., np.newaxis] * urow + ycol[..., np.newaxis] * ucol
 
     # Compute image plane point positions
-    return proj_metadata.SCP + delta_ip_pts
+    return np.asarray(scp) + delta_ip_pts
 
 
 def image_plane_point_to_image_grid(
-    proj_metadata: params.MetadataParams,
+    scp: npt.ArrayLike,
+    urow: npt.ArrayLike,
+    ucol: npt.ArrayLike,
     image_plane_points: npt.ArrayLike,
 ) -> npt.NDArray:
     """Convert image plane positions to corresponding image pixel grid locations.
 
     Parameters
     ----------
-    proj_metadata : MetadataParams
-        Metadata parameters relevant to projection.
+    scp : (..., 3) array_like
+        SCP position in ECEF coordinates (m).
+    urow, ucol : (..., 3) array_like
+        Unit vectors in the increasing row and column directions in ECEF coordinates.
     image_plane_points : (..., 3) array_like
         Array of image plane points with ECEF (WGS 84 cartesian) X, Y, Z components in meters
         in the last dimension.
@@ -71,20 +76,20 @@ def image_plane_point_to_image_grid(
 
     """
     # Compute cosine and sine of angle between uRow and uCol and 2x2 matrix.
-    cos_theta_col = np.dot(proj_metadata.uRow, proj_metadata.uCol)
+    cos_theta_col = np.dot(urow, ucol)
     sin_theta_col = np.sqrt(1 - cos_theta_col**2)
     m_il_ippt = (sin_theta_col ** (-2)) * np.array(
         [[1.0, -cos_theta_col], [-cos_theta_col, 1.0]]
     )
 
     # Compute displacement vector from SCP to image plane points. Compute image grid locations.
-    delta_ip_pt = np.asarray(image_plane_points) - proj_metadata.SCP
+    delta_ip_pt = np.asarray(image_plane_points) - np.asarray(scp)
     il = (
         m_il_ippt
         @ np.stack(
             [
-                (delta_ip_pt * proj_metadata.uRow).sum(axis=-1),
-                (delta_ip_pt * proj_metadata.uCol).sum(axis=-1),
+                (delta_ip_pt * urow).sum(axis=-1),
+                (delta_ip_pt * ucol).sum(axis=-1),
             ],
             axis=-1,
         )[..., np.newaxis]
@@ -93,15 +98,15 @@ def image_plane_point_to_image_grid(
 
 
 def compute_coa_time(
-    proj_metadata: params.MetadataParams,
+    ct_coa: npt.ArrayLike,
     image_grid_locations: npt.ArrayLike,
 ) -> npt.NDArray:
     """Compute Center of Aperture times for specified image grid locations.
 
     Parameters
     ----------
-    proj_metadata : MetadataParams
-        Metadata parameters relevant to projection.
+    ct_coa : array_like
+        Center Of Aperture time polynomial coefficients.
     image_grid_locations : (..., 2) array_like
         N-D array of image coordinates with xrow/ycol in meters in the last dimension.
 
@@ -115,7 +120,7 @@ def compute_coa_time(
     tgts = np.asarray(image_grid_locations)
     xrow = tgts[..., 0]
     ycol = tgts[..., 1]
-    return npp.polyval2d(xrow, ycol, proj_metadata.cT_COA)
+    return npp.polyval2d(xrow, ycol, np.asarray(ct_coa))
 
 
 def compute_coa_pos_vel(
@@ -262,14 +267,13 @@ def compute_scp_coa_slant_plane_normal(
         SCP COA slant plane unit normal with ECEF (WGS 84 cartesian) X, Y, Z components in meters.
 
     """
-    look = {"L": +1, "R": -1}[proj_metadata.SideOfTrack]
     if proj_metadata.is_monostatic():
-        spn_scp_coa = look * np.cross(
+        spn_scp_coa = proj_metadata.LOOK * np.cross(
             (proj_metadata.ARP_SCP_COA - proj_metadata.SCP), proj_metadata.VARP_SCP_COA
         )
     else:
         bistatic_results = _scp_r_rdot_projection_contour_bistatic(proj_metadata)
-        spn_scp_coa = look * np.cross(
+        spn_scp_coa = proj_metadata.LOOK * np.cross(
             bistatic_results["bp_scp_coa"], bistatic_results["bpdot_scp_coa"]
         )
     return spn_scp_coa / np.linalg.norm(spn_scp_coa)
@@ -343,7 +347,7 @@ def r_rdot_from_rgazim_pfa(
         rdot_scp = (coa_pos_vels.VARP_COA * r_scp_vector).sum(-1, keepdims=True) / r_scp
     else:
         pt_r_rdot_params = compute_pt_r_rdot_parameters(
-            proj_metadata, coa_pos_vels, proj_metadata.SCP
+            proj_metadata.LOOK, coa_pos_vels, proj_metadata.SCP
         )
         r_scp = pt_r_rdot_params.R_Avg_PT
         rdot_scp = pt_r_rdot_params.Rdot_Avg_PT
@@ -506,7 +510,7 @@ def r_rdot_from_plane(
         return r_tgt_coa, rdot_tgt_coa
     else:
         pt_r_rdot_params = compute_pt_r_rdot_parameters(
-            proj_metadata, coa_pos_vels, ip_tgt
+            proj_metadata.LOOK, coa_pos_vels, ip_tgt
         )
 
         return pt_r_rdot_params.R_Avg_PT, pt_r_rdot_params.Rdot_Avg_PT
@@ -549,7 +553,6 @@ def compute_and_apply_offsets(
     if proj_metadata.is_monostatic():
         assert apo_input_set.delta_ARP_SCP_COA is not None
         assert apo_input_set.delta_VARP is not None
-        assert init_proj_set.t_COA is not None
         assert init_proj_set.ARP_COA is not None
         assert init_proj_set.VARP_COA is not None
         assert init_proj_set.R_COA is not None
@@ -581,7 +584,6 @@ def compute_and_apply_offsets(
     assert apo_input_set.delta_Rcv_SCP_COA is not None
     assert apo_input_set.delta_VRcv is not None
     assert apo_input_set.f_Clk_R_SF is not None
-    assert proj_metadata.t_SCP_COA is not None
     assert init_proj_set.tx_COA is not None
     assert init_proj_set.tr_COA is not None
     assert init_proj_set.VXmt_COA is not None
@@ -666,7 +668,7 @@ def compute_projection_sets(
         Ensemble of Center of Aperture projection sets.
 
     """
-    t_coa = compute_coa_time(proj_metadata, image_grid_locations)
+    t_coa = compute_coa_time(proj_metadata.cT_COA, image_grid_locations)
     coa_pos_vels = compute_coa_pos_vel(proj_metadata, t_coa)
     r, rdot = compute_coa_r_rdot(
         proj_metadata, image_grid_locations, t_coa, coa_pos_vels
@@ -693,8 +695,13 @@ def compute_projection_sets(
     )
 
 
+def _check_look(look):
+    if look not in (-1, +1):
+        raise ValueError(f"Invalid {look=}; must be +1 or -1")
+
+
 def r_rdot_to_ground_plane_mono(
-    proj_metadata: params.MetadataParams,
+    look: int,
     projection_sets: params.ProjectionSets,
     gref: npt.ArrayLike,
     ugpn: npt.ArrayLike,
@@ -703,8 +710,8 @@ def r_rdot_to_ground_plane_mono(
 
     Parameters
     ----------
-    proj_metadata : MetadataParams
-        Metadata parameters relevant to projection.
+    look : {+1, -1}
+        +1 if SideOfTrack = L, -1 if SideOfTrack = R
     projection_sets : ProjectionSets
         Ensemble of Center of Aperture projection sets to project.
     gref : (3,) array_like
@@ -721,6 +728,7 @@ def r_rdot_to_ground_plane_mono(
 
     """
 
+    _check_look(look)
     assert projection_sets.ARP_COA is not None
     assert projection_sets.VARP_COA is not None
     assert projection_sets.R_COA is not None
@@ -754,7 +762,6 @@ def r_rdot_to_ground_plane_mono(
     cos_az[(cos_az < -1.0) | (cos_az > 1.0)] = np.nan  # No Solution
 
     # Compute the sine of the azimuth angle
-    look = {"L": +1, "R": -1}[proj_metadata.SideOfTrack]
     sin_az = look * np.sqrt(1 - cos_az**2)
 
     # Compute the ground plane points
@@ -762,7 +769,8 @@ def r_rdot_to_ground_plane_mono(
 
 
 def r_rdot_to_ground_plane_bi(
-    proj_metadata: params.MetadataParams,
+    look: int,
+    scp: npt.ArrayLike,
     projection_sets: params.ProjectionSets,
     gref: npt.ArrayLike,
     ugpn: npt.ArrayLike,
@@ -774,8 +782,10 @@ def r_rdot_to_ground_plane_bi(
 
     Parameters
     ----------
-    proj_metadata : MetadataParams
-        Metadata parameters relevant to projection.
+    look : {+1, -1}
+        +1 if SideOfTrack = L, -1 if SideOfTrack = R
+    scp : (3,) array_like
+        SCP position in ECEF coordinates (m).
     projection_sets : ProjectionSets
         Ensemble of Center of Aperture projection sets to project.
     gref : (3,) array_like
@@ -801,6 +811,7 @@ def r_rdot_to_ground_plane_bi(
         to the threshold, ``delta_gp_gpp``.
 
     """
+    _check_look(look)
     assert projection_sets.Xmt_COA is not None
     assert projection_sets.VXmt_COA is not None
     assert projection_sets.Rcv_COA is not None
@@ -808,23 +819,23 @@ def r_rdot_to_ground_plane_bi(
     assert projection_sets.R_Avg_COA is not None
     assert projection_sets.Rdot_Avg_COA is not None
 
+    scp = np.asarray(scp)
     gref = np.asarray(gref)
     ugpn = np.asarray(ugpn)
     # Compute initial ground points
+    scp_lat, scp_lon = sarkit.wgs84.cartesian_to_geodetic(scp)[:2]
     u_up_scp = np.stack(
         (
-            np.cos(np.deg2rad(proj_metadata.SCP_Lat))
-            * np.cos(np.deg2rad(proj_metadata.SCP_Lon)),
-            np.cos(np.deg2rad(proj_metadata.SCP_Lat))
-            * np.sin(np.deg2rad(proj_metadata.SCP_Lon)),
-            np.sin(np.deg2rad(proj_metadata.SCP_Lat)),
+            np.cos(np.deg2rad(scp_lat)) * np.cos(np.deg2rad(scp_lon)),
+            np.cos(np.deg2rad(scp_lat)) * np.sin(np.deg2rad(scp_lon)),
+            np.sin(np.deg2rad(scp_lat)),
         ),
         axis=-1,
     )
-    dist_gp = ((gref - proj_metadata.SCP) * ugpn).sum(axis=-1, keepdims=True) / (
-        u_up_scp * ugpn
-    ).sum(axis=-1, keepdims=True)
-    g_0 = proj_metadata.SCP + dist_gp * u_up_scp
+    dist_gp = ((gref - scp) * ugpn).sum(axis=-1, keepdims=True) / (u_up_scp * ugpn).sum(
+        axis=-1, keepdims=True
+    )
+    g_0 = scp + dist_gp * u_up_scp
 
     xmt, vxmt, rcv, vrcv, g, ugpn = np.broadcast_arrays(
         projection_sets.Xmt_COA,
@@ -840,7 +851,7 @@ def r_rdot_to_ground_plane_bi(
     above_threshold = np.full(g.shape[:-1], True)
     for _ in range(maxiter):
         pt_r_rdot_params = compute_pt_r_rdot_parameters(
-            proj_metadata,
+            look,
             params.CoaPosVels(
                 Xmt_COA=xmt[above_threshold, :],
                 VXmt_COA=vxmt[above_threshold, :],
@@ -884,7 +895,7 @@ def r_rdot_to_ground_plane_bi(
 
 
 def compute_pt_r_rdot_parameters(
-    proj_metadata: params.MetadataParams,
+    look: int,
     coa_pos_vels: params.CoaPosVels,
     scene_points: npt.ArrayLike,
 ) -> params.ScenePointRRdotParams:
@@ -892,8 +903,8 @@ def compute_pt_r_rdot_parameters(
 
     Parameters
     ----------
-    proj_metadata : MetadataParams
-        Metadata parameters relevant to projection.
+    look : {+1, -1}
+        +1 if SideOfTrack = L, -1 if SideOfTrack = R
     coa_pos_vels : CoaPosVels
         Ensemble of COA sensor positions and velocities.
     scene_points : (..., 3) array_like
@@ -905,6 +916,7 @@ def compute_pt_r_rdot_parameters(
     ScenePointRRdotParams
         Ensemble of range and range rate parameters for the specified scene points
     """
+    _check_look(look)
     pt = np.asarray(scene_points)
 
     # Compute parameters for transmit APC relative to scene points
@@ -928,7 +940,6 @@ def compute_pt_r_rdot_parameters(
     bpdot_pt = (u_xmtdot_pt + u_rcvdot_pt) / 2.0
 
     # Compute bistatic slant plane unit normal vector
-    look = {"L": +1, "R": -1}[proj_metadata.SideOfTrack]
     spn_pt = look * np.cross(bp_pt, bpdot_pt)
     uspn_pt = spn_pt / np.linalg.norm(spn_pt)
 
@@ -1080,7 +1091,7 @@ def scene_to_image(
 
         # For image plane points, compute the associated image grid coordinates.
         image_grid_locations[above_threshold] = image_plane_point_to_image_grid(
-            proj_metadata, i
+            proj_metadata.SCP, proj_metadata.uRow, proj_metadata.uCol, i
         )
 
         # Compute the COA projection sets
@@ -1096,7 +1107,7 @@ def scene_to_image(
         # Compute precise projection to ground plane.
         if proj_metadata.is_monostatic():
             p[above_threshold] = r_rdot_to_ground_plane_mono(
-                proj_metadata,
+                proj_metadata.LOOK,
                 projection_sets,
                 s[above_threshold],
                 u_gpn[above_threshold],
@@ -1107,7 +1118,8 @@ def scene_to_image(
         else:
             p[above_threshold], _, r_rdot_to_ground_success[above_threshold] = (
                 r_rdot_to_ground_plane_bi(
-                    proj_metadata,
+                    proj_metadata.LOOK,
+                    proj_metadata.SCP,
                     projection_sets,
                     s[above_threshold],
                     u_gpn[above_threshold],
@@ -1132,7 +1144,9 @@ def scene_to_image(
 
 
 def r_rdot_to_constant_hae_surface(
-    proj_metadata: params.MetadataParams,
+    look: int,
+    scp: npt.ArrayLike,
+    collect_type: str,
     projection_sets: params.ProjectionSets,
     hae0: npt.ArrayLike,
     *,
@@ -1145,8 +1159,12 @@ def r_rdot_to_constant_hae_surface(
 
     Parameters
     ----------
-    proj_metadata : MetadataParams
-        Metadata parameters relevant to projection.
+    look : {+1, -1}
+        +1 if SideOfTrack = L, -1 if SideOfTrack = R
+    scp : (3,) array_like
+        SCP position in ECEF coordinates (m).
+    collect_type : {"MONOSTATIC", "BISTATIC"}
+        Parameter that specifies type of collection for the image.
     projection_sets : ProjectionSets
         Ensemble of Center of Aperture projection sets to project.
     hae0 : array_like
@@ -1174,6 +1192,12 @@ def r_rdot_to_constant_hae_surface(
         to the threshold, ``delta_hae_max``.
     """
     hae0 = np.asarray(hae0)
+    scp = np.asarray(scp)
+
+    _check_look(look)
+    if collect_type.upper() not in {"MONOSTATIC", "BISTATIC"}:
+        raise ValueError(f"Unrecognized {collect_type=}")
+    is_mono = collect_type.upper() == "MONOSTATIC"
 
     def _calc_up(lat_deg, lon_deg):
         return np.stack(
@@ -1186,10 +1210,11 @@ def r_rdot_to_constant_hae_surface(
         )
 
     # Compute parameters for ground plane 1
-    u_gpn1 = _calc_up(proj_metadata.SCP_Lat, proj_metadata.SCP_Lon)
-    gref1 = proj_metadata.SCP + (hae0 - proj_metadata.SCP_HAE)[..., np.newaxis] * u_gpn1
+    scp_lat, scp_lon, scp_hae = sarkit.wgs84.cartesian_to_geodetic(scp)
+    u_gpn1 = _calc_up(scp_lat, scp_lon)
+    gref1 = scp + (hae0 - scp_hae)[..., np.newaxis] * u_gpn1
 
-    if proj_metadata.is_monostatic():
+    if is_mono:
         assert projection_sets.ARP_COA is not None
         assert projection_sets.VARP_COA is not None
         gref, u_gpn, arp, varp = np.broadcast_arrays(
@@ -1219,11 +1244,11 @@ def r_rdot_to_constant_hae_surface(
     r_rdot_to_plane_success = np.full(gref.shape[:-1], False)
     for _ in range(nlim):
         # Compute precise projection to ground plane.
-        if proj_metadata.is_monostatic():
+        if is_mono:
             assert projection_sets.R_COA is not None
             assert projection_sets.Rdot_COA is not None
             gpp[above_threshold, :] = r_rdot_to_ground_plane_mono(
-                proj_metadata,
+                look,
                 params.ProjectionSets(
                     t_COA=projection_sets.t_COA[above_threshold],
                     ARP_COA=arp[above_threshold, :],
@@ -1242,7 +1267,8 @@ def r_rdot_to_constant_hae_surface(
             assert projection_sets.Rdot_Avg_COA is not None
             gpp[above_threshold, :], _, r_rdot_to_plane_success[above_threshold] = (
                 r_rdot_to_ground_plane_bi(
-                    proj_metadata,
+                    look,
+                    scp,
                     params.ProjectionSets(
                         t_COA=projection_sets.t_COA[above_threshold],
                         Xmt_COA=xmt[above_threshold, :],
@@ -1280,13 +1306,12 @@ def r_rdot_to_constant_hae_surface(
         u_gpn[above_threshold, :] = u_up[above_threshold, :]
 
     # Compute slant plane normal tangent to R/Rdot contour at GPP.
-    look = {"L": +1, "R": -1}[proj_metadata.SideOfTrack]
-    if proj_metadata.is_monostatic():
+    if is_mono:
         spn = look * np.cross(varp, gpp - arp)
         u_spn = spn / np.linalg.norm(spn, axis=-1, keepdims=True)
     else:
         gpp_r_rdot_params = compute_pt_r_rdot_parameters(
-            proj_metadata,
+            look,
             params.CoaPosVels(
                 Xmt_COA=projection_sets.Xmt_COA,
                 VXmt_COA=projection_sets.VXmt_COA,

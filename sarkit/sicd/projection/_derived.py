@@ -66,7 +66,7 @@ def image_to_ground_plane(
     )
     if method == "monostatic":
         gpp_tgt = calc.r_rdot_to_ground_plane_mono(
-            proj_metadata, projection_sets, gref, ugpn
+            proj_metadata.LOOK, projection_sets, gref, ugpn
         )
         delta_gp = np.full(gpp_tgt.shape[:-1], np.nan)
         delta_gp[np.isfinite(gpp_tgt).all(axis=-1)] = 0
@@ -85,7 +85,8 @@ def image_to_ground_plane(
                 Rdot_Avg_COA=projection_sets.Rdot_COA,
             )
         gpp_tgt, delta_gp, success = calc.r_rdot_to_ground_plane_bi(
-            proj_metadata,
+            proj_metadata.LOOK,
+            proj_metadata.SCP,
             bistat_projection_sets,
             gref,
             ugpn,
@@ -208,7 +209,9 @@ def image_to_constant_hae_surface(
         )
 
     return calc.r_rdot_to_constant_hae_surface(
-        proj_metadata,
+        proj_metadata.LOOK,
+        proj_metadata.SCP,
+        proj_metadata.Collect_Type,
         projection_sets,
         hae0,
         delta_hae_max=delta_hae_max,
