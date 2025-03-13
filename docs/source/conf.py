@@ -73,7 +73,7 @@ intersphinx_mapping = {
 
 # numpydoc
 numpydoc_xref_param_type = True
-numpydoc_xref_ignore = {"optional", "of"}
+numpydoc_xref_ignore = {"optional", "of", "N"}
 numpydoc_validation_checks = {
     "PR10",  # requires a space before the colon separating the parameter name and type
     "GL07",  # Sections are in the wrong order

@@ -177,7 +177,7 @@ class SicdConsistency(con.ConsistencyChecker):
         Path to SICD XML Schema (Bypass auto selection of SICD schema)
     version_override : str, optional
         Bypass auto detection of SICD version.  Required if schema_override is specified.  eg: "1.1.0"
-    ntf : NITFDetails, optional
+    ntf : ``NITFDetails``, optional
         Header information from a NITF file
     """
 

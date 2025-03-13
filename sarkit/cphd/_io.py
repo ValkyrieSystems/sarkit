@@ -196,14 +196,13 @@ def mask_support_array(
     array : np.ndarray
         Support array to compare to NODATA and create a masked array from
     nodata_hex : str, optional
-        If None, create a maskedarray with all array elements valid. Otherwise, use the hex string to
+        If None, all array elements are valid. Otherwise, use the hex string to
         compare to the values in ``array`` to make the mask
 
     Returns
     -------
-    masked_array : MaskedArray
-        `numpy.ma.MaskedArray` corresponding to the valid elements of ``array``
-
+    masked_array : :py:class:`~numpy.ma.MaskedArray`
+        ``array`` with NODATA elements masked
     """
     if nodata_hex is None:
         return np.ma.array(array)
@@ -251,7 +250,7 @@ def read_file_header(file):
 
     Parameters
     ----------
-    file : file_like
+    file : `file object`
         The open file object, which will be progressively read.
 
     Returns

@@ -584,7 +584,7 @@ class MtxType(Type):
 
     Attributes
     ----------
-    shape : 2-tuple of ints
+    shape : tuple of (int, int)
         Expected shape of the matrix.
 
     """

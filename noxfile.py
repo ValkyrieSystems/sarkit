@@ -20,6 +20,7 @@ def docs(session):
         "docs/source",
         "docs/build",
         "--fail-on-warning",
+        "--nitpicky",
         "--keep-going",
         "--fresh-env",
         "--write-all",

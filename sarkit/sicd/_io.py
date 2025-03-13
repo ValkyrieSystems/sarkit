@@ -727,7 +727,7 @@ class NitfWriter:
         ----------
         array : ndarray
             2D array of complex pixels
-        start : tuple of ints, optional
+        start : tuple of (int, int), optional
             The start index (first_row, first_col) of `array` in the SICD image.
             If not given, `array` must be the full SICD image.
 

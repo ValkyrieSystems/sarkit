@@ -124,7 +124,7 @@ class MetadataParams:
 
         Returns
         -------
-        MetadataParamList
+        MetadataParams
             The metadata parameter list object initialized with values from the XML.
 
         """
