@@ -214,6 +214,33 @@ def mask_support_array(
     )
 
 
+def _describe_signal(
+    cphd_xmltree: lxml.etree.ElementTree,
+    channel_identifier: str,
+    *,
+    standard_format=False,
+) -> tuple[tuple[int, ...], np.dtype]:
+    """Return the shape and dtype of the signal array identified by ``channel_identifier``"""
+    channel_info = cphd_xmltree.find(
+        f"{{*}}Data/{{*}}Channel[{{*}}Identifier='{channel_identifier}']"
+    )
+    is_compressed = (
+        compressed_signal_size := channel_info.findtext("{*}CompressedSignalSize")
+    ) is not None
+    if is_compressed and not standard_format:
+        dtype = np.dtype(np.uint8)
+        shape: tuple[int, ...] = (int(compressed_signal_size),)
+    else:
+        dtype = binary_format_string_to_dtype(
+            cphd_xmltree.find("./{*}Data/{*}SignalArrayFormat").text
+        )
+        shape = (
+            int(channel_info.find("{*}NumVectors").text),
+            int(channel_info.find("{*}NumSamples").text),
+        )
+    return shape, dtype
+
+
 @dataclasses.dataclass(kw_only=True)
 class FileHeaderPart:
     """CPHD header fields which are set per program specific Product Design Document
@@ -432,25 +459,26 @@ class Reader:
         Returns
         -------
         ndarray
-            2D array of complex samples
+            Signal array identified by ``channel_identifier``
+
+            When standard, shape=(NumVectors, NumSamples), dtype determined by SignalArrayFormat.
+
+            When compressed, shape=(CompressedSignalSize,), dtype= `numpy.uint8`
         """
-        channel_info = self.metadata.xmltree.find(
-            f"{{*}}Data/{{*}}Channel[{{*}}Identifier='{channel_identifier}']"
+        signal_offset = int(
+            self.metadata.xmltree.findtext(
+                f"{{*}}Data/{{*}}Channel[{{*}}Identifier='{channel_identifier}']/{{*}}SignalArrayByteOffset"
+            )
         )
-        num_vect = int(channel_info.find("./{*}NumVectors").text)
-        num_samp = int(channel_info.find("./{*}NumSamples").text)
-        shape = (num_vect, num_samp)
-
-        signal_offset = int(channel_info.find("./{*}SignalArrayByteOffset").text)
         self._file_object.seek(signal_offset + self._signal_block_byte_offset)
-
-        signal_dtype = binary_format_string_to_dtype(
-            self.metadata.xmltree.find("./{*}Data/{*}SignalArrayFormat").text
-        ).newbyteorder("B")
-
-        return np.fromfile(
-            self._file_object, signal_dtype, count=np.prod(shape)
-        ).reshape(shape)
+        shape, dtype = _describe_signal(self.metadata.xmltree, channel_identifier)
+        dtype = dtype.newbyteorder(">")
+        nbytes = np.prod(shape) * dtype.itemsize
+        sigarray = self._file_object.read(nbytes)
+        nbytes_read = len(sigarray)
+        if nbytes != nbytes_read:
+            raise RuntimeError(f"Expected {nbytes=}; only read {nbytes_read}")
+        return np.frombuffer(sigarray, dtype=dtype).reshape(shape)
 
     def read_pvps(self, channel_identifier: str) -> npt.NDArray:
         """Read pvp data from a CPHD file
@@ -597,9 +625,6 @@ class Writer:
 
         xml_block_body = lxml.etree.tostring(cphd_xmltree, encoding="utf-8")
 
-        signal_itemsize = binary_format_string_to_dtype(
-            cphd_xmltree.find("./{*}Data/{*}SignalArrayFormat").text
-        ).itemsize
         pvp_itemsize = int(cphd_xmltree.find("./{*}Data/{*}NumBytesPVP").text)
         self._channel_size_offsets = {}
         for chan_node in cphd_xmltree.findall("./{*}Data/{*}Channel"):
@@ -607,12 +632,8 @@ class Writer:
             channel_signal_offset = int(
                 chan_node.find("./{*}SignalArrayByteOffset").text
             )
-            channel_signal_size = (
-                int(chan_node.find("./{*}NumVectors").text)
-                * int(chan_node.find("./{*}NumSamples").text)
-                * signal_itemsize
-            )
-
+            shape, dtype = _describe_signal(cphd_xmltree, channel_identifier)
+            channel_signal_size = int(np.prod(shape)) * dtype.itemsize
             channel_pvp_offset = int(chan_node.find("./{*}PVPArrayByteOffset").text)
             channel_pvp_size = (
                 int(chan_node.find("./{*}NumVectors").text) * pvp_itemsize
@@ -723,22 +744,32 @@ class Writer:
         channel_identifier : str
             Channel unique identifier
         signal_array : ndarray
-            2D array of complex samples
+            Signal data to write.
 
+            When standard, shape=(NumVectors, NumSamples), dtype determined by SignalArrayFormat.
+
+            When compressed, shape=(CompressedSignalSize,), dtype= `numpy.uint8`
         """
         # TODO Add support for partial CPHD writing
-        assert (
-            signal_array.nbytes
-            == self._channel_size_offsets[channel_identifier]["signal_size"]
-        )
+        shape, dtype = _describe_signal(self._metadata.xmltree, channel_identifier)
+        if dtype != signal_array.dtype.newbyteorder("="):
+            raise ValueError(f"{signal_array.dtype=} is not compatible with {dtype=}")
+        if shape != signal_array.shape:
+            raise ValueError(f"{signal_array.shape=} does not match {shape=}")
 
-        self._signal_arrays_written.add(channel_identifier)
-        self._file_object.seek(self._file_header_kvp["SIGNAL_BLOCK_BYTE_OFFSET"])
+        buff_to_write = signal_array.astype(dtype.newbyteorder(">"), copy=False).data
+        expected_nbytes = self._channel_size_offsets[channel_identifier]["signal_size"]
+        if buff_to_write.nbytes != expected_nbytes:
+            raise ValueError(
+                f"{buff_to_write.nbytes=} does not match {expected_nbytes=}"
+            )
+
         self._file_object.seek(
-            self._channel_size_offsets[channel_identifier]["signal_offset"], os.SEEK_CUR
+            self._file_header_kvp["SIGNAL_BLOCK_BYTE_OFFSET"]
+            + self._channel_size_offsets[channel_identifier]["signal_offset"]
         )
-        output_dtype = signal_array.dtype.newbyteorder(">")
-        signal_array.astype(output_dtype, copy=False).tofile(self._file_object)
+        self._file_object.write(buff_to_write)
+        self._signal_arrays_written.add(channel_identifier)
 
     def write_pvp(self, channel_identifier: str, pvp_array: npt.NDArray):
         """Write pvp data to a CPHD file

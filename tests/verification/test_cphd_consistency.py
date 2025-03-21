@@ -1,6 +1,8 @@
 import copy
+import itertools
 import os
 import pathlib
+import re
 
 import lxml.builder
 import numpy as np
@@ -18,6 +20,17 @@ DATAPATH = pathlib.Path(__file__).parents[2] / "data"
 good_cphd_xml_path = DATAPATH / "example-cphd-1.0.1.xml"
 
 
+def assert_failures(con, pattern):
+    pattern = re.compile(pattern)
+    failure_details = itertools.chain(
+        *[x["details"] for x in con.failures(omit_passed_sub=True).values()]
+    )
+    failure_messages = [x["details"] for x in failure_details]
+
+    # this construction can help improve the error message for determining why pattern is not present
+    assert any(list(map(pattern.search, failure_messages)))
+
+
 @pytest.fixture(scope="session")
 def example_cphd_file(tmp_path_factory):
     cphd_etree = etree.parse(good_cphd_xml_path)
@@ -28,6 +41,7 @@ def example_cphd_file(tmp_path_factory):
     )
     pvp_dtype = skcphd.get_pvp_dtype(cphd_etree)
 
+    assert int(cphd_etree.findtext("{*}Data/{*}NumCPHDChannels")) == 1
     assert cphd_etree.findtext("./{*}Data/{*}SignalArrayFormat") == "CF8"
     rng = np.random.default_rng(123456)
     num_vectors = xmlhelp.load(".//{*}Data/{*}Channel/{*}NumVectors")
@@ -87,6 +101,28 @@ def example_cphd_file(tmp_path_factory):
     yield tmp_cphd
 
 
+@pytest.fixture(scope="session")
+def example_compressed_cphd(example_cphd_file):
+    with example_cphd_file.open("rb") as f, skcphd.Reader(f) as r:
+        pvps = r.read_pvps("1")
+
+    new_meta = r.metadata
+    assert new_meta.xmltree.find("{*}Data/{*}SignalCompressionID") is None
+    ns = etree.QName(new_meta.xmltree.getroot()).namespace
+    em = lxml.builder.ElementMaker(namespace=ns, nsmap={None: ns})
+    data_chan_elem = new_meta.xmltree.find("{*}Data/{*}Channel")
+    data_chan_elem.addprevious(em.SignalCompressionID("is constant!"))
+    compressed_data = b"ultra-compressed"
+    data_chan_elem.append(em.CompressedSignalSize(str(len(compressed_data))))
+
+    tmp_cphd = example_cphd_file.with_suffix(".compressed.cphd")
+    with tmp_cphd.open("wb") as f, skcphd.Writer(f, new_meta) as w:
+        w.write_pvp("1", pvps)
+        w.write_signal("1", np.frombuffer(compressed_data, np.uint8))
+    assert not main([str(tmp_cphd), "--signal-data"])
+    yield tmp_cphd
+
+
 def remove_nodes(*nodes):
     for node in nodes:
         node.getparent().remove(node)
@@ -124,8 +160,12 @@ def copy_xml(elem):
     return etree.fromstring(etree.tostring(elem))
 
 
-def test_from_file_cphd(example_cphd_file):
-    cphdcon = CphdConsistency.from_file(example_cphd_file)
+@pytest.mark.parametrize(
+    "fixture_name", ("example_cphd_file", "example_compressed_cphd")
+)
+def test_from_file_cphd(fixture_name, request):
+    file = request.getfixturevalue(fixture_name)
+    cphdcon = CphdConsistency.from_file(file, check_signal_data=True)
     cphdcon.check()
     assert not cphdcon.failures()
 
@@ -1224,3 +1264,42 @@ def test_channel_decorator_logic(good_xml_root):
     # Test for channels 2 and 3 will fail
     assert len(cphd_con.failures()) == 2
     assert len(cphd_con.passes()) == 1
+
+
+@pytest.mark.parametrize(
+    "fixture_name", ("example_cphd_file", "example_compressed_cphd")
+)
+def test_check_signal_block_size_header(fixture_name, request):
+    file = request.getfixturevalue(fixture_name)
+    cphdcon = CphdConsistency.from_file(file)
+    cphdcon.kvp_list["SIGNAL_BLOCK_SIZE"] += "1"
+    cphdcon.check("check_signal_block_size_and_packing")
+    assert_failures(cphdcon, "SIGNAL_BLOCK_SIZE matches the end")
+
+
+@pytest.mark.parametrize(
+    "fixture_name", ("example_cphd_file", "example_compressed_cphd")
+)
+def test_check_signal_block_size_compressedsigsize(fixture_name, request):
+    file = request.getfixturevalue(fixture_name)
+    cphdcon = CphdConsistency.from_file(file)
+    if cphdcon.cphdroot.find("{*}Data/{*}SignalCompressionID") is not None:
+        remove_nodes(
+            cphdcon.cphdroot.find("{*}Data/{*}Channel/{*}CompressedSignalSize")
+        )
+    else:
+        em = lxml.builder.ElementMaker(
+            namespace=etree.QName(cphdcon.cphdroot).namespace,
+            nsmap=cphdcon.cphdroot.nsmap,
+        )
+        cphdcon.cphdroot.find("{*}Data/{*}Channel").append(
+            em.CompressedSignalSize("24"),
+        )
+    cphdcon.check("check_signal_block_size_and_packing")
+    assert_failures(cphdcon, "CompressedSignalSize( not)? in Data/Channel")
+
+
+def test_check_signal_block_packing(cphd_con):
+    cphd_con.cphdroot.find("{*}Data/{*}Channel/{*}SignalArrayByteOffset").text += "1"
+    cphd_con.check("check_signal_block_size_and_packing")
+    assert_failures(cphd_con, "SIGNAL array .+ starts at offset")

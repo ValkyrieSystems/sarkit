@@ -1355,6 +1355,53 @@ class CphdConsistency(con.ConsistencyChecker):
             with self.want("Pad is 0"):
                 assert np.all(bytes_after_pvp == 0)
 
+    def check_signal_block_size_and_packing(self):
+        """Signal block is correctly sized and packed"""
+        has_compression_id = (
+            self.cphdroot.find("{*}Data/{*}SignalCompressionID") is not None
+        )
+        signal_array_offset_size = {}
+
+        signal_dtype_str = self.cphdroot.findtext("{*}Data/{*}SignalArrayFormat")
+        signal_dtype = skcphd.binary_format_string_to_dtype(signal_dtype_str)
+        num_bytes_samp = signal_dtype.itemsize
+        for channel_node in self.cphdroot.findall("{*}Data/{*}Channel"):
+            array_id = channel_node.findtext("{*}Identifier")
+            compressed_signal_size_elem = channel_node.find("{*}CompressedSignalSize")
+            if has_compression_id:
+                with self.need(
+                    f"CompressedSignalSize in Data/Channel for SIGNAL array {array_id}"
+                ):
+                    assert compressed_signal_size_elem is not None
+                array_size = int(compressed_signal_size_elem.text)
+            else:
+                with self.need(
+                    f"CompressedSignalSize not in Data/Channel for SIGNAL array {array_id}"
+                ):
+                    assert compressed_signal_size_elem is None
+                array_size = (
+                    int(channel_node.findtext("{*}NumVectors"))
+                    * int(channel_node.findtext("{*}NumSamples"))
+                    * num_bytes_samp
+                )
+
+            signal_array_offset_size[array_id] = (
+                int(channel_node.findtext("{*}SignalArrayByteOffset")),
+                array_size,
+            )
+        prev_end = 0
+        sorted_arrays = sorted(signal_array_offset_size.items(), key=lambda x: x[1])
+        for array_id, (offset, size) in sorted_arrays:
+            with self.need(f"SIGNAL array {array_id} starts at offset {prev_end}"):
+                assert offset == prev_end
+            prev_end = offset + size
+        with self.precondition():
+            assert self.kvp_list is not None
+            with self.need(
+                f"SIGNAL_BLOCK_SIZE matches the end of the last SIGNAL array {sorted_arrays[-1][0]}"
+            ):
+                assert prev_end == int(self.kvp_list["SIGNAL_BLOCK_SIZE"])
+
     def check_signal_at_end_of_file(self):
         """Signal is at the end of the file."""
         with self.precondition():

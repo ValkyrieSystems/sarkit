@@ -144,6 +144,50 @@ def test_roundtrip(tmp_path):
     ) == lxml.etree.tostring(basis_etree, method="c14n")
 
 
+def test_roundtrip_compressed(tmp_path):
+    basis_etree = lxml.etree.parse(DATAPATH / "example-cphd-1.0.1.xml")
+    basis_version = lxml.etree.QName(basis_etree.getroot()).namespace
+    assert basis_etree.find("{*}Data/{*}SignalCompressionID") is None
+    channel_ids = [
+        x.text for x in basis_etree.findall("./{*}Channel/{*}Parameters/{*}Identifier")
+    ]
+    assert len(channel_ids) == 1
+    ch_id = channel_ids[0]
+
+    em = lxml.builder.ElementMaker(namespace=basis_version, nsmap={None: basis_version})
+    data_chan_elem = basis_etree.find("{*}Data/{*}Channel")
+    data_chan_elem.addprevious(
+        em.SignalCompressionID("Channel identifier but as bytes!")
+    )
+    data_chan_elem.append(em.CompressedSignalSize(str(len(ch_id.encode()))))
+
+    schema = lxml.etree.XMLSchema(file=skcphd.VERSION_INFO[basis_version]["schema"])
+    schema.assertValid(basis_etree)
+    xmlhelp = skcphd.XmlHelper(basis_etree)
+    num_vectors = xmlhelp.load("./{*}Data/{*}Channel/{*}NumVectors")
+    pvps = np.zeros(num_vectors, dtype=skcphd.get_pvp_dtype(basis_etree))
+
+    support_arrays = {}
+    for data_sa_elem in basis_etree.findall("./{*}Data/{*}SupportArray"):
+        sa_id = xmlhelp.load_elem(data_sa_elem.find("./{*}Identifier"))
+        support_arrays[sa_id] = _random_support_array(basis_etree, sa_id)
+
+    meta = skcphd.Metadata(
+        xmltree=basis_etree,
+    )
+    out_cphd = tmp_path / "out.cphd"
+    with open(out_cphd, "wb") as f, skcphd.Writer(f, meta) as writer:
+        writer.write_signal(ch_id, np.frombuffer(ch_id.encode(), dtype=np.uint8))
+        writer.write_pvp(ch_id, pvps)
+        for k, v in support_arrays.items():
+            writer.write_support_array(k, v)
+
+    with open(out_cphd, "rb") as f, skcphd.Reader(f) as reader:
+        sig_array = reader.read_signal(ch_id)
+
+    assert sig_array.tobytes().decode() == ch_id
+
+
 @pytest.mark.parametrize("is_masked", (True, False))
 @pytest.mark.parametrize("nodata_in_xml", (True, False))
 def test_write_support_array(is_masked, nodata_in_xml, tmp_path):
