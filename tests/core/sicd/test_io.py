@@ -4,7 +4,7 @@ import lxml.etree
 import numpy as np
 import pytest
 
-import sarkit._nitf.nitf
+import sarkit._nitf_io
 import sarkit.sicd as sksicd
 
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
@@ -139,17 +139,7 @@ def test_roundtrip(tmp_path, sicd_xml, pixel_type):
     )
     with out_sicd.open("wb") as f:
         with sksicd.NitfWriter(f, metadata) as writer:
-            half_rows, half_cols = np.asarray(basis_array.shape) // 2
-            writer.write_image(basis_array[:half_rows, :half_cols], start=(0, 0))
-            writer.write_image(
-                basis_array[:half_rows, half_cols:], start=(0, half_cols)
-            )
-            writer.write_image(
-                basis_array[half_rows:, half_cols:], start=(half_rows, half_cols)
-            )
-            writer.write_image(
-                basis_array[half_rows:, :half_cols], start=(half_rows, 0)
-            )
+            writer.write_image(basis_array)
 
     with out_sicd.open("rb") as f, sksicd.NitfReader(f) as reader:
         read_array = reader.read_image()
@@ -160,143 +150,143 @@ def test_roundtrip(tmp_path, sicd_xml, pixel_type):
 
 
 def test_nitfheaderfields_from_header():
-    header = sarkit._nitf.nitf.NITFHeader()
-    header.OSTAID = "ostaid"
-    header.FTITLE = "ftitle"
+    header = sarkit._nitf_io.FileHeader("FHDR")
+    header["OSTAID"].value = "ostaid"
+    header["FTITLE"].value = "ftitle"
     # Data is unclassified.  These fields are filled for testing purposes only.
-    header.Security.CLAS = "T"
-    header.Security.CLSY = "US"
-    header.Security.CODE = "code_h"
-    header.Security.CTLH = "hh"
-    header.Security.REL = "rel_h"
-    header.Security.DCTP = "DD"
-    header.Security.DCDT = "20000101"
-    header.Security.DCXM = "25X1"
-    header.Security.DG = "C"
-    header.Security.DGDT = "20000102"
-    header.Security.CLTX = "CW_h"
-    header.Security.CATP = "O"
-    header.Security.CAUT = "caut_h"
-    header.Security.CRSN = "A"
-    header.Security.SRDT = ""
-    header.Security.CTLN = "ctln_h"
-    header.ONAME = "oname"
-    header.OPHONE = "ophone"
+    header["FSCLAS"].value = "T"
+    header["FSCLSY"].value = "US"
+    header["FSCODE"].value = "code_h"
+    header["FSCTLH"].value = "hh"
+    header["FSREL"].value = "rel_h"
+    header["FSDCTP"].value = "DD"
+    header["FSDCDT"].value = "20000101"
+    header["FSDCXM"].value = "25X1"
+    header["FSDG"].value = "C"
+    header["FSDGDT"].value = "20000102"
+    header["FSCLTX"].value = "CW_h"
+    header["FSCATP"].value = "O"
+    header["FSCAUT"].value = "caut_h"
+    header["FSCRSN"].value = "A"
+    header["FSSRDT"].value = ""
+    header["FSCTLN"].value = "ctln_h"
+    header["ONAME"].value = "oname"
+    header["OPHONE"].value = "ophone"
 
     fields = sksicd.NitfFileHeaderPart._from_header(header)
-    assert fields.ostaid == header.OSTAID
-    assert fields.ftitle == header.FTITLE
-    assert fields.security.clas == header.Security.CLAS
-    assert fields.security.clsy == header.Security.CLSY
-    assert fields.security.code == header.Security.CODE
-    assert fields.security.ctlh == header.Security.CTLH
-    assert fields.security.rel == header.Security.REL
-    assert fields.security.dctp == header.Security.DCTP
-    assert fields.security.dcxm == header.Security.DCXM
-    assert fields.security.dg == header.Security.DG
-    assert fields.security.dgdt == header.Security.DGDT
-    assert fields.security.cltx == header.Security.CLTX
-    assert fields.security.catp == header.Security.CATP
-    assert fields.security.caut == header.Security.CAUT
-    assert fields.security.crsn == header.Security.CRSN
-    assert fields.security.srdt == header.Security.SRDT
-    assert fields.security.ctln == header.Security.CTLN
-    assert fields.oname == header.ONAME
-    assert fields.ophone == header.OPHONE
+    assert fields.ostaid == header["OSTAID"].value
+    assert fields.ftitle == header["FTITLE"].value
+    assert fields.security.clas == header["FSCLAS"].value
+    assert fields.security.clsy == header["FSCLSY"].value
+    assert fields.security.code == header["FSCODE"].value
+    assert fields.security.ctlh == header["FSCTLH"].value
+    assert fields.security.rel == header["FSREL"].value
+    assert fields.security.dctp == header["FSDCTP"].value
+    assert fields.security.dcxm == header["FSDCXM"].value
+    assert fields.security.dg == header["FSDG"].value
+    assert fields.security.dgdt == header["FSDGDT"].value
+    assert fields.security.cltx == header["FSCLTX"].value
+    assert fields.security.catp == header["FSCATP"].value
+    assert fields.security.caut == header["FSCAUT"].value
+    assert fields.security.crsn == header["FSCRSN"].value
+    assert fields.security.srdt == header["FSSRDT"].value
+    assert fields.security.ctln == header["FSCTLN"].value
+    assert fields.oname == header["ONAME"].value
+    assert fields.ophone == header["OPHONE"].value
 
 
 def test_nitfimagesegmentfields_from_header():
     comments = ["first", "second"]
-    header = sarkit._nitf.nitf.ImageSegmentHeader(PVTYPE="INT")
-    header.ISORCE = "isorce"
-    header.Comments = sarkit._nitf.nitf_elements.image.ImageComments(
-        [
-            sarkit._nitf.nitf_elements.image.ImageComment(COMMENT=comment)
-            for comment in comments
-        ]
-    )
+    header = sarkit._nitf_io.ImageSubHeader("name")
+    header["ISORCE"].value = "isorce"
+    header["NICOM"].value = 2
+    header["ICOM1"].value = comments[0]
+    header["ICOM2"].value = comments[1]
     # Data is unclassified.  These fields are filled for testing purposes only.
-    header.Security.CLAS = "T"
-    header.Security.CLSY = "US"
-    header.Security.CODE = "code_h"
-    header.Security.CTLH = "hh"
-    header.Security.REL = "rel_h"
-    header.Security.DCTP = "DD"
-    header.Security.DCDT = "20000101"
-    header.Security.DCXM = "25X1"
-    header.Security.DG = "C"
-    header.Security.DGDT = "20000102"
-    header.Security.CLTX = "CW_h"
-    header.Security.CATP = "O"
-    header.Security.CAUT = "caut_h"
-    header.Security.CRSN = "A"
-    header.Security.SRDT = ""
-    header.Security.CTLN = "ctln_h"
+    header["ISCLAS"].value = "T"
+    header["ISCLSY"].value = "US"
+    header["ISCODE"].value = "code_h"
+    header["ISCTLH"].value = "hh"
+    header["ISREL"].value = "rel_h"
+    header["ISDCTP"].value = "DD"
+    header["ISDCDT"].value = "20000101"
+    header["ISDCXM"].value = "25X1"
+    header["ISDG"].value = "C"
+    header["ISDGDT"].value = "20000102"
+    header["ISCLTX"].value = "CW_h"
+    header["ISCATP"].value = "O"
+    header["ISCAUT"].value = "caut_h"
+    header["ISCRSN"].value = "A"
+    header["ISSRDT"].value = ""
+    header["ISCTLN"].value = "ctln_h"
 
     fields = sksicd.NitfImSubheaderPart._from_header(header)
-    assert fields.isorce == header.ISORCE
+    assert fields.isorce == header["ISORCE"].value
     assert fields.icom == comments
-    assert fields.security.clas == header.Security.CLAS
-    assert fields.security.clsy == header.Security.CLSY
-    assert fields.security.code == header.Security.CODE
-    assert fields.security.ctlh == header.Security.CTLH
-    assert fields.security.rel == header.Security.REL
-    assert fields.security.dctp == header.Security.DCTP
-    assert fields.security.dcxm == header.Security.DCXM
-    assert fields.security.dg == header.Security.DG
-    assert fields.security.dgdt == header.Security.DGDT
-    assert fields.security.cltx == header.Security.CLTX
-    assert fields.security.catp == header.Security.CATP
-    assert fields.security.caut == header.Security.CAUT
-    assert fields.security.crsn == header.Security.CRSN
-    assert fields.security.srdt == header.Security.SRDT
-    assert fields.security.ctln == header.Security.CTLN
+    assert fields.security.clas == header["ISCLAS"].value
+    assert fields.security.clsy == header["ISCLSY"].value
+    assert fields.security.code == header["ISCODE"].value
+    assert fields.security.ctlh == header["ISCTLH"].value
+    assert fields.security.rel == header["ISREL"].value
+    assert fields.security.dctp == header["ISDCTP"].value
+    assert fields.security.dcxm == header["ISDCXM"].value
+    assert fields.security.dg == header["ISDG"].value
+    assert fields.security.dgdt == header["ISDGDT"].value
+    assert fields.security.cltx == header["ISCLTX"].value
+    assert fields.security.catp == header["ISCATP"].value
+    assert fields.security.caut == header["ISCAUT"].value
+    assert fields.security.crsn == header["ISCRSN"].value
+    assert fields.security.srdt == header["ISSRDT"].value
+    assert fields.security.ctln == header["ISCTLN"].value
 
 
 def test_nitfdesegmentfields_from_header():
-    header = sarkit._nitf.nitf.DataExtensionHeader(PVTYPE="INT")
-    header.UserHeader.DESSHRP = "desshrp"
-    header.UserHeader.DESSHLI = "desshli"
-    header.UserHeader.DESSHLIN = "desshlin"
-    header.UserHeader.DESSHABS = "desshabs"
+    header = sarkit._nitf_io.DESubHeader("name")
+    header["DESID"].value = "XML_DATA_CONTENT"
+    header["DESVER"].value = 1
+    header["DESSHL"].value = 773
+    header["DESSHF"]["DESSHRP"].value = "desshrp"
+    header["DESSHF"]["DESSHLI"].value = "desshli"
+    header["DESSHF"]["DESSHLIN"].value = "desshlin"
+    header["DESSHF"]["DESSHABS"].value = "desshabs"
     # Data is unclassified.  These fields are filled for testing purposes only.
-    header.Security.CLAS = "T"
-    header.Security.CLSY = "US"
-    header.Security.CODE = "code_h"
-    header.Security.CTLH = "hh"
-    header.Security.REL = "rel_h"
-    header.Security.DCTP = "DD"
-    header.Security.DCDT = "20000101"
-    header.Security.DCXM = "25X1"
-    header.Security.DG = "C"
-    header.Security.DGDT = "20000102"
-    header.Security.CLTX = "CW_h"
-    header.Security.CATP = "O"
-    header.Security.CAUT = "caut_h"
-    header.Security.CRSN = "A"
-    header.Security.SRDT = ""
-    header.Security.CTLN = "ctln_h"
+    header["DESCLAS"].value = "T"
+    header["DESCLSY"].value = "US"
+    header["DESCODE"].value = "code_h"
+    header["DESCTLH"].value = "hh"
+    header["DESREL"].value = "rel_h"
+    header["DESDCTP"].value = "DD"
+    header["DESDCDT"].value = "20000101"
+    header["DESDCXM"].value = "25X1"
+    header["DESDG"].value = "C"
+    header["DESDGDT"].value = "20000102"
+    header["DESCLTX"].value = "CW_h"
+    header["DESCATP"].value = "O"
+    header["DESCAUT"].value = "caut_h"
+    header["DESCRSN"].value = "A"
+    header["DESSRDT"].value = ""
+    header["DESCTLN"].value = "ctln_h"
 
     fields = sksicd.NitfDeSubheaderPart._from_header(header)
-    assert fields.desshrp == header.UserHeader.DESSHRP
-    assert fields.desshli == header.UserHeader.DESSHLI
-    assert fields.desshlin == header.UserHeader.DESSHLIN
-    assert fields.desshabs == header.UserHeader.DESSHABS
-    assert fields.security.clas == header.Security.CLAS
-    assert fields.security.clsy == header.Security.CLSY
-    assert fields.security.code == header.Security.CODE
-    assert fields.security.ctlh == header.Security.CTLH
-    assert fields.security.rel == header.Security.REL
-    assert fields.security.dctp == header.Security.DCTP
-    assert fields.security.dcxm == header.Security.DCXM
-    assert fields.security.dg == header.Security.DG
-    assert fields.security.dgdt == header.Security.DGDT
-    assert fields.security.cltx == header.Security.CLTX
-    assert fields.security.catp == header.Security.CATP
-    assert fields.security.caut == header.Security.CAUT
-    assert fields.security.crsn == header.Security.CRSN
-    assert fields.security.srdt == header.Security.SRDT
-    assert fields.security.ctln == header.Security.CTLN
+    assert fields.desshrp == header["DESSHF"]["DESSHRP"].value
+    assert fields.desshli == header["DESSHF"]["DESSHLI"].value
+    assert fields.desshlin == header["DESSHF"]["DESSHLIN"].value
+    assert fields.desshabs == header["DESSHF"]["DESSHABS"].value
+    assert fields.security.clas == header["DESCLAS"].value
+    assert fields.security.clsy == header["DESCLSY"].value
+    assert fields.security.code == header["DESCODE"].value
+    assert fields.security.ctlh == header["DESCTLH"].value
+    assert fields.security.rel == header["DESREL"].value
+    assert fields.security.dctp == header["DESDCTP"].value
+    assert fields.security.dcxm == header["DESDCXM"].value
+    assert fields.security.dg == header["DESDG"].value
+    assert fields.security.dgdt == header["DESDGDT"].value
+    assert fields.security.cltx == header["DESCLTX"].value
+    assert fields.security.catp == header["DESCATP"].value
+    assert fields.security.caut == header["DESCAUT"].value
+    assert fields.security.crsn == header["DESCRSN"].value
+    assert fields.security.srdt == header["DESSRDT"].value
+    assert fields.security.ctln == header["DESCTLN"].value
 
 
 def test_version_info():
@@ -306,3 +296,77 @@ def test_version_info():
 
     for urn, info in sksicd.VERSION_INFO.items():
         assert lxml.etree.parse(info["schema"]).getroot().get("targetNamespace") == urn
+
+
+def test_image_sizing():
+    sicd_xmltree = lxml.etree.parse(DATAPATH / "example-sicd-1.4.0.xml")
+    xml_helper = sksicd.XmlHelper(sicd_xmltree)
+    assert xml_helper.load("./{*}ImageData/{*}PixelType") == "RE32F_IM32F"
+
+    # Tweak SICD size to force three image segments
+    li_max = 9_999_999_998
+    iloc_max = 99_999
+    num_cols = li_max // 8 // iloc_max  # set num_cols so that row limit is iloc_max
+    last_rows = 24
+    num_rows = iloc_max * 2 + last_rows
+    xml_helper.set("./{*}ImageData/{*}NumRows", num_rows)
+    xml_helper.set("./{*}ImageData/{*}NumCols", num_cols)
+    num_is, imhdrs = sksicd.image_segment_sizing_calculations(sicd_xmltree)
+
+    assert num_is == 3
+
+    def _parse_dms(dms_str):
+        lat_deg = int(dms_str[0:2])
+        lat_min = int(dms_str[2:4])
+        lat_sec = int(dms_str[4:6])
+        sign = {"S": -1, "N": 1}[dms_str[6]]
+        lat = sign * (lat_deg + lat_min / 60.0 + lat_sec / 3600.0)
+
+        lon_deg = int(dms_str[7:10])
+        lon_min = int(dms_str[10:12])
+        lon_sec = int(dms_str[12:14])
+        sign = {"W": -1, "E": 1}[dms_str[14]]
+        lon = sign * (lon_deg + lon_min / 60.0 + lon_sec / 3600.0)
+        return lat, lon
+
+    outer_corners_ll = [
+        _parse_dms(imhdrs[0].igeolo[:15]),
+        _parse_dms(imhdrs[0].igeolo[15:30]),
+        _parse_dms(imhdrs[-1].igeolo[30:45]),
+        _parse_dms(imhdrs[-1].igeolo[45:60]),
+    ]
+    icp_latlon = xml_helper.load("./{*}GeoData/{*}ImageCorners")
+    np.testing.assert_allclose(outer_corners_ll, icp_latlon, atol=0.5 / 3600)
+
+    for idx in range(len(imhdrs) - 1):
+        assert imhdrs[idx].igeolo[45:] == imhdrs[idx + 1].igeolo[:15]
+        assert imhdrs[idx].igeolo[30:45] == imhdrs[idx + 1].igeolo[15:30]
+
+    for imhdr in imhdrs:
+        imhdr.igeolo = ""
+
+    expected_imhdrs = [
+        sksicd.SizingImhdr(
+            idlvl=1,
+            ialvl=0,
+            iloc_rows=0,
+            nrows=iloc_max,
+            igeolo="",
+        ),
+        sksicd.SizingImhdr(
+            idlvl=2,
+            ialvl=1,
+            iloc_rows=iloc_max,
+            nrows=iloc_max,
+            igeolo="",
+        ),
+        sksicd.SizingImhdr(
+            idlvl=3,
+            ialvl=2,
+            iloc_rows=iloc_max,
+            nrows=24,
+            igeolo="",
+        ),
+    ]
+
+    assert expected_imhdrs == imhdrs

@@ -95,24 +95,6 @@ module = [
 ]
 ignore_missing_imports = true
 
-[[tool.mypy.overrides]]
-module = [
-    "sarkit._nitf.base",
-    "sarkit._nitf.data_segment",
-    "sarkit._nitf.format_function",
-    "sarkit._nitf.nitf",
-    "sarkit._nitf.nitf_elements.base",
-    "sarkit._nitf.nitf_elements.des",
-    "sarkit._nitf.nitf_elements.graphics",
-    "sarkit._nitf.nitf_elements.image",
-    "sarkit._nitf.nitf_elements.nitf_head",
-    "sarkit._nitf.nitf_elements.res",
-    "sarkit._nitf.nitf_elements.security",
-    "sarkit._nitf.nitf_elements.text",
-    "sarkit._nitf.slice_parsing"
-]
-ignore_errors = true
-
 [project.urls]
 Documentation = "https://sarkit.readthedocs.io/"
 Repository = "https://github.com/ValkyrieSystems/sarkit.git"

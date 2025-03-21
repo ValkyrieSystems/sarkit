@@ -27,6 +27,8 @@ Data Structure & File Format
    NitfReader
    NitfMetadata
    NitfWriter
+   SizingImhdr
+   image_segment_sizing_calculations
 
 XML Metadata
 ============
@@ -177,6 +179,8 @@ from ._io import (
     NitfReader,
     NitfSecurityFields,
     NitfWriter,
+    SizingImhdr,
+    image_segment_sizing_calculations,
 )
 from ._xml import (
     TRANSCODERS,
@@ -230,12 +234,14 @@ __all__ = [
     "Poly2dType",
     "PolyType",
     "RowColType",
+    "SizingImhdr",
     "TxtType",
     "XdtType",
     "XmlHelper",
     "XyzPolyType",
     "XyzType",
     "compute_scp_coa",
+    "image_segment_sizing_calculations",
     "image_to_constant_hae_surface",
     "image_to_ground_plane",
     "scene_to_image",

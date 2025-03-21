@@ -1,7 +1,0 @@
-The SARkit repository and source distributions contain code from libraries that are
-compatibly licensed.  We list these here.
-
-Name: sarpy
-Files: sarkit/_nitf/*
-License: MIT
-  For details, see sarkit/_nitf/LICENSE
