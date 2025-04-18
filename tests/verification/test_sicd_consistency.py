@@ -6,8 +6,11 @@ import numpy as np
 import pytest
 from lxml import etree
 
+import sarkit._nitf_io
 import sarkit.sicd as sksicd
 from sarkit.verification._sicd_consistency import SicdConsistency, main
+
+from . import testing
 
 DATAPATH = pathlib.Path(__file__).parents[2] / "data"
 
@@ -683,3 +686,35 @@ def test_check_rcvapcindex_nopolys(sicd_con):
     rcvapcnode.getparent().remove(rcvapcnode)
     sicd_con.check("check_rcvapcindex")
     assert sicd_con.failures()
+
+
+def test_check_nitf_imseg(example_sicd_file, tmp_path):
+    example_sicd_file.seek(0)
+    with sksicd.NitfReader(example_sicd_file) as r:
+        sicd_meta = r.metadata
+
+    # Use SICD v1.4.0 FFDD Example 2 parameters to force segmentation
+    sicd_meta.xmltree.find("{*}ImageData/{*}NumRows").text = "30000"
+    sicd_meta.xmltree.find("{*}ImageData/{*}NumCols").text = "90000"
+    sicd_meta.xmltree.find("{*}ImageData/{*}PixelType").text = "RE32F_IM32F"
+    assert sksicd.image_segment_sizing_calculations(sicd_meta.xmltree)[0] == 3
+    tmp_sicd = tmp_path / "forced_segmentation.sicd"
+    with open(tmp_sicd, "wb") as f, sksicd.NitfWriter(f, sicd_meta):
+        pass  # don't currently care about the pixels
+
+    with tmp_sicd.open("rb") as f:
+        sicd_con = SicdConsistency.from_file(f)
+    sicd_con.check("check_nitf_imseg")
+    assert sicd_con.passes() and not sicd_con.failures()
+
+    # monkey with the IID1s
+    with tmp_sicd.open("rb+") as fd:
+        ntf = sarkit._nitf_io.Nitf()
+        ntf.load(fd)
+        for imseg in ntf["ImageSegments"]:
+            imseg["SubHeader"]["IID1"].value = "SICD000"
+            imseg["SubHeader"]["IID1"].dump(fd, seek_first=True)
+    with tmp_sicd.open("rb") as f:
+        sicd_con = SicdConsistency.from_file(f)
+    sicd_con.check("check_nitf_imseg")
+    testing.assert_failures(sicd_con, "Sequential IID1")

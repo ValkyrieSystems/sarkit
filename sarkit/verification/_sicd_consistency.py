@@ -432,16 +432,15 @@ class SicdConsistency(con.ConsistencyChecker):
                     assert imhdr["IMAG"].value == "1.0"
 
             with self.need("Sequential IID1"):
-                if len(imsegs) == 1:
-                    assert imsegs[0]["SubHeader"]["IID1"].value.rstrip() == "SICD000"
-                else:
-                    expected_iid1s = [
-                        f"SICD{idx + 1:03d}   " for idx in range(len(imsegs))
-                    ]
-                    actual_iid1s = [
-                        imseg["SubHeader"]["IID1"].value for imseg in imsegs
-                    ]
-                    assert actual_iid1s == expected_iid1s
+                expected_iid1s = (
+                    ["SICD000"]
+                    if len(imsegs) == 1
+                    else sorted([f"SICD{n + 1:03d}" for n in range(len(imsegs))])
+                )
+                actual_iid1s = sorted(
+                    [imseg["SubHeader"]["IID1"].value for imseg in imsegs]
+                )
+                assert actual_iid1s == expected_iid1s
 
     def check_nitf_imseg_lvls(self) -> None:
         """Check NITF inter-Image SubHeaders Display and Attachment levels"""

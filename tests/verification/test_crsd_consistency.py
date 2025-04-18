@@ -13,6 +13,8 @@ import sarkit.crsd as skcrsd
 import sarkit.wgs84
 from sarkit.verification._crsd_consistency import CrsdConsistency, main
 
+from . import testing
+
 DATAPATH = pathlib.Path(__file__).parents[2] / "data"
 
 good_crsd_xml_path = DATAPATH / "example-crsd-1.0-draft.2025-02-25.xml"
@@ -44,14 +46,7 @@ def _remove(root, pattern):
 
 
 def assert_failures(crsd_con, pattern):
-    pattern = re.compile(pattern)
-    failure_details = itertools.chain(
-        *[x["details"] for x in crsd_con.failures(omit_passed_sub=True).values()]
-    )
-    failure_messages = [x["details"] for x in failure_details]
-
-    # this construction can help improve the error message for determining why pattern is not present
-    assert any(list(map(pattern.search, failure_messages)))
+    testing.assert_failures(crsd_con, pattern)
 
 
 def assert_not_failures(crsd_con, pattern):

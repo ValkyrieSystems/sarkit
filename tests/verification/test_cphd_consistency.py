@@ -1,7 +1,5 @@
 import copy
-import itertools
 import pathlib
-import re
 
 import lxml.builder
 import numpy as np
@@ -14,20 +12,11 @@ import sarkit.cphd as skcphd
 from sarkit import _constants
 from sarkit.verification._cphd_consistency import CphdConsistency, main
 
+from . import testing
+
 DATAPATH = pathlib.Path(__file__).parents[2] / "data"
 
 good_cphd_xml_path = DATAPATH / "example-cphd-1.0.1.xml"
-
-
-def assert_failures(con, pattern):
-    pattern = re.compile(pattern)
-    failure_details = itertools.chain(
-        *[x["details"] for x in con.failures(omit_passed_sub=True).values()]
-    )
-    failure_messages = [x["details"] for x in failure_details]
-
-    # this construction can help improve the error message for determining why pattern is not present
-    assert any(list(map(pattern.search, failure_messages)))
 
 
 @pytest.fixture(scope="session")
@@ -1268,7 +1257,7 @@ def test_check_signal_block_size_header(fixture_name, request):
     cphdcon = CphdConsistency.from_file(file)
     cphdcon.kvp_list["SIGNAL_BLOCK_SIZE"] += "1"
     cphdcon.check("check_signal_block_size_and_packing")
-    assert_failures(cphdcon, "SIGNAL_BLOCK_SIZE matches the end")
+    testing.assert_failures(cphdcon, "SIGNAL_BLOCK_SIZE matches the end")
 
 
 @pytest.mark.parametrize(
@@ -1290,10 +1279,10 @@ def test_check_signal_block_size_compressedsigsize(fixture_name, request):
             em.CompressedSignalSize("24"),
         )
     cphdcon.check("check_signal_block_size_and_packing")
-    assert_failures(cphdcon, "CompressedSignalSize( not)? in Data/Channel")
+    testing.assert_failures(cphdcon, "CompressedSignalSize( not)? in Data/Channel")
 
 
 def test_check_signal_block_packing(cphd_con):
     cphd_con.cphdroot.find("{*}Data/{*}Channel/{*}SignalArrayByteOffset").text += "1"
     cphd_con.check("check_signal_block_size_and_packing")
-    assert_failures(cphd_con, "SIGNAL array .+ starts at offset")
+    testing.assert_failures(cphd_con, "SIGNAL array .+ starts at offset")
