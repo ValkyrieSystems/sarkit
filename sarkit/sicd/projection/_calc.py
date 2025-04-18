@@ -1471,7 +1471,6 @@ def r_rdot_to_dem_surface(
     ):
         if aob == 0:
             s.append(p)
-            break
         if (aob * next_aob) == -1:
             frac = delta_hd / (delta_hd - next_delta_hd)
             cos_ca_s = cos_ca_b + (n_minus_1 + frac) * delta_cos_ca
