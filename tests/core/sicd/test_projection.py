@@ -324,7 +324,7 @@ def test_r_rdot_to_dem_surface(mdata_name, request):
         return ecef2dem_func
 
     dem_funcs = {
-        "is_rrc": get_ripply_dem(0),
+        "is_rrc": lambda x: np.zeros(shape=np.asarray(x).shape[:-1]),
         "some_ripples": get_ripply_dem(4.0),
         "more_ripples": get_ripply_dem(8.0),
         "too_low": lambda x: get_ripply_dem(0)(x) - 1000.0,
