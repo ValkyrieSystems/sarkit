@@ -1556,7 +1556,6 @@ def r_rdot_to_dem_surface(
     ):
         if delta_hd == 0:
             s.append(p)
-            break
         if np.sign(delta_hd) * np.sign(next_delta_hd) == -1:
             # this linear interpolation is new in v1.5
             frac = delta_hd / (delta_hd - next_delta_hd)

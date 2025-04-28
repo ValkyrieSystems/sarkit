@@ -324,6 +324,7 @@ def test_r_rdot_to_dem_surface(mdata_name, request):
         return ecef2dem_func
 
     dem_funcs = {
+        "is_rrc": get_ripply_dem(0),
         "some_ripples": get_ripply_dem(4.0),
         "more_ripples": get_ripply_dem(8.0),
         "too_low": lambda x: get_ripply_dem(0)(x) - 1000.0,
@@ -349,6 +350,7 @@ def test_r_rdot_to_dem_surface(mdata_name, request):
                 proj_metadata.ARP_SCP_COA - results[label], axis=-1
             ) == pytest.approx(float(expected_r))
     assert len(results["more_ripples"]) > len(results["some_ripples"])
+    assert len(results["is_rrc"]) > 1
 
 
 def test_r_rdot_to_dem_surface_mono_as_bi(example_proj_metadata):
