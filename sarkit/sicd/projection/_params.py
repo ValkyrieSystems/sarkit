@@ -403,6 +403,21 @@ class ProjectionSetsBi:
         self.R_Avg_COA = self.R_Avg_COA[..., 0]
         self.Rdot_Avg_COA = self.Rdot_Avg_COA[..., 0]
 
+    @classmethod
+    def from_mono(cls, mono_proj_set: ProjectionSetsMono) -> Self:
+        """Create a bistatic projection set from a monostatic projection set."""
+        return cls(
+            t_COA=mono_proj_set.t_COA,
+            tx_COA=mono_proj_set.t_COA,
+            tr_COA=mono_proj_set.t_COA,
+            Xmt_COA=mono_proj_set.ARP_COA,
+            VXmt_COA=mono_proj_set.VARP_COA,
+            Rcv_COA=mono_proj_set.ARP_COA,
+            VRcv_COA=mono_proj_set.VARP_COA,
+            R_Avg_COA=mono_proj_set.R_COA,
+            Rdot_Avg_COA=mono_proj_set.Rdot_COA,
+        )
+
 
 @dataclasses.dataclass(kw_only=True)
 class ScenePointRRdotParams:

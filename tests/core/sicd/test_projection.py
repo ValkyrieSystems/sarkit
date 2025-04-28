@@ -274,10 +274,7 @@ def test_r_rdot_to_hae_surface(mdata_name, scalar_hae, request):
     "mdata_name",
     (
         "example_proj_metadata",
-        pytest.param(
-            "example_proj_metadata_bi",
-            marks=pytest.mark.xfail(raises=NotImplementedError),
-        ),
+        "example_proj_metadata_bi",
     ),
 )
 def test_r_rdot_to_dem_surface(mdata_name, request):
@@ -352,6 +349,55 @@ def test_r_rdot_to_dem_surface(mdata_name, request):
                 proj_metadata.ARP_SCP_COA - results[label], axis=-1
             ) == pytest.approx(float(expected_r))
     assert len(results["more_ripples"]) > len(results["some_ripples"])
+
+
+def test_r_rdot_to_dem_surface_mono_as_bi(example_proj_metadata):
+    """Asserts similar solutions are found when using bistatic method with monostatic projection set"""
+    r_rdot_to_haedem_func = functools.partial(
+        sicdproj.r_rdot_to_dem_surface,
+        example_proj_metadata.LOOK,
+        example_proj_metadata.SCP,
+        ecef2dem_func=lambda x: sarkit.wgs84.cartesian_to_geodetic(x)[..., -1]
+        - example_proj_metadata.SCP_HAE,
+        hae_min=example_proj_metadata.SCP_HAE - 10.0,
+        hae_max=example_proj_metadata.SCP_HAE + 10.0,
+        delta_dist_dem=1.0,
+    )
+    # Project to constant HAE surface around SCP - assumes validity close to SCP
+    for imcoord in np.random.default_rng(12345).uniform(
+        low=-24.0, high=24.0, size=(32, 2)
+    ):
+        proj_set = sicdproj.compute_projection_sets(example_proj_metadata, imcoord)
+        assert isinstance(proj_set, sicdproj.ProjectionSetsMono)
+        proj_set_bi = sicdproj.ProjectionSetsBi.from_mono(proj_set)
+
+        s_mono = r_rdot_to_haedem_func(projection_set=proj_set)
+        s_mono_as_bi = r_rdot_to_haedem_func(projection_set=proj_set_bi)
+        assert np.allclose(s_mono, s_mono_as_bi, atol=0.01)
+
+
+def test_r_rdot_to_dem_surface_max_bistatic_contour_points(example_proj_metadata_bi):
+    r_rdot_to_haedem_func = functools.partial(
+        sicdproj.r_rdot_to_dem_surface,
+        example_proj_metadata_bi.LOOK,
+        example_proj_metadata_bi.SCP,
+        sicdproj.compute_projection_sets(example_proj_metadata_bi, [0, 0]),
+        ecef2dem_func=lambda x: sarkit.wgs84.cartesian_to_geodetic(x)[..., -1]
+        - example_proj_metadata_bi.SCP_HAE,
+        hae_min=example_proj_metadata_bi.SCP_HAE - 10.0,
+        hae_max=example_proj_metadata_bi.SCP_HAE + 10.0,
+        delta_dist_dem=1.0,
+    )
+    # limit not reached in "nominal" case
+    r_rdot_to_haedem_func()
+
+    # limit reached when set poorly
+    with pytest.raises(RuntimeError, match="Limit .+ reached before a contour point"):
+        r_rdot_to_haedem_func(bistat_max_npts=1)
+
+    # limit reached if dumb kwarg is used
+    with pytest.raises(RuntimeError, match="Limit .+ reached before a contour point"):
+        r_rdot_to_haedem_func(delta_dist_rrc=0)
 
 
 def _projection_sets_smoketest(mdata, gridlocs):

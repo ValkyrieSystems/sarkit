@@ -83,17 +83,7 @@ def image_to_ground_plane(
         return gpp_tgt, delta_gp, success
     if method == "bistatic":
         if isinstance(projection_sets, params.ProjectionSetsMono):
-            projection_sets = params.ProjectionSetsBi(
-                t_COA=projection_sets.t_COA,
-                tr_COA=projection_sets.t_COA,
-                tx_COA=projection_sets.t_COA,
-                Xmt_COA=projection_sets.ARP_COA,
-                VXmt_COA=projection_sets.VARP_COA,
-                Rcv_COA=projection_sets.ARP_COA,
-                VRcv_COA=projection_sets.VARP_COA,
-                R_Avg_COA=projection_sets.R_COA,
-                Rdot_Avg_COA=projection_sets.Rdot_COA,
-            )
+            projection_sets = params.ProjectionSetsBi.from_mono(projection_sets)
         gpp_tgt, delta_gp, success = calc.r_rdot_to_ground_plane_bi(
             proj_metadata.LOOK,
             proj_metadata.SCP,
@@ -216,7 +206,6 @@ def image_to_dem_surface(
     delta_dist_dem: float,
     *,
     delta_dist_rrc: float = 10.0,
-    delta_hd_lim: float = 0.001,
     **kwargs,
 ) -> npt.NDArray:
     """Project image coordinate to a surface described by a Digital Elevation Model.
@@ -253,6 +242,5 @@ def image_to_dem_surface(
         hae_max=hae_max,
         delta_dist_dem=delta_dist_dem,
         delta_dist_rrc=delta_dist_rrc,
-        delta_hd_lim=delta_hd_lim,
         **kwargs,
     )
