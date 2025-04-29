@@ -522,7 +522,7 @@ def proj_metadata_with_error(request):
 def test_apo(proj_metadata_with_error):
     meta, apos = proj_metadata_with_error
     proj_set = sicdproj.compute_projection_sets(meta, [0, 0])
-    adjust_proj_set = sicdproj.compute_and_apply_offsets(meta, proj_set, apos)
+    adjust_proj_set = sicdproj.apply_apos(meta, proj_set, apos)
 
     # Make sure things that were supposed to change did
     if meta.is_monostatic():

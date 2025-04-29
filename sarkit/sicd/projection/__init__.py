@@ -99,7 +99,7 @@ Adjustable Parameters
 .. autosummary::
    :toctree: generated/
 
-   compute_and_apply_offsets
+   apply_apos
 
 Precise R/Rdot to Constant HAE Surface Projection
 =================================================
@@ -128,7 +128,7 @@ Projection Sensitivity Parameters
 """
 
 from ._calc import (
-    compute_and_apply_offsets,
+    apply_apos,
     compute_coa_pos_vel,
     compute_coa_r_rdot,
     compute_coa_time,
@@ -174,7 +174,7 @@ __all__ = [
     "ScenePointGpXyParams",
     "ScenePointRRdotParams",
     "SensitivityMatrices",
-    "compute_and_apply_offsets",
+    "apply_apos",
     "compute_coa_pos_vel",
     "compute_coa_r_rdot",
     "compute_coa_time",
