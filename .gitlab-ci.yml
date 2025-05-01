@@ -16,7 +16,7 @@ default:
   - export PDM_CHECK_UPDATE=false
 
 current_env:
-  image: python:3.12
+  image: python:3.13
   stage: build
   script:
   - pdm lock -G:all

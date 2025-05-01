@@ -23,7 +23,7 @@ jobs:
     - name: Setup PDM and Python
       uses: pdm-project/setup-pdm@v4
       with:
-        python-version: 3.12
+        python-version: 3.13
     - name: Install dependencies
       run: |
         pdm lock -G :all
@@ -75,7 +75,7 @@ jobs:
     - name: Setup PDM and Python
       uses: pdm-project/setup-pdm@v4
       with:
-        python-version: 3.12
+        python-version: 3.13
     - name: Install dependencies
       run: |
         pdm lock -G :all
