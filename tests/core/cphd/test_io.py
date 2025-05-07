@@ -82,7 +82,8 @@ def _random_support_array(cphd_xmltree, sa_id):
     )
 
 
-def test_roundtrip(tmp_path):
+@pytest.mark.parametrize("with_support_block", (True, False))
+def test_roundtrip(tmp_path, with_support_block):
     basis_etree = lxml.etree.parse(DATAPATH / "example-cphd-1.0.1.xml")
     basis_version = lxml.etree.QName(basis_etree.getroot()).namespace
     schema = lxml.etree.XMLSchema(file=skcphd.VERSION_INFO[basis_version]["schema"])
@@ -103,6 +104,11 @@ def test_roundtrip(tmp_path):
     pvps = np.zeros(num_vectors, dtype=skcphd.get_pvp_dtype(basis_etree))
     for f, (dt, _) in pvps.dtype.fields.items():
         pvps[f] = _random_array(num_vectors, dtype=dt, reshape=False)
+
+    assert basis_etree.find("{*}Data/{*}SupportArray") is not None
+    if not with_support_block:
+        for sa in basis_etree.findall(".//{*}SupportArray"):
+            sa.getparent().remove(sa)
 
     support_arrays = {}
     for data_sa_elem in basis_etree.findall("./{*}Data/{*}SupportArray"):
