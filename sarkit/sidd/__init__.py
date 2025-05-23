@@ -67,6 +67,19 @@ Transcoders with children in the ``urn:SICommon:1.0`` namespace.
    XyzPolyType
    ImageCornersType
 
+Calculations
+============
+
+Calculations defined by the SIDD standard.  For more information see the `sarkit.sidd.calculations` namespace.
+
+.. autosummary::
+   :toctree: generated/
+
+    ecef_to_pixel
+    pixel_to_ecef
+    compute_angles
+    get_coordinate_system_type
+
 Constants
 =========
 
@@ -156,6 +169,12 @@ from ._xml import (
     XyzPolyType,
     XyzType,
 )
+from .calculations import (
+    compute_angles,
+    ecef_to_pixel,
+    get_coordinate_system_type,
+    pixel_to_ecef,
+)
 
 __all__ = [
     "ILOC_MAX",
@@ -197,5 +216,9 @@ __all__ = [
     "XmlHelper",
     "XyzPolyType",
     "XyzType",
+    "compute_angles",
+    "ecef_to_pixel",
+    "get_coordinate_system_type",
+    "pixel_to_ecef",
     "segmentation_algorithm",
 ]
