@@ -18,6 +18,7 @@ Python Interface
    CphdConsistency
    CrsdConsistency
    SicdConsistency
+   SiddConsistency
 
 Consistency objects should be instantiated using ``from_parts`` when data components are available in memory or
 ``from_file`` when data has already been serialized into a standard format.
@@ -53,6 +54,7 @@ Each of the consistency checkers has a corresponding entry point:
    $ cphd-consistency /path/to/file
    $ crsd-consistency /path/to/file
    $ sicd-consistency /path/to/file
+   $ sidd-consistency /path/to/file
 
 The command line flags for each are given below:
 
@@ -70,6 +72,11 @@ The command line flags for each are given below:
 
 .. autoprogram:: sarkit.verification._sicd_consistency:_parser()
    :prog: sicd-consistency
+
+.. _sidd-consistency-cli:
+
+.. autoprogram:: sarkit.verification._sidd_consistency:_parser()
+   :prog: sidd-consistency
 """
 
 from ._cphd_consistency import (
@@ -81,9 +88,13 @@ from ._crsd_consistency import (
 from ._sicd_consistency import (
     SicdConsistency,
 )
+from ._sidd_consistency import (
+    SiddConsistency,
+)
 
 __all__ = [
     "CphdConsistency",
     "CrsdConsistency",
     "SicdConsistency",
+    "SiddConsistency",
 ]
