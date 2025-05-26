@@ -18,6 +18,9 @@ API reference for ``sarkit``.
   - `sarkit.sicd.projection`
 
 * `sarkit.sidd`
+
+  - `sarkit.sidd.calculations`
+
 * `sarkit.verification`
 * `sarkit.wgs84`
 
