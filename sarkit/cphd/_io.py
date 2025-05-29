@@ -670,10 +670,6 @@ class Writer:
                 "size": sa_size,
             }
 
-        support_block_size = max(
-            sa["size"] + sa["offset"] for sa in self._sa_size_offsets.values()
-        )
-
         def _align(val):
             return int(np.ceil(float(val) / align_to) * align_to)
 
@@ -690,7 +686,9 @@ class Writer:
             "RELEASE_INFO": cphd_xmltree.findtext("{*}CollectionID/{*}ReleaseInfo"),
         }
         if self._sa_size_offsets:
-            self._file_header_kvp["SUPPORT_BLOCK_SIZE"] = support_block_size
+            self._file_header_kvp["SUPPORT_BLOCK_SIZE"] = max(
+                sa["size"] + sa["offset"] for sa in self._sa_size_offsets.values()
+            )
             self._file_header_kvp["SUPPORT_BLOCK_BYTE_OFFSET"] = (
                 np.iinfo(np.uint64).max,
             )  # placeholder

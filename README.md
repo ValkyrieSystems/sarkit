@@ -5,6 +5,7 @@
 [![PyPI - Version](https://img.shields.io/pypi/v/sarkit)](https://pypi.org/project/sarkit/)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/sarkit)
 [![PyPI - License](https://img.shields.io/pypi/l/sarkit)](./LICENSE)
+[![SPEC 0 — Minimum Supported Dependencies](https://img.shields.io/badge/SPEC-0-green?labelColor=%23004811&color=%235CA038)](https://scientific-python.org/specs/spec-0000/)
 <br>
 [![Tests](https://github.com/ValkyrieSystems/sarkit/actions/workflows/tests.yml/badge.svg)](https://github.com/ValkyrieSystems/sarkit/actions/workflows/tests.yml)
 [![Documentation Status](https://readthedocs.org/projects/sarkit/badge/?version=latest)](https://sarkit.readthedocs.io/en/latest/?badge=latest)

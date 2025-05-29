@@ -282,8 +282,8 @@ SARkit provides checkers that can be used to identify inconsistencies in SAR sta
      - :py:class:`sarkit.verification.SicdConsistency`
      - :ref:`sicd-consistency-cli`
    * - SIDD
-     - To be added
-     - To be added
+     - :py:class:`sarkit.verification.SiddConsistency`
+     - :ref:`sidd-consistency-cli`
 
 Each consistency checker provides a command line interface for checking SAR data/metadata files.
 When there are no inconsistencies, no output is produced.
