@@ -56,6 +56,9 @@ doc = [
     "sphinx-rtd-theme>=2.0.0",
     "sphinxcontrib-autoprogram>=0.1.9",
 ]
+xsdtypes-generation = [
+    "xmlschema>=4.0.1",
+]
 
 [project.scripts]
 cphd-consistency = "sarkit.verification._cphd_consistency:main"

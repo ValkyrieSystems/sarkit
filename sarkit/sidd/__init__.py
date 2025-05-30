@@ -125,11 +125,13 @@ SIDD 3.0
 
 """
 
-from ._io import (
+from ._constants import (
     ILOC_MAX,
     LI_MAX,
     PIXEL_TYPES,
     VERSION_INFO,
+)
+from ._io import (
     NitfDedMetadata,
     NitfDeSubheaderPart,
     NitfFileHeaderPart,

@@ -1,10 +1,15 @@
+import copy
 import datetime
+import random
 
 import lxml.etree
 import numpy as np
+import numpy.testing as npt
 import pytest
 
 import sarkit._xmlhelp as skxml
+import sarkit._xmlhelp2
+import sarkit.sidd._xmlhelp2
 
 
 def test_xdt_naive():
@@ -106,3 +111,101 @@ def test_mtx_type():
 
     with pytest.raises(ValueError, match="shape.*does not match expected"):
         type_obj.set_elem(elem, np.tile(data, 2))
+
+
+def test_dict_type_with_children():
+    # TODO: may want to do something better for namespace control/registry
+    # for now, just force it globally to make the element comparison easier
+    lxml.etree.register_namespace("si", "urn:SICommon:1.0")
+
+    # need to test with an instantiable class, so arbitrarily choose SIDD
+    xh = sarkit.sidd._xmlhelp2.XmlHelper2("urn:SIDD:3.0.0")
+    type_obj = xh.get_transcoder(
+        "<UNNAMED>-{urn:SIDD:3.0.0}ExploitationFeaturesType/{urn:SIDD:3.0.0}Collection"
+    )
+    assert isinstance(type_obj, sarkit._xmlhelp2.DictType)
+    assert type_obj.typedef.children
+    assert type_obj.typedef.attributes
+
+    # attributes/children are optional
+    val = {"Information": {"SensorName": "the_sensor"}}
+    elem = type_obj.make_elem("{urn:SIDD:3.0.0}testelem", val)
+    npt.assert_equal(val, type_obj.parse_elem(elem))
+
+    # attributes are prefixed with @
+    val["@identifier"] = "myid"
+    type_obj.set_elem(elem, val)
+    assert elem.get("identifier") == "myid"
+    npt.assert_equal(val, type_obj.parse_elem(elem))
+
+    # nested dicts are handled
+    val["Information"]["RadarMode"] = {"ModeType": "SPOTLIGHT"}
+    val["Information"]["CollectionDateTime"] = datetime.datetime.now(
+        tz=datetime.timezone.utc
+    )
+    type_obj.set_elem(elem, val)
+    npt.assert_equal(val, type_obj.parse_elem(elem))
+
+    # repeatable nodes are lists
+    val["Information"]["Polarization"] = [
+        {"RcvPolarizationOffset": x} for x in range(24)
+    ]
+    type_obj.set_elem(elem, val)
+    npt.assert_equal(val, type_obj.parse_elem(elem))
+    assert len(elem.findall(".//{*}RcvPolarizationOffset")) == 24
+
+    # key order doesn't matter
+    info_items = list(val["Information"].items())
+    random.shuffle(info_items)
+    val["Information"] = dict(info_items)
+    elem_from_shuffle = type_obj.make_elem(elem.tag, val)
+    npt.assert_equal(val, type_obj.parse_elem(elem_from_shuffle))
+    assert lxml.etree.tostring(elem, method="c14n") == lxml.etree.tostring(
+        elem_from_shuffle, method="c14n"
+    )
+
+    # error if unexpected repetition in elem during parse
+    badelem = copy.deepcopy(elem)
+    sn = badelem.find(".//{*}SensorName")
+    sn.addnext(copy.deepcopy(sn))
+    with pytest.raises(ValueError, match="SensorName not expected to repeat"):
+        type_obj.parse_elem(badelem)
+
+    # error if unrecognized keys during set
+    badval = copy.deepcopy(val)
+    badval["badkey"] = "shouldn't be here"
+    with pytest.raises(ValueError, match="unrecognized_keys.*badkey"):
+        type_obj.make_elem("cannotmake", badval)
+
+
+def test_dict_type_without_children():
+    # need to test with an instantiable class, so arbitrarily choose SIDD
+    xh = sarkit.sidd._xmlhelp2.XmlHelper2("urn:SIDD:3.0.0")
+    type_obj = xh.get_transcoder("{urn:SICommon:1.0}ParameterType")
+    assert isinstance(type_obj, sarkit._xmlhelp2.DictType)
+    assert not type_obj.typedef.children
+    assert type_obj.typedef.attributes
+    assert type_obj.typedef.text_typename
+
+    # text is stored in #text
+    val = {"#text": "parameter-text"}
+    elem = type_obj.make_elem("{urn:SIDD:3.0.0}testelem", val)
+    npt.assert_equal(val, type_obj.parse_elem(elem))
+
+    # attributes are prefixed with @
+    val["@name"] = "parameter-name"
+    type_obj.set_elem(elem, val)
+    assert elem.get("name") == "parameter-name"
+    npt.assert_equal(val, type_obj.parse_elem(elem))
+
+    # error if unexpected children
+    badelem = copy.deepcopy(elem)
+    badelem.append(copy.deepcopy(badelem))
+    with pytest.raises(ValueError, match="not expected to have children"):
+        type_obj.parse_elem(badelem)
+
+    # error if #text is missing
+    badval = copy.deepcopy(val)
+    del badval["#text"]
+    with pytest.raises(KeyError):
+        type_obj.make_elem("cannotmake", badval)

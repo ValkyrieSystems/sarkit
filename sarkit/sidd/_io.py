@@ -6,12 +6,11 @@ import collections
 import copy
 import dataclasses
 import datetime
-import importlib
 import itertools
 import logging
 import os
 import warnings
-from typing import Final, Self, TypedDict
+from typing import Self
 
 import lxml.etree
 import numpy as np
@@ -23,85 +22,9 @@ import sarkit.sicd._io
 import sarkit.sidd as sksidd
 import sarkit.wgs84
 
+from . import _constants as siddconst
+
 logger = logging.getLogger(__name__)
-
-SPECIFICATION_IDENTIFIER: Final[str] = (
-    "SIDD Volume 1 Design & Implementation Description Document"
-)
-
-SCHEMA_DIR = importlib.resources.files("sarkit.sidd.schemas")
-
-
-class VersionInfoType(TypedDict):
-    version: str
-    date: str
-    schema: importlib.resources.abc.Traversable
-
-
-# Keys must be in ascending order
-VERSION_INFO: Final[dict[str, VersionInfoType]] = {
-    "urn:SIDD:2.0.0": {
-        "version": "2.0",
-        "date": "2019-05-31T00:00:00Z",
-        "schema": SCHEMA_DIR / "version2" / "SIDD_schema_V2.0.0_2019_05_31.xsd",
-    },
-    "urn:SIDD:3.0.0": {
-        "version": "3.0",
-        "date": "2021-11-30T00:00:00Z",
-        "schema": SCHEMA_DIR / "version3" / "SIDD_schema_V3.0.0.xsd",
-    },
-}
-
-
-# Table 2-6 NITF 2.1 Image Sub-Header Population for Supported Pixel Type
-class _PixelTypeDict(TypedDict):
-    IREP: str
-    IREPBANDn: list[str]
-    IMODE: str
-    NBPP: int
-    dtype: np.dtype
-
-
-PIXEL_TYPES: Final[dict[str, _PixelTypeDict]] = {
-    "MONO8I": {
-        "IREP": "MONO",
-        "IREPBANDn": ["M"],
-        "IMODE": "B",
-        "NBPP": 8,
-        "dtype": np.dtype(np.uint8),
-    },
-    "MONO8LU": {
-        "IREP": "MONO",
-        "IREPBANDn": ["LU"],
-        "IMODE": "B",
-        "NBPP": 8,
-        "dtype": np.dtype(np.uint8),
-    },
-    "MONO16I": {
-        "IREP": "MONO",
-        "IREPBANDn": ["M"],
-        "IMODE": "B",
-        "NBPP": 16,
-        "dtype": np.dtype(np.uint16),
-    },
-    "RGB8LU": {
-        "IREP": "RGB/LUT",
-        "IREPBANDn": ["LU"],
-        "IMODE": "B",
-        "NBPP": 8,
-        "dtype": np.dtype(np.uint8),
-    },
-    "RGB24I": {
-        "IREP": "RGB",
-        "IREPBANDn": ["R", "G", "B"],
-        "IMODE": "P",
-        "NBPP": 8,
-        "dtype": np.dtype([("R", np.uint8), ("G", np.uint8), ("B", np.uint8)]),
-    },
-}
-
-LI_MAX: Final[int] = 9_999_999_998
-ILOC_MAX: Final[int] = 99_999
 
 
 # SICD implementation happens to match, reuse it
@@ -210,7 +133,10 @@ class NitfProductImageMetadata:
             mismatch = True
         elif pixel_type == "MONO8LU" and lut_dtype not in (np.uint8, np.uint16):
             mismatch = True
-        elif pixel_type == "RGB8LU" and lut_dtype != PIXEL_TYPES["RGB24I"]["dtype"]:
+        elif (
+            pixel_type == "RGB8LU"
+            and lut_dtype != siddconst.PIXEL_TYPES["RGB24I"]["dtype"]
+        ):
             mismatch = True
 
         if mismatch:
@@ -425,7 +351,9 @@ class NitfReader:
 
                         if pixel_type == "RGB8LU":
                             assert im_subhdr["NLUTS00001"].value == 3
-                            lookup_table = np.empty(256, PIXEL_TYPES["RGB24I"]["dtype"])
+                            lookup_table = np.empty(
+                                256, siddconst.PIXEL_TYPES["RGB24I"]["dtype"]
+                            )
                             lookup_table["R"] = np.frombuffer(
                                 im_subhdr["LUTD000011"].value, dtype=np.uint8
                             )
@@ -498,7 +426,7 @@ class NitfReader:
         self._file_object.seek(0)
         xml_helper = sksidd.XmlHelper(self.metadata.images[image_number].xmltree)
         shape = xml_helper.load("{*}Measurement/{*}PixelFootprint")
-        dtype = PIXEL_TYPES[xml_helper.load("{*}Display/{*}PixelType")][
+        dtype = siddconst.PIXEL_TYPES[xml_helper.load("{*}Display/{*}PixelType")][
             "dtype"
         ].newbyteorder(">")
 
@@ -626,7 +554,7 @@ class NitfWriter:
             imageinfo = self._metadata.images[image_num]
             xml_helper = sarkit.sidd._xml.XmlHelper(imageinfo.xmltree)
             pixel_type = xml_helper.load("./{*}Display/{*}PixelType")
-            pixel_info = PIXEL_TYPES[pixel_type]
+            pixel_info = siddconst.PIXEL_TYPES[pixel_type]
 
             icp = xml_helper.load("./{*}GeoData/{*}ImageCorners")
 
@@ -741,9 +669,9 @@ class NitfWriter:
             subhdr["DESSHF"]["DESSHFT"].value = "XML"
             subhdr["DESSHF"]["DESSHDT"].value = now_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
             subhdr["DESSHF"]["DESSHRP"].value = imageinfo.de_subheader_part.desshrp
-            subhdr["DESSHF"]["DESSHSI"].value = SPECIFICATION_IDENTIFIER
-            subhdr["DESSHF"]["DESSHSV"].value = VERSION_INFO[xmlns]["version"]
-            subhdr["DESSHF"]["DESSHSD"].value = VERSION_INFO[xmlns]["date"]
+            subhdr["DESSHF"]["DESSHSI"].value = siddconst.SPECIFICATION_IDENTIFIER
+            subhdr["DESSHF"]["DESSHSV"].value = siddconst.VERSION_INFO[xmlns]["version"]
+            subhdr["DESSHF"]["DESSHSD"].value = siddconst.VERSION_INFO[xmlns]["date"]
             subhdr["DESSHF"]["DESSHTN"].value = xmlns
 
             icp = xml_helper.load("./{*}GeoData/{*}ImageCorners")
@@ -832,10 +760,10 @@ class NitfWriter:
 
         xml_helper = sksidd.XmlHelper(self._metadata.images[image_number].xmltree)
         pixel_type = xml_helper.load("./{*}Display/{*}PixelType")
-        if PIXEL_TYPES[pixel_type]["dtype"] != array.dtype.newbyteorder("="):
+        expected_dtype = siddconst.PIXEL_TYPES[pixel_type]["dtype"]
+        if expected_dtype != array.dtype.newbyteorder("="):
             raise ValueError(
-                f"Array dtype ({array.dtype}) does not match expected dtype ({PIXEL_TYPES[pixel_type]['dtype']}) "
-                f"for PixelType={pixel_type}"
+                f"Array dtype ({array.dtype}) does not match {expected_dtype=} for PixelType={pixel_type}"
             )
 
         shape = xml_helper.load("{*}Measurement/{*}PixelFootprint")
@@ -884,7 +812,7 @@ class NitfWriter:
             raw_dtype = array.dtype[array.dtype.names[0]]
             input_array = array.view((raw_dtype, 3))
         else:
-            raw_dtype = PIXEL_TYPES[pixel_type]["dtype"].newbyteorder(">")
+            raw_dtype = siddconst.PIXEL_TYPES[pixel_type]["dtype"].newbyteorder(">")
             input_array = array
 
         for imseg, first_row in zip(imsegs, first_rows):
@@ -974,7 +902,7 @@ def segmentation_algorithm(
 
     for k, sidd_xmltree in enumerate(sidd_xmltrees):
         xml_helper = sksidd.XmlHelper(sidd_xmltree)
-        pixel_info = PIXEL_TYPES[xml_helper.load("./{*}Display/{*}PixelType")]
+        pixel_info = siddconst.PIXEL_TYPES[xml_helper.load("./{*}Display/{*}PixelType")]
         num_rows_k = xml_helper.load("./{*}Measurement/{*}PixelFootprint/{*}Row")
         num_cols_k = xml_helper.load("./{*}Measurement/{*}PixelFootprint/{*}Col")
 
@@ -988,10 +916,10 @@ def segmentation_algorithm(
         bytes_per_row = (
             bytes_per_pixel * num_cols_k
         )  # Document says NumRows(k), but that doesn't make sense
-        num_rows_limit_k = min(LI_MAX // bytes_per_row, ILOC_MAX)
+        num_rows_limit_k = min(siddconst.LI_MAX // bytes_per_row, siddconst.ILOC_MAX)
 
         product_size = bytes_per_pixel * num_rows_k * num_cols_k
-        if product_size <= LI_MAX:
+        if product_size <= siddconst.LI_MAX:
             z += 1
             fhdr_numi += 1
             fhdr_li.append(product_size)
@@ -1077,11 +1005,11 @@ def _validate_xml(sidd_xmltree):
     """Validate a SIDD XML tree against the schema"""
 
     xmlns = lxml.etree.QName(sidd_xmltree.getroot()).namespace
-    if xmlns not in VERSION_INFO:
-        latest_xmlns = list(VERSION_INFO.keys())[-1]
+    if xmlns not in siddconst.VERSION_INFO:
+        latest_xmlns = list(siddconst.VERSION_INFO.keys())[-1]
         logger.warning(f"Unknown SIDD namespace {xmlns}, assuming {latest_xmlns}")
         xmlns = latest_xmlns
-    schema = lxml.etree.XMLSchema(file=VERSION_INFO[xmlns]["schema"])
+    schema = lxml.etree.XMLSchema(file=siddconst.VERSION_INFO[xmlns]["schema"])
     valid = schema.validate(sidd_xmltree)
     if not valid:
         warnings.warn(str(schema.error_log))

@@ -8,7 +8,7 @@ import pytest
 
 import sarkit._nitf_io
 import sarkit.sidd as sksidd
-import sarkit.sidd._io
+import sarkit.sidd._constants
 
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
 
@@ -81,7 +81,7 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
     )[::-1]
     if force_segmentation:
         monkeypatch.setattr(
-            sarkit.sidd._io, "LI_MAX", basis_array0.nbytes // 5
+            sarkit.sidd._constants, "LI_MAX", basis_array0.nbytes // 5
         )  # reduce the segment size limit to force segmentation
 
     write_metadata = sksidd.NitfMetadata(
@@ -284,7 +284,7 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
             writer.write_image(5, basis_array5)
 
     def _num_imseg(array):
-        rows_per_seg = int(np.floor(sarkit.sidd._io.LI_MAX / array[0].nbytes))
+        rows_per_seg = int(np.floor(sarkit.sidd._constants.LI_MAX / array[0].nbytes))
         return int(np.ceil(array.shape[0] / rows_per_seg))
 
     num_expected_imseg = (
