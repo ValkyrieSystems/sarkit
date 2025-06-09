@@ -560,5 +560,219 @@ def test_sensitivity_matrices(example_proj_metadata):
 
     assert np.allclose(mats.M_SPXY_GPXY @ mats.M_GPXY_SPXY, np.eye(2))
     assert np.allclose(mats.M_SPXY_IL @ mats.M_IL_SPXY, np.eye(2))
-    assert np.allclose(mats.M_GPXY_IL @ mats.M_IL_GPXY, np.eye(2))
-    np.allclose(mats.M_SPXY_PT @ mats.M_PT_GPXY, mats.M_SPXY_GPXY)
+    assert np.allclose(mats.M_SPXY_PT @ mats.M_PT_GPXY, mats.M_SPXY_GPXY)
+
+
+@pytest.mark.parametrize(
+    "xmlpath",
+    [DATAPATH / "example-sicd-1.3.0.xml", DATAPATH / "example-sicd-1.4.0.xml"],
+)
+def test_m_spxy_gpxy(xmlpath):
+    xmltree = lxml.etree.parse(xmlpath)
+    proj_metadata = sicdproj.MetadataParams.from_xml(xmltree)
+    pt0 = proj_metadata.SCP + 1000 * np.array([0.6, -0.7, 0.8])
+    mats = sicdproj.compute_sensitivity_matrices(proj_metadata, pt0)
+    gpxy1 = [1, 0]
+    gpxy2 = [0, 1]
+    pt1 = pt0 + mats.M_PT_GPXY @ gpxy1
+    pt2 = pt0 + mats.M_PT_GPXY @ gpxy2
+    u_spz = np.cross(*mats.M_SPXY_PT)
+
+    def _pt_to_spxy(pt):
+        il, _, success = sicdproj.scene_to_image(proj_metadata, pt)
+        assert success
+
+        spp, _, success = sksicd.image_to_ground_plane(xmltree, il, pt0, u_spz)
+        assert success
+        return mats.M_SPXY_PT @ (spp - pt0)
+
+    spxy0 = _pt_to_spxy(pt0)
+    spxy1 = _pt_to_spxy(pt1)
+    spxy2 = _pt_to_spxy(pt2)
+
+    assert spxy0 == pytest.approx(0.0, abs=0.02)
+    assert np.allclose(spxy1 - spxy0, mats.M_SPXY_GPXY[:, 0], atol=0.02)
+    assert np.allclose(spxy2 - spxy0, mats.M_SPXY_GPXY[:, 1], atol=0.02)
+
+    assert np.allclose(mats.M_SPXY_GPXY @ mats.M_GPXY_SPXY, np.eye(2))
+
+
+@pytest.mark.parametrize(
+    "xmlpath",
+    [DATAPATH / "example-sicd-1.3.0.xml", DATAPATH / "example-sicd-1.4.0.xml"],
+)
+def test_m_rrdot_spxy(xmlpath):
+    xmltree = lxml.etree.parse(xmlpath)
+    proj_metadata = sicdproj.MetadataParams.from_xml(xmltree)
+    pt0 = proj_metadata.SCP + 1000 * np.array([0.6, -0.7, 0.8])
+    spxy1 = [1, 0]
+    spxy2 = [0, 1]
+    mats = sicdproj.compute_sensitivity_matrices(proj_metadata, pt0)
+    pt1 = pt0 + mats.M_SPXY_PT.T @ spxy1
+    pt2 = pt0 + mats.M_SPXY_PT.T @ spxy2
+
+    il0, _, success = sksicd.scene_to_image(xmltree, pt0)
+    assert success
+    projset0 = sicdproj.compute_projection_sets(proj_metadata, il0)
+
+    def _pt_to_rrdot(pt):
+        if isinstance(projset0, sicdproj.ProjectionSetsMono):
+            args = [
+                proj_metadata.LOOK,
+                projset0.ARP_COA,
+                projset0.VARP_COA,
+                projset0.ARP_COA,
+                projset0.VARP_COA,
+                pt,
+            ]
+        else:
+            args = [
+                proj_metadata.LOOK,
+                projset0.Xmt_COA,
+                projset0.VXmt_COA,
+                projset0.Rcv_COA,
+                projset0.VRcv_COA,
+                pt,
+            ]
+        rrdot_params = sicdproj.compute_pt_r_rdot_parameters(*args)
+        return np.array([rrdot_params.R_Avg_PT, rrdot_params.Rdot_Avg_PT])
+
+    rrdot0 = _pt_to_rrdot(pt0)
+    rrdot1 = _pt_to_rrdot(pt1)
+    rrdot2 = _pt_to_rrdot(pt2)
+
+    assert np.allclose(rrdot1 - rrdot0, mats.M_RRdot_SPXY[:, 0], atol=1e-6)
+    assert np.allclose(rrdot2 - rrdot0, mats.M_RRdot_SPXY[:, 1], atol=1e-6)
+
+    assert np.allclose(mats.M_RRdot_SPXY @ mats.M_SPXY_RRdot, np.eye(2))
+
+
+@pytest.mark.parametrize(
+    "xmlpath",
+    [DATAPATH / "example-sicd-1.3.0.xml", DATAPATH / "example-sicd-1.4.0.xml"],
+)
+def test_m_il_pt(xmlpath):
+    xmltree = lxml.etree.parse(xmlpath)
+    proj_metadata = sicdproj.MetadataParams.from_xml(xmltree)
+    pt0 = proj_metadata.SCP + 1000 * np.array([0.6, -0.7, 0.8])
+    pt1 = pt0 + [1, 0, 0]
+    pt2 = pt0 + [0, 1, 0]
+    pt3 = pt0 + [0, 0, 1]
+
+    (il0, il1, il2, il3), _, success = sksicd.scene_to_image(
+        xmltree, [pt0, pt1, pt2, pt3]
+    )
+    assert success
+
+    mats = sicdproj.compute_sensitivity_matrices(proj_metadata, pt0)
+    assert np.allclose(il1 - il0, mats.M_IL_PT[:, 0], atol=0.02)
+    assert np.allclose(il2 - il0, mats.M_IL_PT[:, 1], atol=0.02)
+    assert np.allclose(il3 - il0, mats.M_IL_PT[:, 2], atol=0.02)
+
+
+@pytest.mark.parametrize(
+    "xmlpath",
+    [DATAPATH / "example-sicd-1.3.0.xml", DATAPATH / "example-sicd-1.4.0.xml"],
+)
+def test_m_gpxy_il(xmlpath):
+    xmltree = lxml.etree.parse(xmlpath)
+    proj_metadata = sicdproj.MetadataParams.from_xml(xmltree)
+    pt0 = proj_metadata.SCP + 1000 * np.array([0.6, -0.7, 0.8])
+    il0, _, success = sksicd.scene_to_image(xmltree, pt0)
+    assert success
+    il1 = il0 + [1, 0]
+    il2 = il0 + [0, 1]
+
+    u_gpn0 = pt0 / np.linalg.norm(pt0)
+    gpps, _, success = sksicd.image_to_ground_plane(
+        xmltree, [il0, il1, il2], pt0, u_gpn0
+    )
+    assert success
+
+    mats = sicdproj.compute_sensitivity_matrices(proj_metadata, pt0, u_gpn0)
+    gpxy = (gpps - pt0) @ mats.M_PT_GPXY
+    assert gpxy[0] == pytest.approx(0.0, abs=0.02)
+
+    assert np.allclose(gpxy[1:] - gpxy[0], mats.M_GPXY_IL.T, atol=0.02)
+
+
+@pytest.mark.parametrize(
+    "xmlpath",
+    [DATAPATH / "example-sicd-1.3.0.xml", DATAPATH / "example-sicd-1.4.0.xml"],
+)
+def test_m_spxy_il(xmlpath):
+    xmltree = lxml.etree.parse(xmlpath)
+    proj_metadata = sicdproj.MetadataParams.from_xml(xmltree)
+    pt0 = proj_metadata.SCP + 1000 * np.array([0.6, -0.7, 0.8])
+    il0, _, success = sksicd.scene_to_image(xmltree, pt0)
+    assert success
+    il1 = il0 + [1, 0]
+    il2 = il0 + [0, 1]
+
+    mats = sicdproj.compute_sensitivity_matrices(proj_metadata, pt0)
+    u_spz = np.cross(*mats.M_SPXY_PT)
+    spps, _, success = sksicd.image_to_ground_plane(
+        xmltree, [il0, il1, il2], pt0, u_spz
+    )
+    assert success
+
+    spxy = (spps - pt0) @ mats.M_SPXY_PT.T
+    assert spxy[0] == pytest.approx(0.0, abs=0.02)
+
+    assert np.allclose(spxy[1:] - spxy[0], mats.M_SPXY_IL.T, atol=0.02)
+
+    assert np.allclose(mats.M_SPXY_IL @ mats.M_IL_SPXY, np.eye(2))
+
+
+@pytest.mark.parametrize(
+    "xmlpath",
+    [DATAPATH / "example-sicd-1.3.0.xml", DATAPATH / "example-sicd-1.4.0.xml"],
+)
+def test_m_il_rrdot(xmlpath):
+    xmltree = lxml.etree.parse(xmlpath)
+    proj_metadata = sicdproj.MetadataParams.from_xml(xmltree)
+    pt0 = proj_metadata.SCP + 1000 * np.array([0.6, -0.7, 0.8])
+    mats = sicdproj.compute_sensitivity_matrices(proj_metadata, pt0)
+
+    u_gpn0 = pt0 / np.linalg.norm(pt0)
+
+    il0, _, success = sksicd.scene_to_image(xmltree, pt0)
+    assert success
+    projset0 = sicdproj.compute_projection_sets(proj_metadata, il0)
+
+    delta_rrdot = [1, 0.1]
+
+    if isinstance(projset0, sicdproj.ProjectionSetsMono):
+        projset1 = dataclasses.replace(projset0, R_COA=projset0.R_COA + delta_rrdot[0])
+        projset2 = dataclasses.replace(
+            projset0, Rdot_COA=projset0.Rdot_COA + delta_rrdot[1]
+        )
+        gpp1 = sicdproj.r_rdot_to_ground_plane_mono(
+            proj_metadata.LOOK, projset1, pt0, u_gpn0
+        )
+        gpp2 = sicdproj.r_rdot_to_ground_plane_mono(
+            proj_metadata.LOOK, projset2, pt0, u_gpn0
+        )
+    else:
+        projset1 = dataclasses.replace(
+            projset0, R_Avg_COA=projset0.R_Avg_COA + delta_rrdot[0]
+        )
+        projset2 = dataclasses.replace(
+            projset0, Rdot_Avg_COA=projset0.Rdot_Avg_COA + delta_rrdot[1]
+        )
+        gpp1, _, success = sicdproj.r_rdot_to_ground_plane_bi(
+            proj_metadata.LOOK, proj_metadata.SCP, projset1, pt0, u_gpn0
+        )
+        assert success
+        gpp2, _, success = sicdproj.r_rdot_to_ground_plane_bi(
+            proj_metadata.LOOK, proj_metadata.SCP, projset2, pt0, u_gpn0
+        )
+        assert success
+
+    (il1, il2), _, success = sksicd.scene_to_image(xmltree, [gpp1, gpp2])
+    assert success
+
+    assert np.allclose(il1 - il0, mats.M_IL_RRdot[:, 0] * delta_rrdot[0], atol=0.02)
+    assert np.allclose(il2 - il0, mats.M_IL_RRdot[:, 1] * delta_rrdot[1], atol=0.02)
+
+    assert np.allclose(mats.M_IL_RRdot @ mats.M_RRdot_IL, np.eye(2))
