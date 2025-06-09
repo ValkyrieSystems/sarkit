@@ -597,6 +597,29 @@ def test_m_spxy_gpxy(xmlpath):
     assert np.allclose(mats.M_SPXY_GPXY @ mats.M_GPXY_SPXY, np.eye(2))
 
 
+def _pt_to_rrdot(proj_metadata, projset0, pt):
+    if isinstance(projset0, sicdproj.ProjectionSetsMono):
+        args = [
+            proj_metadata.LOOK,
+            projset0.ARP_COA,
+            projset0.VARP_COA,
+            projset0.ARP_COA,
+            projset0.VARP_COA,
+            pt,
+        ]
+    else:
+        args = [
+            proj_metadata.LOOK,
+            projset0.Xmt_COA,
+            projset0.VXmt_COA,
+            projset0.Rcv_COA,
+            projset0.VRcv_COA,
+            pt,
+        ]
+    rrdot_params = sicdproj.compute_pt_r_rdot_parameters(*args)
+    return np.array([rrdot_params.R_Avg_PT, rrdot_params.Rdot_Avg_PT])
+
+
 @pytest.mark.parametrize(
     "xmlpath",
     [DATAPATH / "example-sicd-1.3.0.xml", DATAPATH / "example-sicd-1.4.0.xml"],
@@ -615,31 +638,9 @@ def test_m_rrdot_spxy(xmlpath):
     assert success
     projset0 = sicdproj.compute_projection_sets(proj_metadata, il0)
 
-    def _pt_to_rrdot(pt):
-        if isinstance(projset0, sicdproj.ProjectionSetsMono):
-            args = [
-                proj_metadata.LOOK,
-                projset0.ARP_COA,
-                projset0.VARP_COA,
-                projset0.ARP_COA,
-                projset0.VARP_COA,
-                pt,
-            ]
-        else:
-            args = [
-                proj_metadata.LOOK,
-                projset0.Xmt_COA,
-                projset0.VXmt_COA,
-                projset0.Rcv_COA,
-                projset0.VRcv_COA,
-                pt,
-            ]
-        rrdot_params = sicdproj.compute_pt_r_rdot_parameters(*args)
-        return np.array([rrdot_params.R_Avg_PT, rrdot_params.Rdot_Avg_PT])
-
-    rrdot0 = _pt_to_rrdot(pt0)
-    rrdot1 = _pt_to_rrdot(pt1)
-    rrdot2 = _pt_to_rrdot(pt2)
+    rrdot0 = _pt_to_rrdot(proj_metadata, projset0, pt0)
+    rrdot1 = _pt_to_rrdot(proj_metadata, projset0, pt1)
+    rrdot2 = _pt_to_rrdot(proj_metadata, projset0, pt2)
 
     assert np.allclose(rrdot1 - rrdot0, mats.M_RRdot_SPXY[:, 0], atol=1e-6)
     assert np.allclose(rrdot2 - rrdot0, mats.M_RRdot_SPXY[:, 1], atol=1e-6)
@@ -776,3 +777,91 @@ def test_m_il_rrdot(xmlpath):
     assert np.allclose(il2 - il0, mats.M_IL_RRdot[:, 1] * delta_rrdot[1], atol=0.02)
 
     assert np.allclose(mats.M_IL_RRdot @ mats.M_RRdot_IL, np.eye(2))
+
+
+@pytest.mark.parametrize(
+    "param,matrix",
+    (("delta_ARP_SCP_COA", "M_RRdot_delta_ARP"), ("delta_VARP", "M_RRdot_delta_VARP")),
+)
+def test_monostatic_posvel_matrices(param, matrix):
+    xmltree = lxml.etree.parse(DATAPATH / "example-sicd-1.3.0.xml")
+    proj_metadata = sicdproj.MetadataParams.from_xml(xmltree)
+    pt0 = proj_metadata.SCP + 1000 * np.array([0.6, -0.7, 0.8])
+    u_gpn0 = pt0 / np.linalg.norm(pt0)
+    mats = sicdproj.compute_sensitivity_matrices(proj_metadata, pt0, u_gpn0)
+    il0, _, success = sksicd.scene_to_image(xmltree, pt0)
+    assert success
+    projset0 = sicdproj.compute_projection_sets(proj_metadata, il0)
+
+    def delta_param_to_rrdot(delta_param):
+        kwargs = {
+            "delta_tx_SCP_COA": 0.0,
+            "delta_tr_SCP_COA": 0.0,
+            "delta_ARP_SCP_COA": np.zeros(3),
+            "delta_VARP": np.zeros(3),
+        } | {param: np.asarray(delta_param)}
+        apos = sicdproj.AdjustableParameterOffsets(**kwargs)
+        adjusted_projset = sicdproj.apply_apos(proj_metadata, projset0, apos)
+        gpp = sicdproj.r_rdot_to_ground_plane_mono(
+            proj_metadata.LOOK, adjusted_projset, pt0, u_gpn0
+        )
+        return _pt_to_rrdot(proj_metadata, projset0, gpp)
+
+    rrdot0 = delta_param_to_rrdot([0, 0, 0])
+    rrdot1 = delta_param_to_rrdot([1, 0, 0])
+    rrdot2 = delta_param_to_rrdot([0, 1, 0])
+    rrdot3 = delta_param_to_rrdot([0, 0, 1])
+
+    sens_mat = getattr(mats, matrix)
+    assert np.allclose(rrdot1 - rrdot0, sens_mat[:, 0], atol=1e-3)
+    assert np.allclose(rrdot2 - rrdot0, sens_mat[:, 1], atol=1e-3)
+    assert np.allclose(rrdot3 - rrdot0, sens_mat[:, 2], atol=1e-3)
+
+
+@pytest.mark.parametrize(
+    "param,matrix",
+    (
+        ("delta_Xmt_SCP_COA", "M_RRdot_delta_Xmt"),
+        ("delta_VXmt", "M_RRdot_delta_VXmt"),
+        ("delta_Rcv_SCP_COA", "M_RRdot_delta_Rcv"),
+        ("delta_VRcv", "M_RRdot_delta_VRcv"),
+    ),
+)
+def test_bistatic_posvel_matrices(param, matrix):
+    xmltree = lxml.etree.parse(DATAPATH / "example-sicd-1.4.0.xml")
+    proj_metadata = sicdproj.MetadataParams.from_xml(xmltree)
+    pt0 = proj_metadata.SCP + 1000 * np.array([0.6, -0.7, 0.8])
+    u_gpn0 = pt0 / np.linalg.norm(pt0)
+    mats = sicdproj.compute_sensitivity_matrices(proj_metadata, pt0, u_gpn0)
+    il0, _, success = sksicd.scene_to_image(xmltree, pt0)
+    assert success
+    projset0 = sicdproj.compute_projection_sets(proj_metadata, il0)
+
+    def delta_param_to_rrdot(delta_param):
+        kwargs = {
+            "delta_tx_SCP_COA": 0.0,
+            "delta_tr_SCP_COA": 0.0,
+            "delta_Xmt_SCP_COA": np.zeros(3),
+            "delta_VXmt": np.zeros(3),
+            "f_Clk_X_SF": 0.0,
+            "delta_Rcv_SCP_COA": np.zeros(3),
+            "delta_VRcv": np.zeros(3),
+            "f_Clk_R_SF": 0.0,
+        } | {param: np.asarray(delta_param)}
+        apos = sicdproj.AdjustableParameterOffsets(**kwargs)
+        adjusted_projset = sicdproj.apply_apos(proj_metadata, projset0, apos)
+        gpp, _, success = sicdproj.r_rdot_to_ground_plane_bi(
+            proj_metadata.LOOK, proj_metadata.SCP, adjusted_projset, pt0, u_gpn0
+        )
+        assert success
+        return _pt_to_rrdot(proj_metadata, projset0, gpp)
+
+    rrdot0 = delta_param_to_rrdot([0, 0, 0])
+    rrdot1 = delta_param_to_rrdot([1, 0, 0])
+    rrdot2 = delta_param_to_rrdot([0, 1, 0])
+    rrdot3 = delta_param_to_rrdot([0, 0, 1])
+
+    sens_mat = getattr(mats, matrix)
+    assert np.allclose(rrdot1 - rrdot0, sens_mat[:, 0], atol=2e-2)
+    assert np.allclose(rrdot2 - rrdot0, sens_mat[:, 1], atol=2e-2)
+    assert np.allclose(rrdot3 - rrdot0, sens_mat[:, 2], atol=2e-2)

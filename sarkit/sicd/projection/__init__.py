@@ -19,15 +19,18 @@ dataclasses with attributes named as similar as feasible to the IPDD.
    MetadataParams
    CoaPosVelsMono
    CoaPosVelsBi
-   ImageLocationSensitivityMatrices
    ProjectionSetsMono
    ProjectionSetsBi
-   ProjGeomParamsMono
-   ProjGeomParamsBi
    ScenePointRRdotParams
    ScenePointGpXyParams
-   SensitivityMatrices
+   ProjGeomParamsMono
+   ProjGeomParamsBi
    SlantPlaneSensitivityMatrices
+   ImageLocationSensitivityMatrices
+   PosVelSensitivityMatricesMono
+   PosVelSensitivityMatricesBi
+   SensitivityMatricesMono
+   SensitivityMatricesBi
 
 Type Aliases
 ------------
@@ -41,6 +44,11 @@ Type Aliases
    :canonical: ProjectionSetsMono | ProjectionSetsBi
 
    Represent either a monostatic or bistatic ensemble of COA projection sets
+
+.. py:type:: SensitivityMatricesLike
+   :canonical: SensitivityMatricesMono | SensitivityMatricesBi
+
+   Represent either a set of monostatic or bistatic ensemble sensitivity matrices
 
 Image Plane Parameters
 ======================
@@ -131,6 +139,8 @@ Projection Sensitivity Parameters
    compute_proj_geom_params_bi
    compute_slant_plane_sensitivity_matrices
    compute_image_location_sensitivity_matrices
+   compute_pos_vel_sensitity_matrices_mono
+   compute_pos_vel_sensitity_matrices_bi
    compute_sensitivity_matrices
 
 """
@@ -167,11 +177,17 @@ from ._params import (
 )
 from ._sensitivity import (
     ImageLocationSensitivityMatrices,
+    PosVelSensitivityMatricesBi,
+    PosVelSensitivityMatricesMono,
     ProjGeomParamsBi,
     ProjGeomParamsMono,
-    SensitivityMatrices,
+    SensitivityMatricesBi,
+    SensitivityMatricesLike,
+    SensitivityMatricesMono,
     SlantPlaneSensitivityMatrices,
     compute_image_location_sensitivity_matrices,
+    compute_pos_vel_sensitity_matrices_bi,
+    compute_pos_vel_sensitity_matrices_mono,
     compute_proj_geom_params_bi,
     compute_proj_geom_params_mono,
     compute_sensitivity_matrices,
@@ -185,6 +201,8 @@ __all__ = [
     "CoaPosVelsMono",
     "ImageLocationSensitivityMatrices",
     "MetadataParams",
+    "PosVelSensitivityMatricesBi",
+    "PosVelSensitivityMatricesMono",
     "ProjGeomParamsBi",
     "ProjGeomParamsMono",
     "ProjectionSetsBi",
@@ -192,7 +210,9 @@ __all__ = [
     "ProjectionSetsMono",
     "ScenePointGpXyParams",
     "ScenePointRRdotParams",
-    "SensitivityMatrices",
+    "SensitivityMatricesBi",
+    "SensitivityMatricesLike",
+    "SensitivityMatricesMono",
     "SlantPlaneSensitivityMatrices",
     "apply_apos",
     "compute_coa_pos_vel",
@@ -200,6 +220,8 @@ __all__ = [
     "compute_coa_time",
     "compute_gp_xy_parameters",
     "compute_image_location_sensitivity_matrices",
+    "compute_pos_vel_sensitity_matrices_bi",
+    "compute_pos_vel_sensitity_matrices_mono",
     "compute_proj_geom_params_bi",
     "compute_proj_geom_params_mono",
     "compute_projection_sets",
