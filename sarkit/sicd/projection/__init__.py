@@ -64,6 +64,7 @@ SCP Pixel Projection
 
    compute_scp_coa_r_rdot
    compute_scp_coa_slant_plane_normal
+   compute_ric_basis_vectors
 
 Image Grid to R/Rdot Contour
 ============================
@@ -125,6 +126,12 @@ Projection Sensitivity Parameters
 
    compute_sensitivity_matrices
 
+Projection Error Propagation
+============================
+.. autosummary::
+   :toctree: generated/
+
+   compute_ecef_pv_covariance
 """
 
 from ._calc import (
@@ -144,6 +151,10 @@ from ._calc import (
     r_rdot_to_ground_plane_bi,
     r_rdot_to_ground_plane_mono,
     scene_to_image,
+)
+from ._errorprop import (
+    compute_ecef_pv_covariance,
+    compute_ric_basis_vectors,
 )
 from ._params import (
     AdjustableParameterOffsets,
@@ -178,9 +189,11 @@ __all__ = [
     "compute_coa_pos_vel",
     "compute_coa_r_rdot",
     "compute_coa_time",
+    "compute_ecef_pv_covariance",
     "compute_gp_xy_parameters",
     "compute_projection_sets",
     "compute_pt_r_rdot_parameters",
+    "compute_ric_basis_vectors",
     "compute_scp_coa_r_rdot",
     "compute_scp_coa_slant_plane_normal",
     "compute_sensitivity_matrices",
