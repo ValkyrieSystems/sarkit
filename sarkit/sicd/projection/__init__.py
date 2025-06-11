@@ -151,7 +151,9 @@ Projection Error Propagation
 .. autosummary::
    :toctree: generated/
 
-   compute_ecef_pv_covariance
+   compute_ecef_pv_transformation
+   compute_composite_error_no_apo_mono
+   compute_composite_error_apo_mono
 """
 
 from ._calc import (
@@ -173,7 +175,9 @@ from ._calc import (
     scene_to_image,
 )
 from ._errorprop import (
-    compute_ecef_pv_covariance,
+    compute_composite_error_apo_mono,
+    compute_composite_error_no_apo_mono,
+    compute_ecef_pv_transformation,
     compute_ric_basis_vectors,
 )
 from ._params import (
@@ -235,7 +239,9 @@ __all__ = [
     "compute_coa_pos_vel",
     "compute_coa_r_rdot",
     "compute_coa_time",
-    "compute_ecef_pv_covariance",
+    "compute_composite_error_apo_mono",
+    "compute_composite_error_no_apo_mono",
+    "compute_ecef_pv_transformation",
     "compute_gp_xy_parameters",
     "compute_image_location_sensitivity_matrices",
     "compute_pos_vel_sensitity_matrices_bi",

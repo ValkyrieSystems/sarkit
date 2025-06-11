@@ -215,7 +215,7 @@ def _elem_to_2x2_cov(elem):
 
 @dataclasses.dataclass(kw_only=True)
 class ErrorStatParams:
-    """Parameters from IPDD Error Statistics Parameters"""
+    """IPDD Error Statistics Parameters"""
 
     #  Monostatic Composite
     C_SCP_RGAZ: np.ndarray | None = None
@@ -352,6 +352,8 @@ class ErrorStatParams:
         unmodeled = sicd_xmltree.find("{*}ErrorStatistics/{*}Unmodeled")
         if unmodeled is not None:
             kwargs["C_UI"] = _elem_to_2x2_cov(unmodeled)
+        else:
+            kwargs["C_UI"] = np.zeros((2, 2))
         return cls(**kwargs)
 
 
