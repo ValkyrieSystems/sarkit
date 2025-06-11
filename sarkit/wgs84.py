@@ -21,6 +21,9 @@ Constants
    * - ``FLATTENING_FACTOR``
      - flattening factor of the Earth (1/f)
      - (unitless)
+   * - ``NOMINAL_MEAN_ANGULAR_VELOCITY``
+     - nominal mean angular velocity of the earth
+     - rad / s
 
 .. list-table:: WGS-84 Ellipsoid Derived Geometric Constants
    :header-rows: 1
@@ -79,10 +82,11 @@ import math
 import numpy as np
 import numpy.typing as npt
 
-# Select parameters from NGS.STND.0036_1.0.0_WGS84 (2014-07-08)
+# Select parameters from NGA.STND.0036_1.0.0_WGS84 (2014-07-08)
 # Defining Parameters
 SEMI_MAJOR_AXIS = A = 6378137.0  # meters
 FLATTENING_FACTOR = 298.257223563
+NOMINAL_MEAN_ANGULAR_VELOCITY = 7.292115e-5  # rad/s
 
 # Derived Parameters
 FLATTENING_REDUCED = F = 1 / FLATTENING_FACTOR
