@@ -1,6 +1,4 @@
-import copy
 import datetime
-import random
 
 import lxml.etree
 import numpy as np
@@ -113,99 +111,127 @@ def test_mtx_type():
         type_obj.set_elem(elem, np.tile(data, 2))
 
 
-def test_dict_type_with_children():
-    # TODO: may want to do something better for namespace control/registry
-    # for now, just force it globally to make the element comparison easier
-    lxml.etree.register_namespace("si", "urn:SICommon:1.0")
+def test_elementwrapper():
+    root_ns = "urn:SIDD:3.0.0"
+    siddroot = lxml.etree.Element(f"{{{root_ns}}}SIDD")
+    xmlhelp = sarkit.sidd._xmlhelp2.XmlHelper2(root_ns)
+    wrapped_siddroot = sarkit._xmlhelp2.ElementWrapper(siddroot, xmlhelper=xmlhelp)
 
-    # need to test with an instantiable class, so arbitrarily choose SIDD
-    xh = sarkit.sidd._xmlhelp2.XmlHelper2("urn:SIDD:3.0.0")
-    type_obj = xh.get_transcoder(
-        "<UNNAMED>-{urn:SIDD:3.0.0}ExploitationFeaturesType/{urn:SIDD:3.0.0}Collection"
+    assert len(wrapped_siddroot) == 0
+    assert not wrapped_siddroot
+
+    # Subelement KeyErrors
+    with pytest.raises(KeyError, match="foo"):
+        wrapped_siddroot["foo"] = "doesn't exist"
+
+    with pytest.raises(KeyError, match="foo"):
+        wrapped_siddroot["foo"]
+
+    with pytest.raises(KeyError, match="foo"):
+        del wrapped_siddroot["foo"]
+
+    # Attribute KeyErrors
+    with pytest.raises(KeyError, match="@fooattr"):
+        wrapped_siddroot["@fooattr"] = "doesn't exist"
+
+    with pytest.raises(KeyError, match="@fooattr"):
+        wrapped_siddroot["@fooattr"]
+
+    with pytest.raises(KeyError, match="@fooattr"):
+        del wrapped_siddroot["@fooattr"]
+
+    # Add descendant of repeatable
+    wrapped_siddroot["ProductProcessing"].add("ProcessingModule")["ModuleName"] = (
+        "mn-name",
+        "mn-val",
     )
-    assert isinstance(type_obj, sarkit._xmlhelp2.DictType)
-    assert type_obj.typedef.children
-    assert type_obj.typedef.attributes
+    mn_elem = siddroot.find("{*}ProductProcessing/{*}ProcessingModule[1]/{*}ModuleName")
+    assert mn_elem.get("name") == "mn-name"
+    assert mn_elem.text == "mn-val"
 
-    # attributes/children are optional
-    val = {"Information": {"SensorName": "the_sensor"}}
-    elem = type_obj.make_elem("{urn:SIDD:3.0.0}testelem", val)
-    npt.assert_equal(val, type_obj.parse_elem(elem))
-
-    # attributes are prefixed with @
-    val["@identifier"] = "myid"
-    type_obj.set_elem(elem, val)
-    assert elem.get("identifier") == "myid"
-    npt.assert_equal(val, type_obj.parse_elem(elem))
-
-    # nested dicts are handled
-    val["Information"]["RadarMode"] = {"ModeType": "SPOTLIGHT"}
-    val["Information"]["CollectionDateTime"] = datetime.datetime.now(
-        tz=datetime.timezone.utc
+    wrapped_siddroot["ProductProcessing"]["ProcessingModule"][0].add(
+        "ModuleParameter", ("mp-name", "mp-val")
     )
-    type_obj.set_elem(elem, val)
-    npt.assert_equal(val, type_obj.parse_elem(elem))
+    mp_elem = siddroot.find(
+        "{*}ProductProcessing/{*}ProcessingModule[1]/{*}ModuleParameter"
+    )
+    assert mp_elem.get("name") == "mp-name"
+    assert mp_elem.text == "mp-val"
+    assert (
+        "ModuleParameter"
+        in wrapped_siddroot["ProductProcessing"]["ProcessingModule"][0]
+    )
+    assert wrapped_siddroot["ProductProcessing"]["ProcessingModule"][0][
+        "ModuleParameter"
+    ][0] == ("mp-name", "mp-val")
 
-    # repeatable nodes are lists
-    val["Information"]["Polarization"] = [
-        {"RcvPolarizationOffset": x} for x in range(24)
-    ]
-    type_obj.set_elem(elem, val)
-    npt.assert_equal(val, type_obj.parse_elem(elem))
-    assert len(elem.findall(".//{*}RcvPolarizationOffset")) == 24
+    # Set descendant
+    wrapped_siddroot["ProductCreation"]["ProductName"] = "prodname"
+    assert siddroot.findtext("{*}ProductCreation/{*}ProductName") == "prodname"
 
-    # key order doesn't matter
-    info_items = list(val["Information"].items())
-    random.shuffle(info_items)
-    val["Information"] = dict(info_items)
-    elem_from_shuffle = type_obj.make_elem(elem.tag, val)
-    npt.assert_equal(val, type_obj.parse_elem(elem_from_shuffle))
-    assert lxml.etree.tostring(elem, method="c14n") == lxml.etree.tostring(
-        elem_from_shuffle, method="c14n"
+    with pytest.raises(ValueError, match="ProductName already exists"):
+        wrapped_siddroot["ProductCreation"].add("ProductName")
+
+    del wrapped_siddroot["ProductCreation"]["ProductName"]
+    assert siddroot.find("{*}ProductCreation/{*}ProductName") is None
+
+    wrapped_siddroot["ProductCreation"].add("ProductName", "prodname is back")
+    assert siddroot.findtext("{*}ProductCreation/{*}ProductName") == "prodname is back"
+
+    # Set attribute of new repeatable
+    wrapped_siddroot["ExploitationFeatures"].add("Collection")["@identifier"] = (
+        "first-id"
+    )
+    wrapped_siddroot["ExploitationFeatures"].add("Collection")["@identifier"] = (
+        "second-id"
+    )
+    assert (
+        siddroot.find("{*}ExploitationFeatures/{*}Collection[1]").get("identifier")
+        == "first-id"
+    )
+    assert (
+        siddroot.find("{*}ExploitationFeatures/{*}Collection[2]").get("identifier")
+        == "second-id"
     )
 
-    # error if unexpected repetition in elem during parse
-    badelem = copy.deepcopy(elem)
-    sn = badelem.find(".//{*}SensorName")
-    sn.addnext(copy.deepcopy(sn))
-    with pytest.raises(ValueError, match="SensorName not expected to repeat"):
-        type_obj.parse_elem(badelem)
+    wrapped_siddroot["ProductCreation"]["Classification"]["@classification"] = "U"
+    attribname, attribval = dict(
+        siddroot.find("{*}ProductCreation/{*}Classification").attrib
+    ).popitem()
+    assert attribname.endswith("classification")
+    assert attribval == "U"
 
-    # error if unrecognized keys during set
-    badval = copy.deepcopy(val)
-    badval["badkey"] = "shouldn't be here"
-    with pytest.raises(ValueError, match="unrecognized_keys.*badkey"):
-        type_obj.make_elem("cannotmake", badval)
+    del wrapped_siddroot["ProductCreation"]["Classification"]["@classification"]
+    assert not siddroot.find("{*}ProductCreation/{*}Classification").attrib
+
+    # Contains for schema-valid element in missing branch
+    assert (
+        "ECEF"
+        not in wrapped_siddroot["Measurement"]["PlaneProjection"]["ReferencePoint"]
+    )
 
 
-def test_dict_type_without_children():
-    # need to test with an instantiable class, so arbitrarily choose SIDD
-    xh = sarkit.sidd._xmlhelp2.XmlHelper2("urn:SIDD:3.0.0")
-    type_obj = xh.get_transcoder("{urn:SICommon:1.0}ParameterType")
-    assert isinstance(type_obj, sarkit._xmlhelp2.DictType)
-    assert not type_obj.typedef.children
-    assert type_obj.typedef.attributes
-    assert type_obj.typedef.text_typename
+def test_elementwrapper_tofromdict():
+    root_ns = "urn:SIDD:3.0.0"
+    siddroot = lxml.etree.parse(
+        "data/syntax_only/sidd/0000-syntax-only-sidd-3.0.xml"
+    ).getroot()
+    xmlhelp = sarkit.sidd._xmlhelp2.XmlHelper2(root_ns)
+    wrapped_siddroot = sarkit._xmlhelp2.ElementWrapper(siddroot, xmlhelper=xmlhelp)
 
-    # text is stored in #text
-    val = {"#text": "parameter-text"}
-    elem = type_obj.make_elem("{urn:SIDD:3.0.0}testelem", val)
-    npt.assert_equal(val, type_obj.parse_elem(elem))
+    dict1 = wrapped_siddroot.to_dict()
+    wrapped_root_fromdict = sarkit._xmlhelp2.ElementWrapper(
+        lxml.etree.Element(lxml.etree.QName(root_ns, "SIDD")), xmlhelper=xmlhelp
+    )
+    wrapped_root_fromdict.from_dict(dict1)
+    dict2 = wrapped_root_fromdict.to_dict()
 
-    # attributes are prefixed with @
-    val["@name"] = "parameter-name"
-    type_obj.set_elem(elem, val)
-    assert elem.get("name") == "parameter-name"
-    npt.assert_equal(val, type_obj.parse_elem(elem))
+    npt.assert_equal(dict1, dict2)
 
-    # error if unexpected children
-    badelem = copy.deepcopy(elem)
-    badelem.append(copy.deepcopy(badelem))
-    with pytest.raises(ValueError, match="not expected to have children"):
-        type_obj.parse_elem(badelem)
-
-    # error if #text is missing
-    badval = copy.deepcopy(val)
-    del badval["#text"]
-    with pytest.raises(KeyError):
-        type_obj.make_elem("cannotmake", badval)
+    orig_elempaths = {siddroot.getroottree().getelementpath(x) for x in siddroot.iter()}
+    fromdict_elempaths = {
+        wrapped_root_fromdict.elem.getroottree().getelementpath(x)
+        for x in wrapped_root_fromdict.elem.iter()
+    }
+    # transcoders can add zeros to sparse polynomials/matrices, etc.
+    assert orig_elempaths.issubset(fromdict_elempaths)

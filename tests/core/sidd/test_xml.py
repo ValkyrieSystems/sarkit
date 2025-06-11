@@ -4,7 +4,6 @@ import lxml.etree
 import numpy as np
 
 import sarkit.sidd as sksidd
-import sarkit.sidd._xmlhelp2
 
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
 
@@ -99,23 +98,3 @@ def test_transcoders():
 
     todos = {xmlpath for xmlpath in no_transcode_leaf if "Classification" in xmlpath}
     assert not (no_transcode_leaf - todos)
-
-
-def test_transcoders2():
-    no_transcode = set()
-    for xml_file in (DATAPATH / "syntax_only/sidd").glob("*.xml"):
-        etree = lxml.etree.parse(xml_file)
-        basis_version = lxml.etree.QName(etree.getroot()).namespace
-        schema = lxml.etree.XMLSchema(file=sksidd.VERSION_INFO[basis_version]["schema"])
-        schema.assertValid(etree)
-        xml_helper2 = sarkit.sidd._xmlhelp2.XmlHelper2(basis_version)
-        for elem in reversed(list(etree.iter())):
-            try:
-                val = xml_helper2.load_elem(elem)
-                xml_helper2.set_elem(elem, val)
-                schema.assertValid(etree)
-                np.testing.assert_equal(xml_helper2.load_elem(elem), val)
-            except LookupError:
-                no_transcode.add(etree.getelementpath(elem))
-
-    assert not no_transcode

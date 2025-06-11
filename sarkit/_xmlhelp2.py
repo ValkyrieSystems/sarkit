@@ -1,11 +1,10 @@
 import abc
+import collections.abc
 import dataclasses
 import json
-from typing import Any
 
+import lxml.ElementInclude
 import lxml.etree
-
-import sarkit._xmlhelp
 
 
 @dataclasses.dataclass
@@ -24,6 +23,22 @@ class XsdTypeDef:
     def get_childdef(self, tag):
         """Return the first ChildDef in children whose tag matches tag."""
         return next((cdef for cdef in self.children if cdef.tag == tag), None)
+
+    def get_childdef_from_localname(self, localname: str):
+        return next(
+            (
+                cdef
+                for cdef in self.children
+                if lxml.etree.QName(cdef.tag).localname == localname
+            ),
+            None,
+        )
+
+    def get_attribute_from_localname(self, localname: str):
+        for attrib in self.attributes:
+            if lxml.etree.QName(attrib).localname == localname:
+                return attrib
+        return None
 
 
 def dumps_xsdtypes(xsdtypes):
@@ -55,9 +70,8 @@ class XmlHelper2(abc.ABC):
     def _read_xsdtypes_json(self, root_ns: str) -> str:
         """Return the text contents of the appropriate xsdtypes JSON"""
 
-    def get_typeinfo(self, elem: lxml.etree.Element):
-        """Return the typename and typedef for a subelement"""
-        elempath = elem.getroottree().getelementpath(elem)
+    def get_typeinfo(self, elempath: str):
+        """Return the typename and typedef for a elementpath"""
         current_typedef = self.xsdtypes["/"]
         if elempath == ".":
             # special handling for root
@@ -67,12 +81,16 @@ class XmlHelper2(abc.ABC):
             current_typedef = self.xsdtypes.get(comp_type)
         return comp_type, current_typedef
 
+    def get_elem_typeinfo(self, elem: lxml.etree.Element):
+        """Return the typename and typedef for a subelement"""
+        return self.get_typeinfo(elem.getroottree().getelementpath(elem))
+
     @abc.abstractmethod
     def get_transcoder(self, typename, tag=None):
         """Return the appropriate transcoder given the typename (and optionally tag)."""
 
     def get_elem_transcoder(self, elem: lxml.etree.Element):
-        return self.get_transcoder(self.get_typeinfo(elem)[0], tag=elem.tag)
+        return self.get_transcoder(self.get_elem_typeinfo(elem)[0], tag=elem.tag)
 
     def load_elem(self, elem):
         """Decode ``elem`` (an XML element) to a Python object."""
@@ -83,91 +101,261 @@ class XmlHelper2(abc.ABC):
         self.get_elem_transcoder(elem).set_elem(elem, val)
 
 
-class DictType(sarkit._xmlhelp.Type):
-    """Transcoder for XML types that should be parsed to a dict.
+class ElementWrapper(collections.abc.MutableMapping):
+    """Wrapper for lxml.etree.Element that provides dictionary-ish interface
 
-    Known children and/or attributes not present during transcoding are ignored.
-    Unknown children and/or attributes are ignored during parsing, but result in an exception during setting.
-    The order of the dict keys during the setting is unimportant.
+    Getting/setting of schema-valid subelements does not inherently raise an exception if they don't exist.
+    Setter will create non-existent ancestors as necessary.
+    Repeatable elements are treated as tuples.
+    Transcoded values are copies, not references. Some effort has been made to make them immutable.
+    If you manage to change them, the changes are not reflected in the underlying XML element.
+    Attributes are accessed using BadgerFish notation (e.g. @attr).
+    Keys are local names. Namespaces are handled automatically.
 
-    This class, like other parts of the module, assumes that "repeatable" children are contiguous and share a type
-    definition.
+    Parameters
+    ----------
+    elem : lxml.etree.Element or None
+        Element to wrap or ``None`` for a placeholder element.
+        If `elem` is ``None``, `elementpath` must be set.
+    xmlhelper : XmlHelper2
+        XML helper for the root namespace of the document that contains `elem`
+    wrapped_parent : ElementWrapper or None
+        Wrapper for the parent of `elem` or ``None``. Only used when trying to set an item of a wrapped placeholder.
+    typename : str or None
+        XSD typename of the element being wrapped. If ``None``, the type information is retrieved from the XML Helper.
+    elementpath : str or None
+        ElementPath expression that identifies the location of `elem` in its tree.
+        If ``None``, the path is retrieved from the element.
+        Required if `elem` is ``None``.
+
+    Notes
+    -----
+    The wrapped element must be located in a tree with the same root element as that expected by `xmlhelper`.
     """
 
     def __init__(
         self,
-        typedef: XsdTypeDef,
+        elem: "lxml.etree.Element | None",
         xmlhelper: XmlHelper2,
+        wrapped_parent: "ElementWrapper | None" = None,
+        typename: str | None = None,
+        elementpath: str | None = None,
     ):
-        self.typedef = typedef
-        self._xmlhelper = xmlhelper
+        self.elem = elem
+        self.wrapped_parent = self if wrapped_parent is None else wrapped_parent
+        if elementpath is None:
+            assert elem is not None
+            elementpath = elem.getroottree().getelementpath(elem)
+        if typename is None:
+            typename = xmlhelper.get_typeinfo(elementpath)[0]
+        self.elementpath = elementpath
+        self.xmlhelper = xmlhelper
+        self.typename = typename
+        self.typedef = xmlhelper.xsdtypes[typename]
 
-    def parse_elem(self, elem) -> dict[str, Any]:
-        val = {
-            "@" + k: elem.get(k) for k in self.typedef.attributes if k in elem.keys()
-        }
+    def _getelem(
+        self, localname: str
+    ) -> "None | lxml.etree.Element | list[lxml.etree.Element]":
+        """Return an element or tuple of elements given a localname."""
+        childdef = self.typedef.get_childdef_from_localname(localname)
+        if childdef is None:
+            raise KeyError(localname)
+        if childdef.repeat:
+            if self.elem is None:
+                return tuple()
+            return tuple(self.elem.findall("{*}" + localname))
+        if self.elem is None:
+            return None
+        return self.elem.find("{*}" + localname)
 
-        if not self.typedef.children:
-            if len(elem) > 0:
-                raise ValueError(f"{elem} not expected to have children")
+    def __repr__(self):
+        return f"ElementWrapper({str(dict(self))})"
 
-            if self.typedef.text_typename:
-                transcoder = self._xmlhelper.get_transcoder(
-                    self.typedef.text_typename, tag=elem.tag
-                )
-                val["#text"] = transcoder.parse_elem(elem)
-
-        for subelem in elem:
-            subelem_localname = lxml.etree.QName(subelem).localname
-            subelem_childdef = self.typedef.get_childdef(subelem.tag)
-            subelem_transcoder = self._xmlhelper.get_transcoder(
-                subelem_childdef.typename, subelem.tag
+    def __getitem__(self, localname: str):
+        if localname.startswith("@"):
+            attribname = self.typedef.get_attribute_from_localname(
+                localname.removeprefix("@")
             )
+            if attribname is None or self.elem is None:
+                raise KeyError(localname)
+            return self.elem.get(attribname)
 
-            if subelem_childdef.repeat:
-                val.setdefault(subelem_localname, []).append(
-                    subelem_transcoder.parse_elem(subelem)
-                )
-            else:
-                if subelem_localname in val:
-                    raise ValueError(f"{subelem_localname} not expected to repeat")
-                val[subelem_localname] = subelem_transcoder.parse_elem(subelem)
+        elem = self._getelem(localname)
+        if isinstance(elem, tuple):
+            return tuple(self._handle_subelem(x, localname) for x in elem)
+        return self._handle_subelem(elem, localname)
 
-        return val
-
-    def set_elem(self, elem, val):
-        elem.clear()
-        valcopy = val.copy()
-
-        for possible_attr in self.typedef.attributes:
-            attr_value = valcopy.pop(f"@{possible_attr}", None)
-            if attr_value is not None:
-                elem.set(possible_attr, attr_value)
-
-        if not self.typedef.children:
-            textval = valcopy.pop("#text")
-            self._xmlhelper.get_transcoder(self.typedef.text_typename).set_elem(
-                elem, textval
+    def _handle_subelem(
+        self, subelem: "lxml.etree.Element | None", subelem_localname: str
+    ):
+        """Retrieve a transcoded value (leaf) or wrapped element (branch) from a subelement."""
+        childdef = self.typedef.get_childdef_from_localname(subelem_localname)
+        elempath = self.elementpath + f"/{childdef.tag}"
+        transcoder = self.xmlhelper.get_transcoder(childdef.typename, childdef.tag)
+        if transcoder is None or subelem is None:
+            return ElementWrapper(
+                subelem,
+                elementpath=elempath,
+                wrapped_parent=self,
+                typename=childdef.typename,
+                xmlhelper=self.xmlhelper,
             )
+        transcoded_val = transcoder.parse_elem(subelem)
+        if isinstance(transcoded_val, list):
+            return tuple(transcoded_val)
+        if hasattr(transcoded_val, "setflags"):
+            transcoded_val.setflags(write=False)
+        return transcoded_val
+
+    def _get_inserter(self, childtag):
+        """Return a function that inserts the child element in the appropriate location."""
+        successor = None
+        for child in reversed(self.typedef.children):
+            if child.tag == childtag:
+                break
+            this_child = self.elem.find(child.tag)
+            if this_child is not None:
+                successor = this_child
+
+        appendfunc = self.elem.append if successor is None else successor.addprevious
+        return appendfunc
+
+    def __setitem__(self, localname: str, value):
+        if self.elem is None:
+            elemtag = self.elementpath.split("/")[-1]
+            self.elem = lxml.etree.Element(elemtag)
+            self.wrapped_parent[lxml.etree.QName(elemtag).localname] = self.elem
+
+        if localname.startswith("@"):
+            attribname = self.typedef.get_attribute_from_localname(
+                localname.removeprefix("@")
+            )
+            if attribname is None:
+                raise KeyError(localname)
+            self.elem.set(attribname, str(value))
+            return
+
+        childdef = self.typedef.get_childdef_from_localname(localname)
+        if childdef is None:
+            raise KeyError(localname)
+
+        transcoder = self.xmlhelper.get_transcoder(childdef.typename, childdef.tag)
+
+        def _val_to_elem(val):
+            if isinstance(val, lxml.etree._Element):
+                return val
+            if isinstance(val, ElementWrapper):
+                return val.elem
+            if transcoder is None:
+                return lxml.etree.Element(childdef.tag)
+            return transcoder.make_elem(childdef.tag, val)
+
+        for subelem in self.elem.findall("{*}" + localname):
+            self.elem.remove(subelem)
+
+        appendfunc = self._get_inserter(childdef.tag)
+        if childdef.repeat:
+            for idx, val in enumerate(value):
+                if isinstance(val, dict) and transcoder is None:
+                    appendfunc(lxml.etree.Element(childdef.tag))
+                    for k, v in val.items():
+                        self[localname][idx][k] = v
+                else:
+                    appendfunc(_val_to_elem(val))
         else:
-            for childdef in self.typedef.children:
-                child_value = valcopy.pop(
-                    lxml.etree.QName(childdef.tag).localname, None
-                )
-                if child_value is not None:
-                    subelem_transcoder = self._xmlhelper.get_transcoder(
-                        childdef.typename, childdef.tag
-                    )
-                    if childdef.repeat:
-                        for item in child_value:
-                            new_child = elem.makeelement(childdef.tag)
-                            elem.append(new_child)
-                            subelem_transcoder.set_elem(new_child, item)
-                    else:
-                        new_child = elem.makeelement(childdef.tag)
-                        elem.append(new_child)
-                        subelem_transcoder.set_elem(new_child, child_value)
+            if isinstance(value, dict) and transcoder is None:
+                for k, v in value.items():
+                    self[localname][k] = v
+            else:
+                appendfunc(_val_to_elem(value))
 
-        unrecognized_keys = list(valcopy.keys())
-        if unrecognized_keys:
-            raise ValueError(f"{unrecognized_keys=}in val for {self.typedef}")
+    def add(self, localname, val=None):
+        """Add a new subelement and optionally set its value.
+
+        Useful for adding a repeatable subelement to work around the tuple from __getitem__.
+
+        Parameters
+        ----------
+        localname : str
+            Local name of element to add
+        val
+            Value to set new subelement to.
+
+        Returns
+        -------
+        the new transcoded or wrapped subelement
+        """
+        childdef = self.typedef.get_childdef_from_localname(localname)
+        if childdef is None:
+            raise KeyError(localname)
+
+        setval = val if val is not None else {}
+
+        if childdef.repeat:
+            self[localname] += (setval,)
+            return self[localname][-1]
+        if localname in self:
+            raise ValueError(f"{localname} already exists")
+        self[localname] = setval
+        return self[localname]
+
+    def __delitem__(self, localname):
+        if localname.startswith("@"):
+            attribname = self.typedef.get_attribute_from_localname(
+                localname.removeprefix("@")
+            )
+            if attribname is None:
+                raise KeyError(localname)
+            del self.elem.attrib[attribname]
+        else:
+            childdef = self.typedef.get_childdef_from_localname(localname)
+            if childdef is None:
+                raise KeyError(localname)
+            for subelem in self.elem.findall(childdef.tag):
+                self.elem.remove(subelem)
+
+    def _keys(self):
+        keys = []
+        if self.elem is not None:
+            for attribname in self.elem.keys():
+                localname = lxml.etree.QName(attribname).localname
+                if self.typedef.get_attribute_from_localname(localname) is not None:
+                    keys.append("@" + localname)
+
+            keys.sort()
+            for subelem in self.elem:
+                localname = lxml.etree.QName(subelem).localname
+                if localname not in keys and (
+                    self.typedef.get_childdef_from_localname(localname) is not None
+                ):
+                    keys.append(localname)
+        return keys
+
+    def __iter__(self):
+        return iter(self._keys())
+
+    def __len__(self):
+        return len(self._keys())
+
+    def __contains__(self, localname):
+        return localname in self._keys()
+
+    def to_dict(self) -> dict:
+        """Recursively convert the ElementWrapper to a dictionary."""
+
+        def convert(v):
+            if isinstance(v, ElementWrapper):
+                return v.to_dict()
+            if isinstance(v, tuple):
+                return tuple(map(convert, v))
+            return v
+
+        return {k: convert(v) for k, v in self.items()}
+
+    def from_dict(self, val):
+        """Populate the ElementWrapper with the contents of a dictionary.
+
+        Similar to `dict.update`
+        """
+        for k, v in val.items():
+            self[k] = v

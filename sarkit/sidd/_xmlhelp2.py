@@ -1,6 +1,7 @@
 import importlib.resources
 import pathlib
 
+import sarkit._xmlhelp
 import sarkit._xmlhelp2
 import sarkit.sidd._xml as sksiddxml
 
@@ -25,16 +26,22 @@ class XmlHelper2(sarkit._xmlhelp2.XmlHelper2):
             "{http://www.w3.org/2001/XMLSchema}double": sksiddxml.DblType(),
         }
         typedef = self.xsdtypes[typename]
+        easy = {
+            "{urn:SICommon:1.0}XYZType": sksiddxml.XyzType(),
+            "{urn:SICommon:1.0}Poly1DType": sksiddxml.PolyCoef1dType(),
+            "{urn:SICommon:1.0}Poly2DType": sksiddxml.PolyCoef2dType(),
+            "{urn:SICommon:1.0}XYZPolyType": sksiddxml.XyzPolyType(),
+            "{urn:SICommon:1.0}AngleZeroToExclusive360MagnitudeType": sksiddxml.AngleMagnitudeType(),
+            "{urn:SICommon:1.0}LatLonType": sksiddxml.LatLonType(),
+            "{urn:SIDD:3.0.0}PolygonType": sarkit._xmlhelp.ListType(
+                "Vertex", sksiddxml.LatLonType()
+            ),
+            "{urn:SICommon:1.0}ParameterType": sksiddxml.ParameterType(),
+        }
         if typename.startswith("{http://www.w3.org/2001/XMLSchema}"):
             return known_builtins[typename]
-        if typename == "{urn:SICommon:1.0}Poly1DType":
-            return sksiddxml.PolyCoef1dType()
-        if typename == "{urn:SICommon:1.0}Poly2DType":
-            return sksiddxml.PolyCoef2dType()
-        if typename == "{urn:SICommon:1.0}XYZPolyType":
-            return sksiddxml.XyzPolyType()
+        if typename in easy:
+            return easy[typename]
         if not typedef.children and not typedef.attributes:
             return known_builtins.get(typedef.text_typename, sksiddxml.TxtType())
-        if typedef.children or typedef.attributes:
-            return sarkit._xmlhelp2.DictType(typedef, self)
         return None
