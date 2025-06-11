@@ -15,8 +15,10 @@ dataclasses with attributes named as similar as feasible to the IPDD.
 .. autosummary::
    :toctree: generated/
 
-   AdjustableParameterOffsets
    MetadataParams
+   ErrorStatParams
+   AdjustableParameterOffsets
+   ApoErrorParams
    CoaPosVelsMono
    CoaPosVelsBi
    ProjectionSetsMono
@@ -165,9 +167,11 @@ from ._calc import (
 )
 from ._params import (
     AdjustableParameterOffsets,
+    ApoErrorParams,
     CoaPosVelsBi,
     CoaPosVelsLike,
     CoaPosVelsMono,
+    ErrorStatParams,
     MetadataParams,
     ProjectionSetsBi,
     ProjectionSetsLike,
@@ -196,9 +200,11 @@ from ._sensitivity import (
 
 __all__ = [
     "AdjustableParameterOffsets",
+    "ApoErrorParams",
     "CoaPosVelsBi",
     "CoaPosVelsLike",
     "CoaPosVelsMono",
+    "ErrorStatParams",
     "ImageLocationSensitivityMatrices",
     "MetadataParams",
     "PosVelSensitivityMatricesBi",

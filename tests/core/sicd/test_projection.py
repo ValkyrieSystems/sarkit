@@ -75,6 +75,32 @@ def test_metadata_params_is_monostatic(example_proj_metadata):
         example_proj_metadata.is_monostatic()
 
 
+@pytest.mark.parametrize("xmlfile", (DATAPATH / "syntax_only/sicd").glob("*.xml"))
+def test_errorstatparams(xmlfile):
+    errparams = sicdproj.ErrorStatParams.from_xml(lxml.etree.parse(xmlfile))
+    for field in dataclasses.fields(errparams):
+        val = getattr(errparams, field.name)
+        if val is None:
+            continue
+        if field.name in ("C_SCP_RGAZ", "C_AIF_APV", "C_SCP_RRdot", "C_ATM", "C_UI"):
+            # "deconstructed" covariance matrices positive semi-definite by construction
+            assert np.all(np.linalg.eigvalsh(val) >= 0.0)
+        if field.name.startswith("VAR_"):
+            assert val >= 0.0
+
+
+@pytest.mark.parametrize("xmlfile", (DATAPATH / "syntax_only/sicd").glob("*.xml"))
+def test_apoerrorparams(xmlfile):
+    apoerrparams = sicdproj.ApoErrorParams.from_xml(lxml.etree.parse(xmlfile))
+    for field in dataclasses.fields(apoerrparams):
+        val = getattr(apoerrparams, field.name)
+        if val is None:
+            continue
+        if field.name in ("C_SCPAPO_RGAZ", "C_SCPAPO_RRdot"):
+            # "deconstructed" covariance matrices positive semi-definite by construction
+            assert np.all(np.linalg.eigvalsh(val) >= 0.0)
+
+
 def test_image_plane_parameters_roundtrip(example_proj_metadata):
     image_grid_locations = np.random.default_rng(12345).uniform(
         low=-24, high=24, size=(3, 4, 5, 2)

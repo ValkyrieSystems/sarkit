@@ -205,6 +205,211 @@ class MetadataParams:
         )
 
 
+def _elem_to_2x2_cov(elem):
+    """Build a 2x2 covariance matrix from an XML element with subelements in order [std0, std1, cc]"""
+    std0 = float(elem[0].text)
+    std1 = float(elem[1].text)
+    cc = float(elem[2].text)
+    return np.array([[std0**2, cc * std0 * std1], [cc * std0 * std1, std1**2]])
+
+
+@dataclasses.dataclass(kw_only=True)
+class ErrorStatParams:
+    """Parameters from IPDD Error Statistics Parameters"""
+
+    #  Monostatic Composite
+    C_SCP_RGAZ: np.ndarray | None = None
+    # Monostatic Component
+    C_AIF_APV: np.ndarray | None = None
+    AIF: str | None = None
+    VAR_RB: float | None = None
+    VAR_CLK_SF: float | None = None
+    VAR_TROP: float | None = None
+    VAR_IONO: float | None = None
+    # Bistatic Composite
+    C_SCP_RRdot: np.ndarray | None = None
+    # Bistatic Component
+    C_XIF_XPV: np.ndarray | None = None
+    XIF: str | None = None
+    C_RIF_RPV: np.ndarray | None = None
+    RIF: str | None = None
+    CC_XIF_RIF_XPV_RPV: np.ndarray | None = None
+    C_XRTF: np.ndarray | None = None
+    C_ATM: np.ndarray | None = None
+    # Unmodeled
+    C_UI: np.ndarray | None = None
+
+    @classmethod
+    def from_xml(cls, sicd_xmltree: lxml.etree.ElementTree) -> Self:
+        """Extract relevant error statistics parameters from SICD XML as described in SICD IPDD.
+
+        Parameters
+        ----------
+        sicd_xmltree : lxml.etree.ElementTree
+            SICD XML metadata.
+
+        Returns
+        -------
+        ErrorStatParams
+            The error statistics parameter object initialized with values from the XML.
+        """
+        xmlhelp = ss_xml.XmlHelper(sicd_xmltree)
+        kwargs = {}
+
+        compscp = sicd_xmltree.find("{*}ErrorStatistics/{*}CompositeSCP")
+        if compscp is not None:
+            kwargs["C_SCP_RGAZ"] = _elem_to_2x2_cov(compscp)
+
+        comps = sicd_xmltree.find("{*}ErrorStatistics/{*}Components")
+        if comps is not None:
+            kwargs["AIF"] = comps.findtext("{*}PosVelErr/{*}Frame")
+            pv_names = ("P1", "P2", "P3", "V1", "V2", "V3")
+            ce = {x: float(comps.findtext("{*}PosVelErr/{*}" + x)) for x in pv_names}
+            ce |= {x + x: 1.0 for x in pv_names}
+            ce |= {
+                x: float(comps.findtext("{*}PosVelErr/{*}CorrCoefs/{*}" + x) or 0.0)
+                for x in (
+                    "P1P2",
+                    "P1P3",
+                    "P1V1",
+                    "P1V2",
+                    "P1V3",
+                    "P2P3",
+                    "P2V1",
+                    "P2V2",
+                    "P2V3",
+                    "P3V1",
+                    "P3V2",
+                    "P3V3",
+                    "V1V2",
+                    "V1V3",
+                    "V2V3",
+                )
+            }
+            c_aif_apv = np.zeros((6, 6))
+            for m, mn in enumerate(pv_names):
+                for n, nn in list(enumerate(pv_names))[m:]:
+                    c_aif_apv[m, n] = ce[mn + nn] * ce[mn] * ce[nn]
+                    c_aif_apv[n, m] = ce[mn + nn] * ce[mn] * ce[nn]
+            kwargs["C_AIF_APV"] = c_aif_apv
+            kwargs["VAR_RB"] = float(comps.findtext("{*}RadarSensor/{*}RangeBias")) ** 2
+            kwargs["VAR_CLK_SF"] = (
+                float(comps.findtext("{*}RadarSensor/{*}ClockFreqSF") or 0.0) ** 2
+            )
+            if rts := comps.findtext("{*}RadarSensor/{*}TropoError/{*}TropoRangeSlant"):
+                kwargs["VAR_TROP"] = float(rts) ** 2
+            elif rtv := comps.findtext(
+                "{*}RadarSensor/{*}TropoError/{*}TropoRangeVertical"
+            ):
+                kwargs["VAR_TROP"] = (
+                    float(rtv) ** 2
+                    / np.sin(
+                        np.deg2rad(
+                            float(sicd_xmltree.findtext("{*}SCPCOA/{*}GrazeAng"))
+                        )
+                    )
+                    ** 2
+                )
+            else:
+                kwargs["VAR_TROP"] = 0.0
+            if iono_rg_vert := comps.findtext(
+                "{*}RadarSensor/{*}IonoError/{*}IonoRangeVertical"
+            ):
+                kwargs["VAR_IONO"] = (
+                    float(iono_rg_vert) ** 2
+                    / np.sin(
+                        np.deg2rad(
+                            float(sicd_xmltree.findtext("{*}SCPCOA/{*}GrazeAng"))
+                        )
+                    )
+                    ** 2
+                )
+            else:
+                kwargs["VAR_IONO"] = 0.0
+
+        bicompscp = sicd_xmltree.find("{*}ErrorStatistics/{*}BistaticCompositeSCP")
+        if bicompscp is not None:
+            kwargs["C_SCP_RRdot"] = _elem_to_2x2_cov(bicompscp)
+
+        bicomps = sicd_xmltree.find("{*}ErrorStatistics/{*}BistaticComponents")
+        if bicomps is not None:
+            kwargs["C_XIF_XPV"] = xmlhelp.load_elem(
+                bicomps.find("{*}PosVelErr/{*}TxPVCov")
+            )
+            kwargs["XIF"] = bicomps.findtext("{*}PosVelErr/{*}TxFrame")
+            kwargs["C_RIF_RPV"] = xmlhelp.load_elem(
+                bicomps.find("{*}PosVelErr/{*}RcvPVCov")
+            )
+            kwargs["RIF"] = bicomps.findtext("{*}PosVelErr/{*}RcvFrame")
+            kwargs["CC_XIF_RIF_XPV_RPV"] = xmlhelp.load_elem(
+                bicomps.find("{*}PosVelErr/{*}TxRcvPVXCov")
+            )
+            kwargs["C_XRTF"] = xmlhelp.load_elem(
+                bicomps.find("{*}RadarSensor/{*}TxRcvTimeFreq")
+            )
+            kwargs["C_ATM"] = _elem_to_2x2_cov(bicomps.find("{*}AtmosphericError"))
+
+        unmodeled = sicd_xmltree.find("{*}ErrorStatistics/{*}Unmodeled")
+        if unmodeled is not None:
+            kwargs["C_UI"] = _elem_to_2x2_cov(unmodeled)
+        return cls(**kwargs)
+
+
+@dataclasses.dataclass(kw_only=True)
+class ApoErrorParams:
+    """Parameters from IPDD APO Error Parameters table"""
+
+    # Monostatic
+    C_SCPAPO_RGAZ: np.ndarray | None = None
+    C_APOM: np.ndarray | None = None
+    # Bistatic
+    C_SCPAPO_RRdot: np.ndarray | None = None
+    C_APOXR: np.ndarray | None = None
+
+    @classmethod
+    def from_xml(cls, sicd_xmltree: lxml.etree.ElementTree) -> Self:
+        """Extract relevant APO error parameters from SICD XML as described in SICD IPDD.
+
+        Parameters
+        ----------
+        sicd_xmltree : lxml.etree.ElementTree
+            SICD XML metadata.
+
+        Returns
+        -------
+        ApoErrorParams
+            The APO error parameters object initialized with values from the XML.
+        """
+        xmlhelp = ss_xml.XmlHelper(sicd_xmltree)
+        kwargs = {}
+
+        apo_comp = sicd_xmltree.find(
+            "{*}ErrorStatistics/{*}AdjustableParameterOffsets/{*}CompositeSCP"
+        )
+        if apo_comp is not None:
+            kwargs["C_SCPAPO_RGAZ"] = _elem_to_2x2_cov(apo_comp)
+
+        apoerror = sicd_xmltree.find(
+            "{*}ErrorStatistics/{*}AdjustableParameterOffsets/{*}APOError"
+        )
+        if apoerror is not None:
+            kwargs["C_APOM"] = xmlhelp.load_elem(apoerror)
+
+        bi_apo_comp = sicd_xmltree.find(
+            "{*}ErrorStatistics/{*}BistaticAdjustableParameterOffsets/{*}BistaticCompositeSCP"
+        )
+        if bi_apo_comp is not None:
+            kwargs["C_SCPAPO_RRdot"] = _elem_to_2x2_cov(bi_apo_comp)
+
+        bi_apoerror = sicd_xmltree.find(
+            "{*}ErrorStatistics/{*}BistaticAdjustableParameterOffsets/{*}APOError"
+        )
+        if bi_apoerror is not None:
+            kwargs["C_APOXR"] = xmlhelp.load_elem(bi_apoerror)
+
+        return cls(**kwargs)
+
+
 @dataclasses.dataclass(kw_only=True)
 class CoaPosVelsMono:
     """Ensemble of monostatic Center Of Aperture sensor positions and velocities.
