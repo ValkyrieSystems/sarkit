@@ -159,6 +159,7 @@ Projection Error Propagation
    compute_composite_error_no_apo_bi
    compute_composite_error_apo_bi
    compute_i2s_error
+   compute_s2i_error
 """
 
 from ._calc import (
@@ -187,6 +188,7 @@ from ._errorprop import (
     compute_ecef_pv_transformation,
     compute_i2s_error,
     compute_ric_basis_vectors,
+    compute_s2i_error,
 )
 from ._params import (
     AdjustableParameterOffsets,
@@ -266,6 +268,7 @@ __all__ = [
     "compute_projection_sets",
     "compute_pt_r_rdot_parameters",
     "compute_ric_basis_vectors",
+    "compute_s2i_error",
     "compute_scp_coa_r_rdot",
     "compute_scp_coa_slant_plane_normal",
     "compute_sensitivity_matrices",

@@ -198,3 +198,16 @@ def test_compute_i2s_error(xmlpath):
 
     c_pt = sicdproj.compute_i2s_error([[1, 0], [0, 1]], np.eye(2), 0.24, sens_mat)
     assert c_pt.shape == (3, 3)
+
+
+@pytest.mark.parametrize(
+    "xmlpath",
+    ((DATAPATH / "example-sicd-1.3.0.xml"), (DATAPATH / "example-sicd-1.4.0.xml")),
+)
+def test_compute_s2i_error(xmlpath):
+    sicd_xmltree = lxml.etree.parse(xmlpath)
+    projmeta = sicdproj.MetadataParams.from_xml(sicd_xmltree)
+    sens_mat = sicdproj.compute_sensitivity_matrices(projmeta)
+
+    c_il = sicdproj.compute_s2i_error([[1, 0], [0, 1]], np.eye(3), sens_mat)
+    assert c_il.shape == (2, 2)

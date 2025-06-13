@@ -445,3 +445,46 @@ def compute_i2s_error(
     c_pt = c_rgaz_pt + c_il_sel_pt + c_hae_pt
 
     return c_pt
+
+
+def compute_s2i_error(
+    c_ilpt_rgaz: npt.ArrayLike,
+    c_pt_sel: npt.ArrayLike,
+    sens_mats: _sensitivity.SensitivityMatricesLike,
+) -> np.ndarray:
+    """Compute the scene-to-image projection error statistics for a projection pair: IL0 and PT0
+
+    Parameters
+    ----------
+    c_ilpt_rgaz : (2, 2) array_like
+        Predicted error covariance for composite RGAZ image error
+    c_pt_sel : (3, 3) array_like
+        Predicted error covariance for scene point position in ECEF
+    sens_mats : SensitivityMatricesLike
+        Sensitivity matrices for projection pair: IL0 and PT0
+
+    Returns
+    -------
+    (2, 2) ndarray
+        scene-to-image projection error covariance matrix in image coordinates
+    """
+    c_ilpt_rgaz = np.asarray(c_ilpt_rgaz)
+    c_pt_sel = np.asarray(c_pt_sel)
+
+    mpt_spxy_rgaz = np.eye(2)  # 12.2.1 (4)
+    # 12.6
+    # (1)
+    c_rgaz_il = (
+        sens_mats.M_IL_SPXY
+        @ mpt_spxy_rgaz
+        @ c_ilpt_rgaz
+        @ (sens_mats.M_IL_SPXY @ mpt_spxy_rgaz).T
+    )
+
+    # (2)
+    c_pt_sel_il = sens_mats.M_IL_PT @ c_pt_sel @ sens_mats.M_IL_PT.T
+
+    # (3)
+    c_il = c_rgaz_il + c_pt_sel_il
+
+    return c_il
