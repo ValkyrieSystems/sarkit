@@ -17,6 +17,8 @@ dataclasses with attributes named as similar as feasible to the IPDD.
 
    MetadataParams
    ErrorStatParams
+   ComponentErrorStatMono
+   ComponentErrorStatBi
    AdjustableParameterOffsets
    ApoErrorParams
    CoaPosVelsMono
@@ -154,6 +156,8 @@ Projection Error Propagation
    compute_ecef_pv_transformation
    compute_composite_error_no_apo_mono
    compute_composite_error_apo_mono
+   compute_composite_error_no_apo_bi
+   compute_composite_error_apo_bi
 """
 
 from ._calc import (
@@ -175,7 +179,9 @@ from ._calc import (
     scene_to_image,
 )
 from ._errorprop import (
+    compute_composite_error_apo_bi,
     compute_composite_error_apo_mono,
+    compute_composite_error_no_apo_bi,
     compute_composite_error_no_apo_mono,
     compute_ecef_pv_transformation,
     compute_ric_basis_vectors,
@@ -186,6 +192,8 @@ from ._params import (
     CoaPosVelsBi,
     CoaPosVelsLike,
     CoaPosVelsMono,
+    ComponentErrorStatBi,
+    ComponentErrorStatMono,
     ErrorStatParams,
     MetadataParams,
     ProjectionSetsBi,
@@ -219,6 +227,8 @@ __all__ = [
     "CoaPosVelsBi",
     "CoaPosVelsLike",
     "CoaPosVelsMono",
+    "ComponentErrorStatBi",
+    "ComponentErrorStatMono",
     "ErrorStatParams",
     "ImageLocationSensitivityMatrices",
     "MetadataParams",
@@ -239,7 +249,9 @@ __all__ = [
     "compute_coa_pos_vel",
     "compute_coa_r_rdot",
     "compute_coa_time",
+    "compute_composite_error_apo_bi",
     "compute_composite_error_apo_mono",
+    "compute_composite_error_no_apo_bi",
     "compute_composite_error_no_apo_mono",
     "compute_ecef_pv_transformation",
     "compute_gp_xy_parameters",
