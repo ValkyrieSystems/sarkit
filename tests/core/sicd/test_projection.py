@@ -623,6 +623,31 @@ def test_m_spxy_gpxy(xmlpath):
     assert np.allclose(mats.M_SPXY_GPXY @ mats.M_GPXY_SPXY, np.eye(2))
 
 
+@pytest.mark.parametrize(
+    "xmlpath",
+    [DATAPATH / "example-sicd-1.3.0.xml", DATAPATH / "example-sicd-1.4.0.xml"],
+)
+def test_mil_pt_hae(xmlpath):
+    xmltree = lxml.etree.parse(xmlpath)
+    proj_metadata = sicdproj.MetadataParams.from_xml(xmltree)
+    pt0 = proj_metadata.SCP + 1000 * np.array([0.6, -0.7, 0.8])
+    # pick an arbitrary gpz sufficiently different from up
+    gpz = pt0 / np.linalg.norm(pt0) + proj_metadata.uRow
+    ugpz = gpz / np.linalg.norm(gpz)
+    mats = sicdproj.compute_sensitivity_matrices(proj_metadata, pt0, ugpz)
+
+    il0, _, success = sicdproj.scene_to_image(proj_metadata, pt0)
+    assert success
+
+    pt1 = pt0 + sarkit.wgs84.up(sarkit.wgs84.cartesian_to_geodetic(pt0))
+    spp1, _, success = sksicd.image_to_ground_plane(xmltree, il0, pt1, ugpz)
+    assert success
+
+    assert np.allclose(
+        (spp1 - pt0).reshape(mats.MIL_PT_HAE.shape), mats.MIL_PT_HAE, atol=0.02
+    )
+
+
 def _pt_to_rrdot(proj_metadata, projset0, pt):
     if isinstance(projset0, sicdproj.ProjectionSetsMono):
         args = [

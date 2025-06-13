@@ -393,3 +393,55 @@ def compute_composite_error_apo_bi(
 
         return c_ilpt_rgaz
     return None
+
+
+def compute_i2s_error(
+    c_ilpt_rgaz: npt.ArrayLike,
+    c_il_sel: npt.ArrayLike,
+    var_hae: float,
+    sens_mats: _sensitivity.SensitivityMatricesLike,
+) -> np.ndarray:
+    """Compute the image-to-scene projection error statistics for a projection pair: IL0 and PT0
+
+    Parameters
+    ----------
+    c_ilpt_rgaz : (2, 2) array_like
+        Predicted error covariance for composite RGAZ image error
+    c_il_sel : (2, 2) array_like
+        Predicted error covariance for image location
+    var_hae : float
+        Surface height error variance
+    sens_mats : SensitivityMatricesLike
+        Sensitivity matrices for projection pair: IL0 and PT0
+
+    Returns
+    -------
+    (3, 3) ndarray
+        image-to-scene projection error covariance matrix in ECEF
+    """
+    c_ilpt_rgaz = np.asarray(c_ilpt_rgaz)
+    c_il_sel = np.asarray(c_il_sel)
+
+    # 12.5
+    # (1)
+    mil_spxy_rgaz = -np.eye(2)  # 12.2.1 (4)
+    c_rgaz_gpxy = (
+        sens_mats.M_GPXY_SPXY
+        @ mil_spxy_rgaz
+        @ c_ilpt_rgaz
+        @ (sens_mats.M_GPXY_SPXY @ mil_spxy_rgaz).T
+    )
+    c_rgaz_pt = sens_mats.M_PT_GPXY @ c_rgaz_gpxy @ sens_mats.M_PT_GPXY.T
+
+    # (2)
+    c_il_sel_gpxy = sens_mats.M_GPXY_IL @ c_il_sel @ sens_mats.M_GPXY_IL.T
+    c_il_sel_pt = sens_mats.M_PT_GPXY @ c_il_sel_gpxy @ sens_mats.M_PT_GPXY.T
+
+    # (3) unused
+    # (4)
+    c_hae_pt = sens_mats.MIL_PT_HAE @ sens_mats.MIL_PT_HAE.T * var_hae
+
+    # (5)
+    c_pt = c_rgaz_pt + c_il_sel_pt + c_hae_pt
+
+    return c_pt

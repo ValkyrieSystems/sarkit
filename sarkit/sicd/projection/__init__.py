@@ -158,6 +158,7 @@ Projection Error Propagation
    compute_composite_error_apo_mono
    compute_composite_error_no_apo_bi
    compute_composite_error_apo_bi
+   compute_i2s_error
 """
 
 from ._calc import (
@@ -184,6 +185,7 @@ from ._errorprop import (
     compute_composite_error_no_apo_bi,
     compute_composite_error_no_apo_mono,
     compute_ecef_pv_transformation,
+    compute_i2s_error,
     compute_ric_basis_vectors,
 )
 from ._params import (
@@ -255,6 +257,7 @@ __all__ = [
     "compute_composite_error_no_apo_mono",
     "compute_ecef_pv_transformation",
     "compute_gp_xy_parameters",
+    "compute_i2s_error",
     "compute_image_location_sensitivity_matrices",
     "compute_pos_vel_sensitity_matrices_bi",
     "compute_pos_vel_sensitity_matrices_mono",

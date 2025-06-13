@@ -185,3 +185,16 @@ def test_compute_composite_error_apo_bi():
         projmeta.t_SCP_COA,
     )
     assert c_rgaz is not None
+
+
+@pytest.mark.parametrize(
+    "xmlpath",
+    ((DATAPATH / "example-sicd-1.3.0.xml"), (DATAPATH / "example-sicd-1.4.0.xml")),
+)
+def test_compute_i2s_error(xmlpath):
+    sicd_xmltree = lxml.etree.parse(xmlpath)
+    projmeta = sicdproj.MetadataParams.from_xml(sicd_xmltree)
+    sens_mat = sicdproj.compute_sensitivity_matrices(projmeta)
+
+    c_pt = sicdproj.compute_i2s_error([[1, 0], [0, 1]], np.eye(2), 0.24, sens_mat)
+    assert c_pt.shape == (3, 3)

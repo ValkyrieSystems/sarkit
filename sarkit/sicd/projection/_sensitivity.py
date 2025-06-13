@@ -23,6 +23,7 @@ class SlantPlaneSensitivityMatrices:
     M_SPXY_GPXY: np.ndarray
     M_GPXY_SPXY: np.ndarray
     M_PT_GPXY: np.ndarray
+    MIL_PT_HAE: np.ndarray
     M_RRdot_SPXY: np.ndarray
     M_SPXY_RRdot: np.ndarray
 
@@ -31,6 +32,7 @@ class SlantPlaneSensitivityMatrices:
         assert self.M_SPXY_GPXY.shape == (2, 2)
         assert self.M_GPXY_SPXY.shape == (2, 2)
         assert self.M_PT_GPXY.shape == (3, 2)
+        assert self.MIL_PT_HAE.shape == (3, 1)
         assert self.M_RRdot_SPXY.shape == (2, 2)
         assert self.M_SPXY_RRdot.shape == (2, 2)
 
@@ -316,6 +318,11 @@ def compute_slant_plane_sensitivity_matrices(
     m_pt_gpxy = np.stack((u_gpx, u_gpy)).T
 
     # (5)
+    u_up0 = _get_proj_parameters(proj_metadata, pt0)[1]
+    spz_sf = np.dot(u_up0, u_gpz) / np.dot(u_spz, u_gpz)
+    mil_pt_hae = spz_sf * u_spz.reshape((3, 1))
+
+    # (6)
     if isinstance(geom_params, ProjGeomParamsMono):
         p = geom_params.uPT
         pdot = geom_params.uPTDot
@@ -323,12 +330,12 @@ def compute_slant_plane_sensitivity_matrices(
         p = geom_params.bP
         pdot = geom_params.bPDot
 
-    # (6)
+    # (7)
     m_rrdot_spxy = -np.array(
         [[np.dot(p, u_spx), 0.0], [np.dot(pdot, u_spx), np.dot(pdot, u_spy)]]
     )
 
-    # (7)
+    # (8)
     m_spxy_rrdot = np.linalg.inv(m_rrdot_spxy)
 
     return SlantPlaneSensitivityMatrices(
@@ -336,6 +343,7 @@ def compute_slant_plane_sensitivity_matrices(
         M_SPXY_GPXY=m_spxy_gpxy,
         M_GPXY_SPXY=m_gpxy_spxy,
         M_PT_GPXY=m_pt_gpxy,
+        MIL_PT_HAE=mil_pt_hae,
         M_RRdot_SPXY=m_rrdot_spxy,
         M_SPXY_RRdot=m_spxy_rrdot,
     )
