@@ -33,10 +33,10 @@ DEFINED_HEADER_KEYS: Final[set] = {
 }
 
 VERSION_INFO: Final[dict] = {
-    "http://api.nsgreg.nga.mil/schema/crsd/1.0_DRAFT_2025_02_25": {
+    "http://api.nsgreg.nga.mil/schema/crsd/1.0": {
         "version": "1.0",
         "date": "2025-02-25T00:00:00Z",
-        "schema": SCHEMA_DIR / "CRSD_schema_V1.0_DRAFT_2025_02_25.xsd",
+        "schema": SCHEMA_DIR / "NGA.STND.0080-2_1.0_CRSD_schema_2025_02_25.xsd",
     },
 }
 
@@ -188,7 +188,7 @@ class Reader:
         import sarkit.crsd as skcrsd
         import lxml.etree
         meta = skcrsd.Metadata(
-            xmltree=lxml.etree.parse("data/example-crsd-1.0-draft.2025-02-25.xml")
+            xmltree=lxml.etree.parse("data/example-crsd-1.0.xml")
         )
 
         file = pathlib.Path(tmpdir.name) / "foo"
@@ -460,7 +460,7 @@ class Writer:
 
         >>> import lxml.etree
 
-        >>> xmltree = lxml.etree.parse("data/example-crsd-1.0-draft.2025-02-25.xml")
+        >>> xmltree = lxml.etree.parse("data/example-crsd-1.0.xml")
         >>> first_sequence = xmltree.find("{*}Data/{*}Transmit/{*}TxSequence")
         >>> tx_id = first_sequence.findtext("{*}TxId")
         >>> num_p = int(first_sequence.findtext("{*}NumPulses"))
