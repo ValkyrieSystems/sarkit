@@ -2,6 +2,7 @@ import abc
 import collections.abc
 import dataclasses
 import json
+import re
 
 import lxml.etree
 
@@ -41,8 +42,13 @@ class XsdTypeDef:
 
 
 def dumps_xsdtypes(xsdtypes):
+    def _asdict(x):
+        if dataclasses.is_dataclass(x):
+            return dataclasses.asdict(x)
+        return x
+
     return json.dumps(
-        {k: dataclasses.asdict(v) for k, v in xsdtypes.items()},
+        {k: _asdict(v) for k, v in xsdtypes.items()},
         sort_keys=True,
         indent=2,
     )
@@ -60,6 +66,14 @@ def loads_xsdtypes(s: str):
     return json.loads(s, object_hook=as_dataclass)
 
 
+def split_elempath(elempath: str) -> list[str]:
+    """Return an ordered list of an ElementPath's various elements (discarding positional predicates)."""
+    return [
+        m.group("elem")
+        for m in re.finditer(r"(?P<elem>(\{.*?\})?[^/[]+)(\[\d+\])?/?", elempath)
+    ]
+
+
 class XsdHelper(abc.ABC):
     def __init__(self, root_ns: str):
         xsdtypes_json_str = self._read_xsdtypes_json(root_ns)
@@ -69,20 +83,23 @@ class XsdHelper(abc.ABC):
     def _read_xsdtypes_json(self, root_ns: str) -> str:
         """Return the text contents of the appropriate xsdtypes JSON"""
 
-    def get_typeinfo(self, elempath: str):
+    def get_typeinfo(self, elempath: str, roottag: str):
         """Return the typename and typedef for a elementpath"""
-        current_typedef = self.xsdtypes["/"]
+        current_typename = self.xsdtypes["/"][roottag]
+        current_typedef = self.xsdtypes[current_typename]
         if elempath == ".":
             # special handling for root
-            return ("/", current_typedef)
-        for component in elempath.split("/"):
-            comp_type = current_typedef.get_childdef(component.split("[")[0]).typename
-            current_typedef = self.xsdtypes.get(comp_type)
-        return comp_type, current_typedef
+            return current_typename, current_typedef
+        for component in split_elempath(elempath):
+            current_typename = current_typedef.get_childdef(component).typename
+            current_typedef = self.xsdtypes.get(current_typename)
+        return current_typename, current_typedef
 
     def get_elem_typeinfo(self, elem: lxml.etree.Element):
         """Return the typename and typedef for a subelement"""
-        return self.get_typeinfo(elem.getroottree().getelementpath(elem))
+        return self.get_typeinfo(
+            elem.getroottree().getelementpath(elem), elem.getroottree().getroot().tag
+        )
 
     @abc.abstractmethod
     def get_transcoder(self, typename, tag=None):
@@ -118,10 +135,14 @@ class ElementWrapper(collections.abc.MutableMapping):
         ElementPath expression that identifies the location of `elem` in its tree.
         If ``None``, the path is retrieved from the element.
         Required if `elem` is ``None``.
+    roottag : str or None
+        Tag of the root element of `elem`'s tree.
+        If ``None``, the tag is retrieved from the element.
+        Required if `elem` is ``None``.
 
     Notes
     -----
-    The wrapped element must be located in a tree with the same root element as that expected by `xsdhelper`.
+    The wrapped element must be located in a tree with a root element expected by `xsdhelper`.
     """
 
     def __init__(
@@ -131,15 +152,20 @@ class ElementWrapper(collections.abc.MutableMapping):
         wrapped_parent: "ElementWrapper | None" = None,
         typename: str | None = None,
         elementpath: str | None = None,
+        roottag: str | None = None,
     ):
         self.elem = elem
         self.wrapped_parent = self if wrapped_parent is None else wrapped_parent
         if elementpath is None:
             assert elem is not None
             elementpath = elem.getroottree().getelementpath(elem)
+        if roottag is None:
+            assert elem is not None
+            roottag = elem.getroottree().getroot().tag
         if typename is None:
-            typename = xsdhelper.get_typeinfo(elementpath)[0]
+            typename = xsdhelper.get_typeinfo(elementpath, roottag)[0]
         self.elementpath = elementpath
+        self.roottag = roottag
         self.xsdhelper = xsdhelper
         self.typename = typename
         self.typedef = xsdhelper.xsdtypes[typename]
@@ -187,6 +213,7 @@ class ElementWrapper(collections.abc.MutableMapping):
             return ElementWrapper(
                 subelem,
                 elementpath=elempath,
+                roottag=self.roottag,
                 wrapped_parent=self,
                 typename=childdef.typename,
                 xsdhelper=self.xsdhelper,
@@ -213,7 +240,7 @@ class ElementWrapper(collections.abc.MutableMapping):
 
     def __setitem__(self, localname: str, value):
         if self.elem is None:
-            elemtag = self.elementpath.split("/")[-1]
+            elemtag = split_elempath(self.elementpath)[-1]
             self.elem = lxml.etree.Element(elemtag)
             self.wrapped_parent[lxml.etree.QName(elemtag).localname] = self.elem
 

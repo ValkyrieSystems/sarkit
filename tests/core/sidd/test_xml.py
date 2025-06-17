@@ -8,6 +8,7 @@ import pytest
 import sarkit._xmlhelp2
 import sarkit.sidd as sksidd
 import sarkit.sidd._xmlhelp2
+from tests.core import testing
 
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
 
@@ -119,34 +120,4 @@ def test_elementwrapper_tofromdict(xmlpath):
     dict2 = wrapped_root_fromdict.to_dict()
 
     npt.assert_equal(dict1, dict2)
-
-    def _elem_cmp(a, b):
-        if a.tag != b.tag:
-            return False
-        try:
-            npt.assert_equal(a.attrib, b.attrib)
-        except AssertionError:
-            return False
-
-        t = xsdhelp.get_elem_transcoder(a)
-        if len(a) == len(b) == 0:
-            try:
-                npt.assert_equal(t.parse_elem(a), t.parse_elem(b))
-            except (AssertionError, AttributeError):
-                # sometimes text is None or has pretty-printing
-                a_text = (a.text or "").strip()
-                b_text = (b.text or "").strip()
-                return a_text == b_text
-            return True
-
-        b_children = list(b)
-        for a_child in a:
-            for b_child in b_children:
-                if _elem_cmp(a_child, b_child):
-                    b_children.remove(b_child)
-                    break
-            else:
-                return False
-        return all(float(x.text) == 0 for x in b_children)
-
-    assert _elem_cmp(siddroot, wrapped_root_fromdict.elem)
+    assert testing.elem_cmp(siddroot, wrapped_root_fromdict.elem, xsdhelp)

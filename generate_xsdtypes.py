@@ -1,6 +1,7 @@
 import argparse
 import contextlib
 import filecmp
+import itertools
 import pathlib
 import sys
 import tempfile
@@ -9,12 +10,13 @@ import lxml.etree
 import xmlschema
 
 import sarkit._xmlhelp2 as skxh2
+import sarkit.crsd as skcrsd
 import sarkit.sidd as sksidd
 
 
 def generate_xsdtypes(xs: xmlschema.XMLSchema):
-    assert len(xs.root_elements) == 1
-    xsdtypes = {"/": make_typedef(xs.root_elements[0].type)}
+    # Special root definition
+    xsdtypes = {"/": {x.name: get_typename(x) for x in xs.root_elements}}
 
     def process_elem(elem):
         typname = get_typename(elem)
@@ -30,7 +32,8 @@ def generate_xsdtypes(xs: xmlschema.XMLSchema):
                 root_typeobj = xs.get_schema(qn.namespace).types[qn.localname]
                 xsdtypes[newitem.text_typename] = make_typedef(root_typeobj)
 
-    process_elem(xs.root_elements[0])
+    for root_elem in xs.root_elements:
+        process_elem(root_elem)
 
     return xsdtypes
 
@@ -83,7 +86,10 @@ def main(args=None):
     )
     config = parser.parse_args(args)
 
-    schema_files = [x["schema"] for x in sksidd.VERSION_INFO.values()]
+    vi_vals = itertools.chain.from_iterable(
+        x.VERSION_INFO.values() for x in (skcrsd, sksidd)
+    )
+    schema_files = [x["schema"] for x in vi_vals]
 
     files_that_differ = set()
     for schema in schema_files:
