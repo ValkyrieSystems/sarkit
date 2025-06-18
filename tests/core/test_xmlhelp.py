@@ -114,8 +114,8 @@ def test_mtx_type():
 def test_elementwrapper():
     root_ns = "urn:SIDD:3.0.0"
     siddroot = lxml.etree.Element(f"{{{root_ns}}}SIDD")
-    xmlhelp = sarkit.sidd._xmlhelp2.XmlHelper2(root_ns)
-    wrapped_siddroot = sarkit._xmlhelp2.ElementWrapper(siddroot, xmlhelper=xmlhelp)
+    xmlhelp = sarkit.sidd._xmlhelp2.XsdHelper(root_ns)
+    wrapped_siddroot = sarkit._xmlhelp2.ElementWrapper(siddroot, xsdhelper=xmlhelp)
 
     assert len(wrapped_siddroot) == 0
     assert not wrapped_siddroot
@@ -216,12 +216,12 @@ def test_elementwrapper_tofromdict():
     siddroot = lxml.etree.parse(
         "data/syntax_only/sidd/0000-syntax-only-sidd-3.0.xml"
     ).getroot()
-    xmlhelp = sarkit.sidd._xmlhelp2.XmlHelper2(root_ns)
-    wrapped_siddroot = sarkit._xmlhelp2.ElementWrapper(siddroot, xmlhelper=xmlhelp)
+    xmlhelp = sarkit.sidd._xmlhelp2.XsdHelper(root_ns)
+    wrapped_siddroot = sarkit._xmlhelp2.ElementWrapper(siddroot, xsdhelper=xmlhelp)
 
     dict1 = wrapped_siddroot.to_dict()
     wrapped_root_fromdict = sarkit._xmlhelp2.ElementWrapper(
-        lxml.etree.Element(lxml.etree.QName(root_ns, "SIDD")), xmlhelper=xmlhelp
+        lxml.etree.Element(lxml.etree.QName(root_ns, "SIDD")), xsdhelper=xmlhelp
     )
     wrapped_root_fromdict.from_dict(dict1)
     dict2 = wrapped_root_fromdict.to_dict()

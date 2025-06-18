@@ -2,8 +2,12 @@ import pathlib
 
 import lxml.etree
 import numpy as np
+import numpy.testing as npt
+import pytest
 
+import sarkit._xmlhelp2
 import sarkit.sidd as sksidd
+import sarkit.sidd._xmlhelp2
 
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
 
@@ -75,7 +79,6 @@ def test_sfapointtype():
 
 
 def test_transcoders():
-    used_transcoders = set()
     no_transcode_leaf = set()
     for xml_file in (DATAPATH / "syntax_only/sidd").glob("*.xml"):
         etree = lxml.etree.parse(xml_file)
@@ -89,12 +92,61 @@ def test_transcoders():
                 xml_helper.set_elem(elem, val)
                 schema.assertValid(xml_helper.element_tree)
                 np.testing.assert_equal(xml_helper.load_elem(elem), val)
-                used_transcoders.add(xml_helper.get_transcoder_name(elem))
-            except LookupError:
+            except AttributeError:
                 if len(elem) == 0:
                     no_transcode_leaf.add(xml_helper.element_tree.getelementpath(elem))
-    unused_transcoders = sksidd.TRANSCODERS.keys() - used_transcoders
-    assert not unused_transcoders
 
     todos = {xmlpath for xmlpath in no_transcode_leaf if "Classification" in xmlpath}
     assert not (no_transcode_leaf - todos)
+
+
+@pytest.mark.parametrize(
+    "xmlpath",
+    list((DATAPATH / "syntax_only/sidd").glob("*.xml"))
+    + list(DATAPATH.glob("example-sidd*.xml")),
+)
+def test_elementwrapper_tofromdict(xmlpath):
+    siddroot = lxml.etree.parse(xmlpath).getroot()
+    root_ns = lxml.etree.QName(siddroot).namespace
+    xsdhelp = sarkit.sidd._xmlhelp2.XsdHelper(root_ns)
+    wrapped_siddroot = sarkit._xmlhelp2.ElementWrapper(siddroot, xsdhelper=xsdhelp)
+
+    dict1 = wrapped_siddroot.to_dict()
+    wrapped_root_fromdict = sarkit._xmlhelp2.ElementWrapper(
+        lxml.etree.Element(lxml.etree.QName(root_ns, "SIDD")), xsdhelper=xsdhelp
+    )
+    wrapped_root_fromdict.from_dict(dict1)
+    dict2 = wrapped_root_fromdict.to_dict()
+
+    npt.assert_equal(dict1, dict2)
+
+    def _elem_cmp(a, b):
+        if a.tag != b.tag:
+            return False
+        try:
+            npt.assert_equal(a.attrib, b.attrib)
+        except AssertionError:
+            return False
+
+        t = xsdhelp.get_elem_transcoder(a)
+        if len(a) == len(b) == 0:
+            try:
+                npt.assert_equal(t.parse_elem(a), t.parse_elem(b))
+            except (AssertionError, AttributeError):
+                # sometimes text is None or has pretty-printing
+                a_text = (a.text or "").strip()
+                b_text = (b.text or "").strip()
+                return a_text == b_text
+            return True
+
+        b_children = list(b)
+        for a_child in a:
+            for b_child in b_children:
+                if _elem_cmp(a_child, b_child):
+                    b_children.remove(b_child)
+                    break
+            else:
+                return False
+        return all(float(x.text) == 0 for x in b_children)
+
+    assert _elem_cmp(siddroot, wrapped_root_fromdict.elem)

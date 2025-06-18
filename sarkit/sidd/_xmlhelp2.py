@@ -8,7 +8,7 @@ import sarkit.sidd._xml as sksiddxml
 from . import _constants as siddconst
 
 
-class XmlHelper2(sarkit._xmlhelp2.XmlHelper2):
+class XsdHelper(sarkit._xmlhelp2.XsdHelper):
     def _read_xsdtypes_json(self, root_ns: str) -> str:
         """Return the text contents of the appropriate xsdtypes JSON"""
         schema_name = siddconst.VERSION_INFO[root_ns]["schema"].name
@@ -27,21 +27,68 @@ class XmlHelper2(sarkit._xmlhelp2.XmlHelper2):
         }
         typedef = self.xsdtypes[typename]
         easy = {
-            "{urn:SICommon:1.0}XYZType": sksiddxml.XyzType(),
+            "{urn:SFA:1.2.0}PointType": sksiddxml.SfaPointType(),
+            "{urn:SICommon:1.0}AngleZeroToExclusive360MagnitudeType": sksiddxml.AngleMagnitudeType(),
+            "{urn:SICommon:1.0}LatLonRestrictionType": sksiddxml.LatLonType(),
+            "{urn:SICommon:1.0}LatLonType": sksiddxml.LatLonType(),
+            "{urn:SICommon:1.0}LatLonVertexType": sksiddxml.LatLonType(),
+            "{urn:SICommon:1.0}LineType": sarkit._xmlhelp.ListType(
+                "Endpoint", sksiddxml.LatLonType()
+            ),
+            "{urn:SICommon:1.0}ParameterType": sksiddxml.ParameterType(),
             "{urn:SICommon:1.0}Poly1DType": sksiddxml.PolyCoef1dType(),
             "{urn:SICommon:1.0}Poly2DType": sksiddxml.PolyCoef2dType(),
+            "{urn:SICommon:1.0}PolygonType": sarkit._xmlhelp.ListType(
+                "Vertex", sksiddxml.LatLonType()
+            ),
+            "{urn:SICommon:1.0}RangeAzimuthType": sksiddxml.RangeAzimuthType(),
+            "{urn:SICommon:1.0}RowColDoubleType": sksiddxml.RowColDblType(),
+            "{urn:SICommon:1.0}RowColIntType": sksiddxml.RowColIntType(),
+            "{urn:SICommon:1.0}RowColVertexType": sksiddxml.RowColIntType(),
             "{urn:SICommon:1.0}XYZPolyType": sksiddxml.XyzPolyType(),
-            "{urn:SICommon:1.0}AngleZeroToExclusive360MagnitudeType": sksiddxml.AngleMagnitudeType(),
-            "{urn:SICommon:1.0}LatLonType": sksiddxml.LatLonType(),
+            "{urn:SICommon:1.0}XYZType": sksiddxml.XyzType(),
+            "<UNNAMED>-{urn:SICommon:1.0}LineType/{urn:SICommon:1.0}Endpoint": sksiddxml.LatLonType(),
+            "<UNNAMED>-{urn:SICommon:1.0}PolygonType/{urn:SICommon:1.0}Vertex": sksiddxml.LatLonType(),
+            "{urn:SIDD:3.0.0}FilterBankCoefType": sksiddxml.FilterCoefficientType(
+                "phasingpoint"
+            ),
+            "{urn:SIDD:3.0.0}FilterKernelCoefType": sksiddxml.FilterCoefficientType(
+                "rowcol"
+            ),
+            "{urn:SIDD:3.0.0}ImageCornersType": sksiddxml.ImageCornersType(),
+            "{urn:SIDD:3.0.0}LookupTableType": sksiddxml.IntListType(),
+            "{urn:SIDD:3.0.0}LUTInfoType": sksiddxml.LUTInfoType(),
             "{urn:SIDD:3.0.0}PolygonType": sarkit._xmlhelp.ListType(
                 "Vertex", sksiddxml.LatLonType()
             ),
-            "{urn:SICommon:1.0}ParameterType": sksiddxml.ParameterType(),
+            "{urn:SIDD:3.0.0}ValidDataType": sarkit._xmlhelp.ListType(
+                "Vertex", sksiddxml.RowColIntType()
+            ),
+            "<UNNAMED>-{urn:SIDD:3.0.0}ImageCornersType/{urn:SIDD:3.0.0}ICP": sksiddxml.LatLonType(),
         }
+        easy["{urn:SIDD:2.0.0}FilterBankCoefType"] = easy[
+            "{urn:SIDD:3.0.0}FilterBankCoefType"
+        ]
+        easy["{urn:SIDD:2.0.0}FilterKernelCoefType"] = easy[
+            "{urn:SIDD:3.0.0}FilterKernelCoefType"
+        ]
+        easy["{urn:SIDD:2.0.0}ImageCornersType"] = easy[
+            "{urn:SIDD:3.0.0}ImageCornersType"
+        ]
+        easy["{urn:SIDD:2.0.0}LookupTableType"] = easy[
+            "{urn:SIDD:3.0.0}LookupTableType"
+        ]
+        easy["{urn:SIDD:2.0.0}LUTInfoType"] = easy["{urn:SIDD:3.0.0}LUTInfoType"]
+        easy["{urn:SIDD:2.0.0}PolygonType"] = easy["{urn:SIDD:3.0.0}PolygonType"]
+        easy["{urn:SIDD:2.0.0}ValidDataType"] = easy["{urn:SIDD:3.0.0}ValidDataType"]
+        easy["<UNNAMED>-{urn:SIDD:2.0.0}ImageCornersType/{urn:SIDD:2.0.0}ICP"] = easy[
+            "<UNNAMED>-{urn:SIDD:3.0.0}ImageCornersType/{urn:SIDD:3.0.0}ICP"
+        ]
+
         if typename.startswith("{http://www.w3.org/2001/XMLSchema}"):
             return known_builtins[typename]
         if typename in easy:
             return easy[typename]
-        if not typedef.children and not typedef.attributes:
+        if not typedef.children:
             return known_builtins.get(typedef.text_typename, sksiddxml.TxtType())
         return None
