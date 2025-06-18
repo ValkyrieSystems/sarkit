@@ -2,9 +2,9 @@
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
    elementFormDefault="qualified"
    attributeFormDefault="unqualified"
-   targetNamespace="http://api.nsgreg.nga.mil/schema/crsd/1.0_DRAFT_2025_02_25"
-   xmlns="http://api.nsgreg.nga.mil/schema/crsd/1.0_DRAFT_2025_02_25"
-   xmlns:ns="http://api.nsgreg.nga.mil/schema/crsd/1.0_DRAFT_2025_02_25"
+   targetNamespace="http://api.nsgreg.nga.mil/schema/crsd/1.0"
+   xmlns="http://api.nsgreg.nga.mil/schema/crsd/1.0"
+   xmlns:ns="http://api.nsgreg.nga.mil/schema/crsd/1.0"
    version="2025-02-25">
 
 <!-- CRSD TYPES -->

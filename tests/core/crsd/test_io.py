@@ -9,7 +9,7 @@ DATAPATH = pathlib.Path(__file__).parents[3] / "data"
 
 
 def test_roundtrip(tmp_path, caplog):
-    basis_etree = lxml.etree.parse(DATAPATH / "example-crsd-1.0-draft.2025-02-25.xml")
+    basis_etree = lxml.etree.parse(DATAPATH / "example-crsd-1.0.xml")
     basis_version = lxml.etree.QName(basis_etree.getroot()).namespace
     schema = lxml.etree.XMLSchema(file=skcrsd.VERSION_INFO[basis_version]["schema"])
     schema.assertValid(basis_etree)

@@ -166,7 +166,7 @@ def main(args=None):
         ):
             etree = lxml.etree.parse(
                 pathlib.Path(__file__).parent
-                / "manual-syntax-only-crsd-mono-sar-1.0-draft.2025-02-25.xml"
+                / "manual-syntax-only-crsd-mono-sar-1.0.xml"
             )
             mods(etree)
             version_ns = lxml.etree.QName(etree.getroot()).namespace
@@ -189,7 +189,7 @@ def main(args=None):
                 diff.diff_files
                 or {
                     pathlib.Path(__file__).name,
-                    "manual-syntax-only-crsd-mono-sar-1.0-draft.2025-02-25.xml",
+                    "manual-syntax-only-crsd-mono-sar-1.0.xml",
                     "stubs",
                 }.symmetric_difference(diff.left_only)
             )
