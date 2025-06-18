@@ -36,7 +36,7 @@ used to describe settable metadata.
      - Reader
      - Metadata
      - Writer
-   * - ⛔ CRSD [Draft] ⛔
+   * - CRSD
      - :py:class:`~sarkit.crsd.Reader`
      - :py:class:`~sarkit.crsd.Metadata`
      - :py:class:`~sarkit.crsd.Writer`
@@ -179,7 +179,7 @@ convenient Python objects.
 
    * - Format
      - XML Helper
-   * - ⛔ CRSD [Draft] ⛔
+   * - CRSD
      - :py:class:`sarkit.crsd.XmlHelper`
    * - CPHD
      - :py:class:`sarkit.cphd.XmlHelper`
@@ -272,7 +272,7 @@ SARkit provides checkers that can be used to identify inconsistencies in SAR sta
    * - Format
      - Consistency class
      - Command
-   * - ⛔ CRSD [Draft] ⛔
+   * - CRSD
      - :py:class:`sarkit.verification.CrsdConsistency`
      - :ref:`crsd-consistency-cli`
    * - CPHD

@@ -17,7 +17,7 @@ from . import testing
 
 DATAPATH = pathlib.Path(__file__).parents[2] / "data"
 
-good_crsd_xml_path = DATAPATH / "example-crsd-1.0-draft.2025-02-25.xml"
+good_crsd_xml_path = DATAPATH / "example-crsd-1.0.xml"
 
 
 def _repack_support_arrays(crsd_etree):

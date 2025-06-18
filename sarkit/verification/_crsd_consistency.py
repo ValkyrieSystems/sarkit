@@ -193,7 +193,7 @@ class CrsdConsistency(con.ConsistencyChecker):
 
             >>> import sarkit.verification as skver
 
-            >>> with open("data/example-crsd-1.0-draft.2025-02-25.xml", "r") as f:
+            >>> with open("data/example-crsd-1.0.xml", "r") as f:
             ...     con = skver.CrsdConsistency.from_file(f)
             >>> con.check()
             >>> bool(con.passes())
@@ -208,7 +208,7 @@ class CrsdConsistency(con.ConsistencyChecker):
             import sarkit.crsd as skcrsd
             import lxml.etree
             meta = skcrsd.Metadata(
-                xmltree=lxml.etree.parse("data/example-crsd-1.0-draft.2025-02-25.xml"),
+                xmltree=lxml.etree.parse("data/example-crsd-1.0.xml"),
             )
             file = tmppath / "example.crsd"
             with file.open("wb") as f, skcrsd.Writer(f, meta) as w:
@@ -310,7 +310,7 @@ class CrsdConsistency(con.ConsistencyChecker):
 
             >>> import lxml.etree
             >>> import sarkit.verification as skver
-            >>> crsd_xmltree = lxml.etree.parse("data/example-crsd-1.0-draft.2025-02-25.xml")
+            >>> crsd_xmltree = lxml.etree.parse("data/example-crsd-1.0.xml")
             >>> con = skver.CrsdConsistency.from_parts(crsd_xmltree)
             >>> con.check()
             >>> bool(con.passes())

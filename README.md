@@ -17,7 +17,7 @@ Valkyrie Systems Corporation to encourage the use of National Geospatial-Intelli
 
 With SARkit, you can:
 
-* read and write SAR standards files (CPHD, SICD, SIDD)
+* read and write SAR standards files (CRSD, CPHD, SICD, SIDD)
 * interact with SAR XML metadata using more convenient Python objects
 * check SAR data/metadata files for inconsistencies
 

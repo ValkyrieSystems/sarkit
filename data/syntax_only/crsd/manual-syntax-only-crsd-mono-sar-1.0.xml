@@ -1,4 +1,4 @@
-<CRSDsar xmlns="http://api.nsgreg.nga.mil/schema/crsd/1.0_DRAFT_2025_02_25">
+<CRSDsar xmlns="http://api.nsgreg.nga.mil/schema/crsd/1.0">
   <ProductInfo>
     <ProductName>The CRSDsar Product Name</ProductName>
     <Classification>UNCLASSIFIED</Classification>

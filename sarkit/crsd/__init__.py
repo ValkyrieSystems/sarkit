@@ -9,9 +9,7 @@ documents that define the Compensated Radar Signal Data (CRSD) format.
 Supported Versions
 ==================
 
-* `CRSD 1.0 DRAFT 2025-02-25`_
-
-.. WARNING:: v1.0 DRAFT support is temporary and will be replaced upon NTB approval
+* `CRSD 1.0`_
 
 Data Structure & File Format
 ============================
@@ -96,10 +94,16 @@ Constants
 References
 ==========
 
-CRSD 1.0 DRAFT 2025-02-25
--------------------------
-TBD
+CRSD 1.0
+--------
+.. [NGA.STND.0080-1_1.0_CRSD] National Center for Geospatial Intelligence Standards,
+   "Compensated Radar Signal Data (CRSD), Vol. 1, Design & Implementation Description Document,
+   Version 1.0", 2025.
+   https://nsgreg.nga.mil/doc/view?i=5672
 
+.. [NGA.STND.0080-2_1.0_CRSD_schema_2025_02_25.xsd] National Center for Geospatial Intelligence Standards,
+   "Compensated Radar Signal Data (CRSD) XML Schema, Version 1.0", 2025.
+   https://nsgreg.nga.mil/doc/view?i=5673
 """
 
 from ._computations import (
@@ -195,15 +199,3 @@ __all__ = [
     "mask_support_array",
     "read_file_header",
 ]
-
-
-import os  # noqa: I001
-import sys  # noqa: I001
-
-print(
-    "\033[93m" if sys.stdout.isatty() and not os.environ.get("NO_COLOR") else "",
-    "WARNING: SARkit's CRSD modules are provisional and implement the 2025-02-25 draft\n",
-    "The modules will be updated and this message will be removed when the standard is published",
-    "\x1b[0m" if sys.stdout.isatty() and not os.environ.get("NO_COLOR") else "",
-    file=sys.stderr,
-)
