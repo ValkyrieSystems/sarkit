@@ -520,10 +520,9 @@ class NitfReader:
         for split, sz, offset in zip(
             np.array_split(image_pixels, splits, axis=0), imseg_sizes, imseg_offsets
         ):
-            this_os = offset - self._file_object.tell()
-            split[...] = np.fromfile(
-                self._file_object, dtype, count=sz // dtype.itemsize, offset=this_os
-            ).reshape(split.shape)
+            self._file_object.seek(offset)
+            array = self._file_object.read(sz)
+            split[...] = np.frombuffer(array, dtype).reshape(split.shape)
 
         return image_pixels
 

@@ -503,7 +503,12 @@ class Reader:
         self._file_object.seek(pvp_offset + self._pvp_block_byte_offset)
 
         pvp_dtype = get_pvp_dtype(self.metadata.xmltree).newbyteorder("B")
-        return np.fromfile(self._file_object, pvp_dtype, count=num_vect)
+        nbytes = pvp_dtype.itemsize * num_vect
+        array = self._file_object.read(nbytes)
+        nbytes_read = len(array)
+        if nbytes != nbytes_read:
+            raise RuntimeError(f"Expected {nbytes=}; only read {nbytes_read}")
+        return np.frombuffer(array, pvp_dtype).copy()
 
     def read_channel(self, channel_identifier: str) -> tuple[npt.NDArray, npt.NDArray]:
         """Read signal and pvp data from a CPHD file channel
@@ -539,9 +544,12 @@ class Reader:
         sa_offset = int(sa_info.find("./{*}ArrayByteOffset").text)
         self._file_object.seek(sa_offset + self._support_block_byte_offset)
         assert dtype.itemsize == int(sa_info.find("./{*}BytesPerElement").text)
-        return np.fromfile(self._file_object, dtype, count=np.prod(shape)).reshape(
-            shape
-        )
+        nbytes = dtype.itemsize * np.prod(shape)
+        array = self._file_object.read(nbytes)
+        nbytes_read = len(array)
+        if nbytes != nbytes_read:
+            raise RuntimeError(f"Expected {nbytes=}; only read {nbytes_read}")
+        return np.frombuffer(array, dtype).reshape(shape).copy()
 
     def read_support_array(self, sa_identifier, masked=True):
         """Read SupportArray"""
