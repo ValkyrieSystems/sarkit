@@ -15,6 +15,7 @@ import numpy as np
 import numpy.linalg as npl
 import numpy.polynomial.polynomial as npp
 import shapely.geometry as shg
+from jbpy import Jbp
 from lxml import etree
 
 import sarkit.sicd as sksicd
@@ -22,7 +23,6 @@ import sarkit.sicd.projection as sicdproj
 import sarkit.verification._consistency as con
 import sarkit.wgs84
 from sarkit import _constants
-from sarkit._nitf_io import Nitf
 
 logger = logging.getLogger(__name__)
 
@@ -155,9 +155,9 @@ def _compute_pfa_min_max_fx(xmlhelp):
 
 def _get_desdata_location(ntf):
     """Return the first SICD DES"""
-    for deseg in ntf["DESegments"]:
-        if deseg["SubHeader"]["DESSHF"]["DESSHTN"].value.startswith("urn:SICD"):
-            return deseg["DESDATA"].get_offset(), deseg["DESDATA"].length()
+    for deseg in ntf["DataExtensionSegments"]:
+        if deseg["subheader"]["DESSHF"]["DESSHTN"].value.startswith("urn:SICD"):
+            return deseg["DESDATA"].get_offset(), deseg["DESDATA"].get_size()
     raise ValueError("Unable to find SICD DES")
 
 
@@ -197,7 +197,7 @@ class SicdConsistency(con.ConsistencyChecker):
         self.xmlhelp = sksicd.XmlHelper(self.sicdroot.getroottree())
         if file is not None:
             file.seek(0, os.SEEK_SET)
-            self.ntf = Nitf().load(file)
+            self.ntf = Jbp().load(file)
         else:
             self.ntf = None
 
@@ -294,7 +294,7 @@ class SicdConsistency(con.ConsistencyChecker):
             ntf = None
         except etree.XMLSyntaxError:
             file.seek(0, os.SEEK_SET)
-            ntf = Nitf().load(file)
+            ntf = Jbp().load(file)
             des_offset, des_length = _get_desdata_location(ntf)
             file.seek(des_offset, os.SEEK_SET)
             sicdroot = etree.fromstring(file.read(des_length))
@@ -389,7 +389,7 @@ class SicdConsistency(con.ConsistencyChecker):
                 assert schema.validate(self.sicdroot), schema.error_log
 
     def check_nitf_imseg(self) -> None:
-        """Check NITF Image SubHeaders"""
+        """Check NITF Image Subheaders"""
         collect_start = self.xmlhelp.load("./{*}Timeline/{*}CollectStart")
         pixel_info = sksicd.PIXEL_TYPES[
             self.xmlhelp.load("./{*}ImageData/{*}PixelType")
@@ -399,7 +399,7 @@ class SicdConsistency(con.ConsistencyChecker):
             assert self.ntf is not None
             imsegs = self.ntf["ImageSegments"]
             for imseg in imsegs:
-                imhdr = imseg["SubHeader"]
+                imhdr = imseg["subheader"]
                 idatim = datetime.datetime.strptime(
                     imhdr["IDATIM"].value + "+0000", "%Y%m%d%H%M%S%z"
                 )
@@ -438,23 +438,23 @@ class SicdConsistency(con.ConsistencyChecker):
                     else sorted([f"SICD{n + 1:03d}" for n in range(len(imsegs))])
                 )
                 actual_iid1s = sorted(
-                    [imseg["SubHeader"]["IID1"].value for imseg in imsegs]
+                    [imseg["subheader"]["IID1"].value for imseg in imsegs]
                 )
                 assert actual_iid1s == expected_iid1s
 
     def check_nitf_imseg_lvls(self) -> None:
-        """Check NITF inter-Image SubHeaders Display and Attachment levels"""
+        """Check NITF inter-Image Subheaders Display and Attachment levels"""
         with self.precondition():
             assert self.ntf is not None
             imsegs = self.ntf["ImageSegments"]
-            with self.need("Consistent NITF inter-Image SubHeaders Display levels"):
+            with self.need("Consistent NITF inter-Image Subheaders Display levels"):
                 assert np.array_equal(
-                    [imseg["SubHeader"]["IDLVL"].value for imseg in imsegs],
+                    [imseg["subheader"]["IDLVL"].value for imseg in imsegs],
                     np.arange(len(imsegs)) + 1,
                 )
-            with self.need("Consistent NITF inter-Image SubHeaders Attachment levels"):
+            with self.need("Consistent NITF inter-Image Subheaders Attachment levels"):
                 assert np.array_equal(
-                    [imseg["SubHeader"]["IALVL"].value for imseg in imsegs],
+                    [imseg["subheader"]["IALVL"].value for imseg in imsegs],
                     np.arange(len(imsegs)),
                 )
 
@@ -499,16 +499,16 @@ class SicdConsistency(con.ConsistencyChecker):
                 assert len(imsegs) == num_is
                 for imidx, imseg in enumerate(imsegs):
                     with self.need("Matching NROWS"):
-                        assert imseg["SubHeader"]["NROWS"].value == num_rows_is[imidx]
+                        assert imseg["subheader"]["NROWS"].value == num_rows_is[imidx]
                     expected_iloc_rows = 0 if imidx == 0 else num_rows_is[imidx - 1]
                     with self.need("ILOC matches expected "):
                         assert (
-                            int(imseg["SubHeader"]["ILOC"].value[0])
+                            int(imseg["subheader"]["ILOC"].value[0])
                             == expected_iloc_rows
                         )
-                        assert int(imseg["SubHeader"]["ILOC"].value[1]) == 0
+                        assert int(imseg["subheader"]["ILOC"].value[1]) == 0
                     with self.need("Matching NCOLS"):
-                        assert imseg["SubHeader"]["NCOLS"].value == num_cols
+                        assert imseg["subheader"]["NCOLS"].value == num_cols
 
     def check_nitf_igeolo(self) -> None:
         """Check each NITF image segment's IGEOLO"""
@@ -549,20 +549,20 @@ class SicdConsistency(con.ConsistencyChecker):
             for imidx, imseg in enumerate(imsegs):
                 igeolo_ll = [  # Lat, Lon
                     [
-                        _dms_to_dd(imseg["SubHeader"]["IGEOLO"].value[0:7]),
-                        _dms_to_dd(imseg["SubHeader"]["IGEOLO"].value[7:15]),
+                        _dms_to_dd(imseg["subheader"]["IGEOLO"].value[0:7]),
+                        _dms_to_dd(imseg["subheader"]["IGEOLO"].value[7:15]),
                     ],
                     [
-                        _dms_to_dd(imseg["SubHeader"]["IGEOLO"].value[15:22]),
-                        _dms_to_dd(imseg["SubHeader"]["IGEOLO"].value[22:30]),
+                        _dms_to_dd(imseg["subheader"]["IGEOLO"].value[15:22]),
+                        _dms_to_dd(imseg["subheader"]["IGEOLO"].value[22:30]),
                     ],
                     [
-                        _dms_to_dd(imseg["SubHeader"]["IGEOLO"].value[30:37]),
-                        _dms_to_dd(imseg["SubHeader"]["IGEOLO"].value[37:45]),
+                        _dms_to_dd(imseg["subheader"]["IGEOLO"].value[30:37]),
+                        _dms_to_dd(imseg["subheader"]["IGEOLO"].value[37:45]),
                     ],
                     [
-                        _dms_to_dd(imseg["SubHeader"]["IGEOLO"].value[45:52]),
-                        _dms_to_dd(imseg["SubHeader"]["IGEOLO"].value[52:60]),
+                        _dms_to_dd(imseg["subheader"]["IGEOLO"].value[45:52]),
+                        _dms_to_dd(imseg["subheader"]["IGEOLO"].value[52:60]),
                     ],
                 ]
                 with self.need("IGEOLO close to ICP Lon/Lat"):
@@ -574,11 +574,14 @@ class SicdConsistency(con.ConsistencyChecker):
         """Check NITF DES Subheaders"""
         with self.precondition():
             assert self.ntf is not None
-            des_header = self.ntf["DESegments"][0]["SubHeader"]
+            des_header = self.ntf["DataExtensionSegments"][0]["subheader"]
 
             xml_offset, _ = _get_desdata_location(self.ntf)
             with self.need("XML from first DES matches sicdroot being used"):
-                assert xml_offset == self.ntf["DESegments"][0]["DESDATA"].get_offset()
+                assert (
+                    xml_offset
+                    == self.ntf["DataExtensionSegments"][0]["DESDATA"].get_offset()
+                )
 
             with self.need("DESID == XML_DATA_CONTENT"):
                 assert des_header["DESID"].value.rstrip() == "XML_DATA_CONTENT"

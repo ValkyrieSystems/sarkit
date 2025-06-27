@@ -1,12 +1,12 @@
 import copy
 import pathlib
 
+import jbpy
 import lxml.builder
 import numpy as np
 import pytest
 from lxml import etree
 
-import sarkit._nitf_io
 import sarkit.sicd as sksicd
 from sarkit.verification._sicd_consistency import SicdConsistency, main
 
@@ -709,11 +709,11 @@ def test_check_nitf_imseg(example_sicd_file, tmp_path):
 
     # monkey with the IID1s
     with tmp_sicd.open("rb+") as fd:
-        ntf = sarkit._nitf_io.Nitf()
+        ntf = jbpy.Jbp()
         ntf.load(fd)
         for imseg in ntf["ImageSegments"]:
-            imseg["SubHeader"]["IID1"].value = "SICD000"
-            imseg["SubHeader"]["IID1"].dump(fd, seek_first=True)
+            imseg["subheader"]["IID1"].value = "SICD000"
+            imseg["subheader"]["IID1"].dump(fd, seek_first=True)
     with tmp_sicd.open("rb") as f:
         sicd_con = SicdConsistency.from_file(f)
     sicd_con.check("check_nitf_imseg")

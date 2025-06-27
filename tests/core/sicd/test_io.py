@@ -1,10 +1,11 @@
 import pathlib
 
+import jbpy
+import jbpy.core
 import lxml.etree
 import numpy as np
 import pytest
 
-import sarkit._nitf_io
 import sarkit.sicd as sksicd
 
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
@@ -138,11 +139,15 @@ def test_roundtrip(tmp_path, sicd_xml, pixel_type):
         },
     )
     with out_sicd.open("wb") as f:
-        with sksicd.NitfWriter(f, metadata) as writer:
+        jbp = sksicd.jbp_from_nitf_metadata(metadata)
+        jbp["FileHeader"]["UDHDL"].value = 10
+        jbp["FileHeader"]["UDHD"].append(jbpy.tre_factory("SECTGA"))
+        with sksicd.NitfWriter(f, metadata, jbp_override=jbp) as writer:
             writer.write_image(basis_array)
 
     with out_sicd.open("rb") as f, sksicd.NitfReader(f) as reader:
         read_array = reader.read_image()
+        assert reader.jbp["FileHeader"]["UDHD"][0]["CETAG"].value == "SECTGA"
 
     schema.assertValid(reader.metadata.xmltree)
     assert metadata == reader.metadata
@@ -150,7 +155,7 @@ def test_roundtrip(tmp_path, sicd_xml, pixel_type):
 
 
 def test_nitfheaderfields_from_header():
-    header = sarkit._nitf_io.FileHeader("FHDR")
+    header = jbpy.core.FileHeader("FHDR")
     header["OSTAID"].value = "ostaid"
     header["FTITLE"].value = "ftitle"
     # Data is unclassified.  These fields are filled for testing purposes only.
@@ -197,7 +202,7 @@ def test_nitfheaderfields_from_header():
 
 def test_nitfimagesegmentfields_from_header():
     comments = ["first", "second"]
-    header = sarkit._nitf_io.ImageSubHeader("name")
+    header = jbpy.core.ImageSubheader("name")
     header["ISORCE"].value = "isorce"
     header["NICOM"].value = 2
     header["ICOM1"].value = comments[0]
@@ -241,7 +246,7 @@ def test_nitfimagesegmentfields_from_header():
 
 
 def test_nitfdesegmentfields_from_header():
-    header = sarkit._nitf_io.DESubHeader("name")
+    header = jbpy.core.DataExtensionSubheader("name")
     header["DESID"].value = "XML_DATA_CONTENT"
     header["DESVER"].value = 1
     header["DESSHL"].value = 773
