@@ -2,11 +2,11 @@ import itertools
 import pathlib
 import re
 
+import jbpy
 import lxml.etree
 import numpy as np
 import pytest
 
-import sarkit._nitf_io
 import sarkit.sidd as sksidd
 import sarkit.sidd._io
 
@@ -275,7 +275,10 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
     )
 
     with out_sidd.open("wb") as file:
-        with sksidd.NitfWriter(file, write_metadata) as writer:
+        jbp = sksidd.jbp_from_nitf_metadata(write_metadata)
+        jbp["FileHeader"]["UDHDL"].value = 10
+        jbp["FileHeader"]["UDHD"].append(jbpy.tre_factory("SECTGA"))
+        with sksidd.NitfWriter(file, write_metadata, jbp_override=jbp) as writer:
             writer.write_image(0, basis_array0)
             writer.write_image(1, basis_array1)
             writer.write_image(2, basis_array2)
@@ -298,13 +301,19 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
     if force_segmentation:
         assert num_expected_imseg > 2  # make sure the monkeypatch caused segmentation
     with out_sidd.open("rb") as file:
-        ntf = sarkit._nitf_io.Nitf()
+        ntf = jbpy.Jbp()
         ntf.load(file)
         assert num_expected_imseg == len(ntf["ImageSegments"])
+
+        mapping = sksidd.product_image_segment_mapping(ntf)
+        assert len(mapping) == 6
+        assert sum(len(indices) for indices in mapping.values()) == num_expected_imseg
 
     with out_sidd.open("rb") as file:
         with sksidd.NitfReader(file) as reader:
             read_metadata = reader.metadata
+            assert reader.jbp["FileHeader"]["UDHD"][0]["CETAG"].value == "SECTGA"
+            assert len(reader.jbp["ImageSegments"]) == num_expected_imseg
             assert len(read_metadata.images) == 6
             assert len(read_metadata.sicd_xmls) == 2
             assert len(read_metadata.product_support_xmls) == 2
