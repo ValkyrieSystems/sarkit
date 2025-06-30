@@ -32,13 +32,13 @@ class XsdHelper(sarkit._xmlhelp2.XsdHelper):
             "{urn:SICommon:1.0}LatLonRestrictionType": sksiddxml.LatLonType(),
             "{urn:SICommon:1.0}LatLonType": sksiddxml.LatLonType(),
             "{urn:SICommon:1.0}LatLonVertexType": sksiddxml.LatLonType(),
-            "{urn:SICommon:1.0}LineType": sarkit._xmlhelp.ListType(
+            "{urn:SICommon:1.0}LineType": sarkit._xmlhelp.NdArrayType(
                 "Endpoint", sksiddxml.LatLonType()
             ),
             "{urn:SICommon:1.0}ParameterType": sksiddxml.ParameterType(),
             "{urn:SICommon:1.0}Poly1DType": sksiddxml.PolyCoef1dType(),
             "{urn:SICommon:1.0}Poly2DType": sksiddxml.PolyCoef2dType(),
-            "{urn:SICommon:1.0}PolygonType": sarkit._xmlhelp.ListType(
+            "{urn:SICommon:1.0}PolygonType": sarkit._xmlhelp.NdArrayType(
                 "Vertex", sksiddxml.LatLonType()
             ),
             "{urn:SICommon:1.0}RangeAzimuthType": sksiddxml.RangeAzimuthType(),
@@ -58,10 +58,10 @@ class XsdHelper(sarkit._xmlhelp2.XsdHelper):
             "{urn:SIDD:3.0.0}ImageCornersType": sksiddxml.ImageCornersType(),
             "{urn:SIDD:3.0.0}LookupTableType": sksiddxml.IntListType(),
             "{urn:SIDD:3.0.0}LUTInfoType": sksiddxml.LUTInfoType(),
-            "{urn:SIDD:3.0.0}PolygonType": sarkit._xmlhelp.ListType(
+            "{urn:SIDD:3.0.0}PolygonType": sarkit._xmlhelp.NdArrayType(
                 "Vertex", sksiddxml.LatLonType()
             ),
-            "{urn:SIDD:3.0.0}ValidDataType": sarkit._xmlhelp.ListType(
+            "{urn:SIDD:3.0.0}ValidDataType": sarkit._xmlhelp.NdArrayType(
                 "Vertex", sksiddxml.RowColIntType()
             ),
             "<UNNAMED>-{urn:SIDD:3.0.0}ImageCornersType/{urn:SIDD:3.0.0}ICP": sksiddxml.LatLonType(),

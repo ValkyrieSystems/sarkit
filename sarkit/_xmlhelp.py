@@ -6,7 +6,7 @@ import abc
 import datetime
 import inspect
 import re
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from typing import Any
 
 import lxml.etree
@@ -493,11 +493,9 @@ class CmplxType(SequenceType):
         super().set_subelements(elem, {"Real": val.real, "Imag": val.imag})
 
 
-class ListType(Type):
+class SizedType(abc.ABC, Type):
     """
-    ListType(sub_tag, sub_type, *, include_size_attr=True, index_start=1)
-
-    Transcoder for XML parameter types containing an ordered list of subelements with a common tag.
+    Abstract base class for XML parameter types containing ordered subelements with a common tag.
 
     Parameters
     ----------
@@ -511,7 +509,6 @@ class ListType(Type):
         Starting index. Default is 1.
     child_ns : str, optional
         Namespace to use for child elements.  Parent namespace used if unspecified.
-
     """
 
     def __init__(
@@ -529,14 +526,14 @@ class ListType(Type):
         self.index_start = index_start
         self.child_ns = child_ns
 
-    def parse_elem(self, elem: lxml.etree.Element) -> npt.NDArray:
-        """Returns an array containing the sub-elements encoded in ``elem``."""
-        return np.array(
-            [
-                self.sub_type.parse_elem(x)
-                for x in sorted(elem, key=lambda x: int(x.get("index")))
-            ]
-        )
+    @abc.abstractmethod
+    def parse_elem(self, elem: lxml.etree.Element) -> Any:
+        pass
+
+    def iter_parse(self, elem: lxml.etree.Element) -> Iterator:
+        """Yield sub-elements encoded in ``elem`` in indexed order."""
+        for x in sorted(elem, key=lambda x: int(x.get("index"))):
+            yield self.sub_type.parse_elem(x)
 
     def set_elem(self, elem: lxml.etree.Element, val: Sequence[Any]) -> None:
         """Set ``elem`` node using ``val``.
@@ -558,6 +555,27 @@ class ListType(Type):
             subelem = lxml.etree.SubElement(elem, ns + self.sub_tag)
             self.sub_type.set_elem(subelem, sub_val)
             subelem.set("index", str(index + self.index_start))
+
+
+class ListType(SizedType):
+    """
+    Transcoder for XML parameter types containing an ordered list of subelements with a common tag.
+
+    """
+
+    def parse_elem(self, elem: lxml.etree.Element) -> list:
+        """Returns an list containing the sub-elements encoded in ``elem``."""
+        return list(self.iter_parse(elem))
+
+
+class NdArrayType(SizedType):
+    """
+    Like `ListType`, but returns an `ndarray`
+    """
+
+    def parse_elem(self, elem: lxml.etree.Element) -> npt.NDArray:
+        """Returns an array containing the sub-elements encoded in ``elem``."""
+        return np.array(list(self.iter_parse(elem)))
 
 
 class ParameterType(Type):

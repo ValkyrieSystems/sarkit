@@ -93,7 +93,7 @@ class ParameterType(skxml.ParameterType):
     pass
 
 
-class ImageAreaCornerPointsType(skxml.ListType):
+class ImageAreaCornerPointsType(skxml.NdArrayType):
     """
     Transcoder for CPHD-like SceneCoordinates/ImageAreaCornerPoints XML parameter types.
 
@@ -228,11 +228,11 @@ TRANSCODERS |= {
     "SceneCoordinates/ReferenceSurface/HAE/uIAYLL": LatLonType(),
     "SceneCoordinates/ImageArea/X1Y1": XyType(),
     "SceneCoordinates/ImageArea/X2Y2": XyType(),
-    "SceneCoordinates/ImageArea/Polygon": skxml.ListType("Vertex", XyType()),
+    "SceneCoordinates/ImageArea/Polygon": skxml.NdArrayType("Vertex", XyType()),
     "SceneCoordinates/ImageAreaCornerPoints": ImageAreaCornerPointsType(),
     "SceneCoordinates/ExtendedArea/X1Y1": XyType(),
     "SceneCoordinates/ExtendedArea/X2Y2": XyType(),
-    "SceneCoordinates/ExtendedArea/Polygon": skxml.ListType("Vertex", XyType()),
+    "SceneCoordinates/ExtendedArea/Polygon": skxml.NdArrayType("Vertex", XyType()),
     "SceneCoordinates/ImageGrid/Identifier": TxtType(),
     "SceneCoordinates/ImageGrid/IARPLocation": LineSampType(),
     "SceneCoordinates/ImageGrid/IAXExtent/LineSpacing": DblType(),
@@ -247,7 +247,7 @@ TRANSCODERS |= {
     "SceneCoordinates/ImageGrid/SegmentList/Segment/StartSample": IntType(),
     "SceneCoordinates/ImageGrid/SegmentList/Segment/EndLine": IntType(),
     "SceneCoordinates/ImageGrid/SegmentList/Segment/EndSample": IntType(),
-    "SceneCoordinates/ImageGrid/SegmentList/Segment/SegmentPolygon": skxml.ListType(
+    "SceneCoordinates/ImageGrid/SegmentList/Segment/SegmentPolygon": skxml.NdArrayType(
         "SV", LineSampType()
     ),
 }
@@ -303,7 +303,7 @@ TRANSCODERS |= {
     "Channel/Parameters/DwellTimes/UseDTA": BoolType(),
     "Channel/Parameters/ImageArea/X1Y1": XyType(),
     "Channel/Parameters/ImageArea/X2Y2": XyType(),
-    "Channel/Parameters/ImageArea/Polygon": skxml.ListType("Vertex", XyType()),
+    "Channel/Parameters/ImageArea/Polygon": skxml.NdArrayType("Vertex", XyType()),
     "Channel/Parameters/Antenna/TxAPCId": TxtType(),
     "Channel/Parameters/Antenna/TxAPATId": TxtType(),
     "Channel/Parameters/Antenna/RcvAPCId": TxtType(),
@@ -574,8 +574,8 @@ TRANSCODERS |= {
 TRANSCODERS |= {
     "GeoInfo/Desc": ParameterType(),
     "GeoInfo/Point": LatLonType(),
-    "GeoInfo/Line": skxml.ListType("Endpoint", LatLonType()),
-    "GeoInfo/Polygon": skxml.ListType("Vertex", LatLonType()),
+    "GeoInfo/Line": skxml.NdArrayType("Endpoint", LatLonType()),
+    "GeoInfo/Polygon": skxml.NdArrayType("Vertex", LatLonType()),
 }
 TRANSCODERS |= {
     "MatchInfo/NumMatchTypes": IntType(),
@@ -610,7 +610,7 @@ TRANSCODERS.update(
     {
         f"{p}/{v.sub_tag}": v.sub_type
         for p, v in TRANSCODERS.items()
-        if isinstance(v, skxml.ListType)
+        if isinstance(v, skxml.NdArrayType)
     }
 )
 

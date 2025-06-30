@@ -11,6 +11,7 @@ import xmlschema
 
 import sarkit._xmlhelp2 as skxh2
 import sarkit.crsd as skcrsd
+import sarkit.sicd as sksicd
 import sarkit.sidd as sksidd
 
 
@@ -87,7 +88,7 @@ def main(args=None):
     config = parser.parse_args(args)
 
     vi_vals = itertools.chain.from_iterable(
-        x.VERSION_INFO.values() for x in (skcrsd, sksidd)
+        x.VERSION_INFO.values() for x in (skcrsd, sksicd, sksidd)
     )
     schema_files = [x["schema"] for x in vi_vals]
 

@@ -396,7 +396,12 @@ class XmlHelper:
         self.xsdhelper = xsdhelper
 
     def _get_transcoder(self, elem):
-        return self.xsdhelper.get_elem_transcoder(elem)
+        t = self.xsdhelper.get_elem_transcoder(elem)
+        if t is None:
+            raise LookupError(
+                f"{self.element_tree.getelementpath(elem)} is not transcodable"
+            )
+        return t
 
     def load_elem(self, elem):
         """Decode ``elem`` (an XML element) to a Python object."""

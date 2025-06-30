@@ -173,21 +173,25 @@ class XsdHelper(skxml2.XsdHelper):
             "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/crsd/1.0}LatLonPolygonType/{http://api.nsgreg.nga.mil/schema/crsd/1.0}Vertex": LatLonType(),
             "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/crsd/1.0}LineType/{http://api.nsgreg.nga.mil/schema/crsd/1.0}Endpoint": LatLonType(),
             "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/crsd/1.0}SceneCoordinatesBaseType/{http://api.nsgreg.nga.mil/schema/crsd/1.0}ImageAreaCornerPoints": ImageAreaCornerPointsType(),
-            "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/crsd/1.0}SceneCoordinatesSARType/{http://api.nsgreg.nga.mil/schema/crsd/1.0}ImageGrid/{http://api.nsgreg.nga.mil/schema/crsd/1.0}SegmentList/{http://api.nsgreg.nga.mil/schema/crsd/1.0}Segment/{http://api.nsgreg.nga.mil/schema/crsd/1.0}SegmentPolygon": skxml.ListType(
-                "SV", LineSampType()
-            ),
+            (
+                "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/crsd/1.0}SceneCoordinatesSARType"
+                "/{http://api.nsgreg.nga.mil/schema/crsd/1.0}ImageGrid"
+                "/{http://api.nsgreg.nga.mil/schema/crsd/1.0}SegmentList"
+                "/{http://api.nsgreg.nga.mil/schema/crsd/1.0}Segment"
+                "/{http://api.nsgreg.nga.mil/schema/crsd/1.0}SegmentPolygon"
+            ): skxml.NdArrayType("SV", LineSampType()),
             "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/crsd/1.0}XYPolygonType/{http://api.nsgreg.nga.mil/schema/crsd/1.0}Vertex": XyType(),
             "{http://api.nsgreg.nga.mil/schema/crsd/1.0}ErrorDecorrFuncType": EdfType(),
             "{http://api.nsgreg.nga.mil/schema/crsd/1.0}LSType": LineSampType(),
             "{http://api.nsgreg.nga.mil/schema/crsd/1.0}LSVertexType": LineSampType(),
             "{http://api.nsgreg.nga.mil/schema/crsd/1.0}LatLonCornerRestrictionType": LatLonType(),
             "{http://api.nsgreg.nga.mil/schema/crsd/1.0}LatLonHAERestrictionType": LatLonHaeType(),
-            "{http://api.nsgreg.nga.mil/schema/crsd/1.0}LatLonPolygonType": skxml.ListType(
+            "{http://api.nsgreg.nga.mil/schema/crsd/1.0}LatLonPolygonType": skxml.NdArrayType(
                 "Vertex", LatLonType()
             ),
             "{http://api.nsgreg.nga.mil/schema/crsd/1.0}LatLonRestrictionType": LatLonType(),
             "{http://api.nsgreg.nga.mil/schema/crsd/1.0}LatLonType": LatLonType(),
-            "{http://api.nsgreg.nga.mil/schema/crsd/1.0}LineType": skxml.ListType(
+            "{http://api.nsgreg.nga.mil/schema/crsd/1.0}LineType": skxml.NdArrayType(
                 "Endpoint", LatLonType()
             ),
             "{http://api.nsgreg.nga.mil/schema/crsd/1.0}Matrix2x2Type": MtxType((2, 2)),
@@ -204,7 +208,7 @@ class XsdHelper(skxml2.XsdHelper):
             "{http://api.nsgreg.nga.mil/schema/crsd/1.0}Poly2DType": Poly2dType(),
             "{http://api.nsgreg.nga.mil/schema/crsd/1.0}UserDefinedPxPType": AddedPxpType(),
             "{http://api.nsgreg.nga.mil/schema/crsd/1.0}XDTType": XdtType(),
-            "{http://api.nsgreg.nga.mil/schema/crsd/1.0}XYPolygonType": skxml.ListType(
+            "{http://api.nsgreg.nga.mil/schema/crsd/1.0}XYPolygonType": skxml.NdArrayType(
                 "Vertex", XyType()
             ),
             "{http://api.nsgreg.nga.mil/schema/crsd/1.0}XYType": XyType(),

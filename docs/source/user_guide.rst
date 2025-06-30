@@ -255,7 +255,7 @@ Select parent nodes also have them when a straightforward mapping is apparent (e
    # this parent node does not have a transcoder
    >>> xmlhelp.load("{*}CollectionInfo")
    Traceback (most recent call last):
-   LookupError: CollectionInfo is not transcodable
+   LookupError: {urn:SICD:1.4.0}CollectionInfo is not transcodable
 
 
 .. _consistency_checking:

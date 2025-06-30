@@ -93,7 +93,7 @@ def test_transcoders():
                 xml_helper.set_elem(elem, val)
                 schema.assertValid(xml_helper.element_tree)
                 np.testing.assert_equal(xml_helper.load_elem(elem), val)
-            except AttributeError:
+            except LookupError:
                 if len(elem) == 0:
                     no_transcode_leaf.add(xml_helper.element_tree.getelementpath(elem))
 

@@ -229,7 +229,7 @@ class IntListType(skxml.Type):
         elem.text = " ".join([str(entry) for entry in val])
 
 
-class ImageCornersType(skxml.ListType):
+class ImageCornersType(skxml.NdArrayType):
     """
     Transcoder for GeoData/ImageCorners XML parameter types.
 
