@@ -31,6 +31,8 @@ Data Structure & File Format
    NitfSicdXmlMetadata
    NitfWriter
    SegmentationImhdr
+   jbp_from_nitf_metadata
+   product_image_segment_mapping
    segmentation_algorithm
 
 XML Metadata
@@ -144,6 +146,8 @@ from ._io import (
     NitfSicdXmlMetadata,
     NitfWriter,
     SegmentationImhdr,
+    jbp_from_nitf_metadata,
+    product_image_segment_mapping,
     segmentation_algorithm,
 )
 from ._xml import (
@@ -220,6 +224,8 @@ __all__ = [
     "compute_angles",
     "ecef_to_pixel",
     "get_coordinate_system_type",
+    "jbp_from_nitf_metadata",
     "pixel_to_ecef",
+    "product_image_segment_mapping",
     "segmentation_algorithm",
 ]

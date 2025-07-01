@@ -21,6 +21,7 @@ classifiers = [
 dynamic = ["version"]
 
 dependencies = [
+    "jbpy>=0.1.0",
     "lxml>=5.1.0",
     "numpy>=1.25.0",
 ]
@@ -97,6 +98,7 @@ module = [
     "lxml.*",
     "numba.*",
     "shapely.*",
+    "jbpy.*",
 ]
 ignore_missing_imports = true
 
