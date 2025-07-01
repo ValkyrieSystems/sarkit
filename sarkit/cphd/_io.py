@@ -4,43 +4,14 @@ Functions to read and write CPHD files.
 
 import copy
 import dataclasses
-import importlib.resources
 import logging
 import os
-from typing import Final
 
 import lxml.etree
 import numpy as np
 import numpy.typing as npt
 
-SCHEMA_DIR = importlib.resources.files("sarkit.cphd.schemas")
-SECTION_TERMINATOR: Final[bytes] = b"\f\n"
-DEFINED_HEADER_KEYS: Final[set] = {
-    "XML_BLOCK_SIZE",
-    "XML_BLOCK_BYTE_OFFSET",
-    "SUPPORT_BLOCK_SIZE",
-    "SUPPORT_BLOCK_BYTE_OFFSET",
-    "PVP_BLOCK_SIZE",
-    "PVP_BLOCK_BYTE_OFFSET",
-    "SIGNAL_BLOCK_SIZE",
-    "SIGNAL_BLOCK_BYTE_OFFSET",
-    "CLASSIFICATION",
-    "RELEASE_INFO",
-}
-
-# Keys in ascending order
-VERSION_INFO: Final[dict] = {
-    "http://api.nsgreg.nga.mil/schema/cphd/1.0.1": {
-        "version": "1.0.1",
-        "date": "2018-05-21T00:00:00Z",
-        "schema": SCHEMA_DIR / "CPHD_schema_V1.0.1_2018_05_21.xsd",
-    },
-    "http://api.nsgreg.nga.mil/schema/cphd/1.1.0": {
-        "version": "1.1.0",
-        "date": "2021-11-30T00:00:00Z",
-        "schema": SCHEMA_DIR / "CPHD_schema_V1.1.0_2021_11_30_FINAL.xsd",
-    },
-}
+from . import _constants as cphdconst
 
 
 def _to_binary_format_string_recursive(dtype):
@@ -290,7 +261,7 @@ def read_file_header(file):
     file_type_header = file.readline().decode()
 
     kvp_list = {}
-    while (line := file.readline()) != SECTION_TERMINATOR:
+    while (line := file.readline()) != cphdconst.SECTION_TERMINATOR:
         field, value = line.decode().strip("\n").split(" := ")
         kvp_list[field] = value
     return file_type_header, kvp_list
@@ -393,7 +364,7 @@ class Reader:
         # skip the version line and read header
         _, self._kvp_list = read_file_header(self._file_object)
 
-        extra_header_keys = set(self._kvp_list.keys()) - DEFINED_HEADER_KEYS
+        extra_header_keys = set(self._kvp_list.keys()) - cphdconst.DEFINED_HEADER_KEYS
         additional_kvps = {key: self._kvp_list[key] for key in extra_header_keys}
 
         self._file_object.seek(self._xml_block_byte_offset)
@@ -696,21 +667,21 @@ class Writer:
         self._file_header_kvp.update(self._metadata.file_header_part.additional_kvps)
 
         def _serialize_header():
-            version = VERSION_INFO[lxml.etree.QName(cphd_xmltree.getroot()).namespace][
-                "version"
-            ]
+            version = cphdconst.VERSION_INFO[
+                lxml.etree.QName(cphd_xmltree.getroot()).namespace
+            ]["version"]
             header_str = f"CPHD/{version}\n"
             header_str += "".join(
                 (f"{key} := {value}\n" for key, value in self._file_header_kvp.items())
             )
-            return header_str.encode() + SECTION_TERMINATOR
+            return header_str.encode() + cphdconst.SECTION_TERMINATOR
 
         next_offset = _align(len(_serialize_header()))
         self._file_header_kvp["XML_BLOCK_BYTE_OFFSET"] = next_offset
         next_offset = _align(
             next_offset
             + self._file_header_kvp["XML_BLOCK_SIZE"]
-            + len(SECTION_TERMINATOR)
+            + len(cphdconst.SECTION_TERMINATOR)
         )
 
         if self._sa_size_offsets:
@@ -728,7 +699,7 @@ class Writer:
         self._file_object.seek(0)
         self._file_object.write(_serialize_header())
         self._file_object.seek(self._file_header_kvp["XML_BLOCK_BYTE_OFFSET"])
-        self._file_object.write(xml_block_body + SECTION_TERMINATOR)
+        self._file_object.write(xml_block_body + cphdconst.SECTION_TERMINATOR)
 
         self._signal_arrays_written: set[str] = set()
         self._pvp_arrays_written: set[str] = set()

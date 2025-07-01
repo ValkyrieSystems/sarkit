@@ -2,9 +2,12 @@ import pathlib
 
 import lxml.etree
 import numpy as np
+import numpy.testing as npt
 import pytest
 
+import sarkit._xmlhelp2 as skxml2
 import sarkit.cphd as skcphd
+from tests.core import testing
 
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
 
@@ -40,7 +43,6 @@ def test_addedpvp():
 
 
 def test_transcoders():
-    used_transcoders = set()
     no_transcode_leaf = set()
     for xml_file in (DATAPATH / "syntax_only/cphd").glob("*.xml"):
         etree = lxml.etree.parse(xml_file)
@@ -54,10 +56,29 @@ def test_transcoders():
                 xml_helper.set_elem(elem, val)
                 schema.assertValid(xml_helper.element_tree)
                 np.testing.assert_equal(xml_helper.load_elem(elem), val)
-                used_transcoders.add(xml_helper.get_transcoder_name(elem))
             except LookupError:
                 if len(elem) == 0:
                     no_transcode_leaf.add(xml_helper.element_tree.getelementpath(elem))
-    unused_transcoders = skcphd.TRANSCODERS.keys() - used_transcoders
-    assert not unused_transcoders
     assert not no_transcode_leaf
+
+
+@pytest.mark.parametrize(
+    "xmlpath",
+    list((DATAPATH / "syntax_only/cphd").glob("*.xml"))
+    + list(DATAPATH.glob("example-cphd*.xml")),
+)
+def test_elementwrapper_tofromdict(xmlpath):
+    xmlroot = lxml.etree.parse(xmlpath).getroot()
+    root_ns = lxml.etree.QName(xmlroot).namespace
+    xsdhelp = skcphd.XsdHelper(root_ns)
+    wrapped_cphdroot = skxml2.ElementWrapper(xmlroot, xsdhelper=xsdhelp)
+
+    dict1 = wrapped_cphdroot.to_dict()
+    wrapped_root_fromdict = skxml2.ElementWrapper(
+        lxml.etree.Element(xmlroot.tag), xsdhelper=xsdhelp
+    )
+    wrapped_root_fromdict.from_dict(dict1)
+    dict2 = wrapped_root_fromdict.to_dict()
+
+    npt.assert_equal(dict1, dict2)
+    assert testing.elem_cmp(xmlroot, wrapped_root_fromdict.elem, xsdhelp)

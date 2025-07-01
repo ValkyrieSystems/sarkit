@@ -41,9 +41,9 @@ def test_elementwrapper_tofromdict(xmlpath):
     xmlroot = lxml.etree.parse(xmlpath).getroot()
     root_ns = lxml.etree.QName(xmlroot).namespace
     xsdhelp = skcrsd.XsdHelper(root_ns)
-    wrapped_siddroot = skxml2.ElementWrapper(xmlroot, xsdhelper=xsdhelp)
+    wrapped_crsdroot = skxml2.ElementWrapper(xmlroot, xsdhelper=xsdhelp)
 
-    dict1 = wrapped_siddroot.to_dict()
+    dict1 = wrapped_crsdroot.to_dict()
     wrapped_root_fromdict = skxml2.ElementWrapper(
         lxml.etree.Element(xmlroot.tag), xsdhelper=xsdhelp
     )
