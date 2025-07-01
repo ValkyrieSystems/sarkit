@@ -29,6 +29,7 @@ Data Structure & File Format
    NitfWriter
    SizingImhdr
    image_segment_sizing_calculations
+   jbp_from_nitf_metadata
 
 XML Metadata
 ============
@@ -182,6 +183,7 @@ from ._io import (
     NitfWriter,
     SizingImhdr,
     image_segment_sizing_calculations,
+    jbp_from_nitf_metadata,
 )
 from ._xml import (
     TRANSCODERS,
@@ -247,5 +249,6 @@ __all__ = [
     "image_to_constant_hae_surface",
     "image_to_dem_surface",
     "image_to_ground_plane",
+    "jbp_from_nitf_metadata",
     "scene_to_image",
 ]

@@ -3,21 +3,22 @@ Functions to read and write SIDD files.
 """
 
 import collections
-import copy
 import dataclasses
 import datetime
 import importlib
 import itertools
 import logging
 import os
+import re
 import warnings
 from typing import Final, Self, TypedDict
 
+import jbpy
+import jbpy.core
 import lxml.etree
 import numpy as np
 import numpy.typing as npt
 
-import sarkit._nitf_io
 import sarkit.sicd as sksicd
 import sarkit.sicd._io
 import sarkit.sidd as sksidd
@@ -137,8 +138,8 @@ class NitfImSubheaderPart:
     icom: list[str] = dataclasses.field(default_factory=list)
 
     @classmethod
-    def _from_header(cls, image_header: sarkit._nitf_io.ImageSubHeader) -> Self:
-        """Construct from a NITF ImageSubHeader object"""
+    def _from_header(cls, image_header: jbpy.core.ImageSubheader) -> Self:
+        """Construct from a NITF ImageSubheader object"""
         return cls(
             tgtid=image_header["TGTID"].value,
             iid2=image_header["IID2"].value,
@@ -319,6 +320,8 @@ class NitfReader:
     ----------
     metadata : NitfMetadata
         SIDD NITF metadata
+    jbp : ``jbpy.Jbp``
+        NITF file object
 
     See Also
     --------
@@ -365,16 +368,19 @@ class NitfReader:
 
         >>> print(r.metadata.file_header_part.ftitle)
         sarkit example
+
+        >>> print(r.jbp["FileHeader"]["FTITLE"].value)
+        sarkit example
     """
 
     def __init__(self, file):
         self._file_object = file
 
-        self._ntf = sarkit._nitf_io.Nitf().load(file)
+        self.jbp = jbpy.Jbp().load(file)
 
         im_segments = {}
-        for imseg_index, imseg in enumerate(self._ntf["ImageSegments"]):
-            img_header = imseg["SubHeader"]
+        for imseg_index, imseg in enumerate(self.jbp["ImageSegments"]):
+            img_header = imseg["subheader"]
             if img_header["IID1"].value.startswith("SIDD"):
                 if img_header["ICAT"].value == "SAR":
                     image_number = int(img_header["IID1"].value[4:7]) - 1
@@ -386,20 +392,20 @@ class NitfReader:
                 raise NotImplementedError("DED not supported")  # TODO
 
         image_segment_collections = {}
-        for idx, imseg in enumerate(self._ntf["ImageSegments"]):
-            imghdr = imseg["SubHeader"]
+        for idx, imseg in enumerate(self.jbp["ImageSegments"]):
+            imghdr = imseg["subheader"]
             if not imghdr["IID1"].value.startswith("SIDD"):
                 continue
             image_num = int(imghdr["IID1"].value[4:7]) - 1
             image_segment_collections.setdefault(image_num, [])
             image_segment_collections[image_num].append(idx)
 
-        file_header_part = NitfFileHeaderPart._from_header(self._ntf["FileHeader"])
+        file_header_part = NitfFileHeaderPart._from_header(self.jbp["FileHeader"])
         self.metadata = NitfMetadata(file_header_part=file_header_part)
 
         image_number = 0
-        for idx, deseg in enumerate(self._ntf["DESegments"]):
-            des_header = deseg["SubHeader"]
+        for idx, deseg in enumerate(self.jbp["DataExtensionSegments"]):
+            des_header = deseg["subheader"]
             if des_header["DESID"].value == "XML_DATA_CONTENT":
                 file.seek(deseg["DESDATA"].get_offset(), os.SEEK_SET)
                 try:
@@ -415,7 +421,7 @@ class NitfReader:
                     if len(self.metadata.images) < len(image_segment_collections):
                         # user settable fields should be the same for all image segments
                         im_idx = im_segments[image_number][0]
-                        im_subhdr = self._ntf["ImageSegments"][im_idx]["SubHeader"]
+                        im_subhdr = self.jbp["ImageSegments"][im_idx]["subheader"]
                         im_subhdeader_part = NitfImSubheaderPart._from_header(im_subhdr)
                         pixel_type = xmltree.findtext("./{*}Display/{*}PixelType")
                         lookup_table = None
@@ -502,16 +508,10 @@ class NitfReader:
             "dtype"
         ].newbyteorder(">")
 
-        imsegs = sorted(
-            [
-                imseg
-                for imseg in self._ntf["ImageSegments"]
-                if imseg["SubHeader"]["IID1"].value.startswith(
-                    f"SIDD{image_number + 1:03d}"
-                )
-            ],
-            key=lambda seg: seg["SubHeader"]["IID1"].value,
-        )
+        imseg_indices = product_image_segment_mapping(self.jbp)[
+            f"SIDD{image_number + 1:03d}"
+        ]
+        imsegs = [self.jbp["ImageSegments"][idx] for idx in imseg_indices]
 
         image_pixels = np.empty(shape, dtype)
         imseg_sizes = np.asarray([imseg["Data"].size for imseg in imsegs])
@@ -534,6 +534,247 @@ class NitfReader:
         return
 
 
+def jbp_from_nitf_metadata(metadata: NitfMetadata) -> jbpy.Jbp:
+    """Create a Jbp object from NitfMetadata"""
+
+    now_dt = datetime.datetime.now(datetime.timezone.utc)
+    jbp = jbpy.Jbp()
+    jbp["FileHeader"]["OSTAID"].value = metadata.file_header_part.ostaid
+    jbp["FileHeader"]["FTITLE"].value = metadata.file_header_part.ftitle
+    metadata.file_header_part.security._set_nitf_fields("FS", jbp["FileHeader"])
+    jbp["FileHeader"]["ONAME"].value = metadata.file_header_part.oname
+    jbp["FileHeader"]["OPHONE"].value = metadata.file_header_part.ophone
+
+    _, _, seginfos = segmentation_algorithm((img.xmltree for img in metadata.images))
+    jbp["FileHeader"]["NUMI"].value = len(seginfos)  # TODO + num DES + num LEG
+
+    for idx, seginfo in enumerate(seginfos):
+        subhdr = jbp["ImageSegments"][idx]["subheader"]
+        image_num = int(seginfo.iid1[4:7]) - 1
+
+        imageinfo = metadata.images[image_num]
+        xml_helper = sarkit.sidd._xml.XmlHelper(imageinfo.xmltree)
+        pixel_type = xml_helper.load("./{*}Display/{*}PixelType")
+        pixel_info = PIXEL_TYPES[pixel_type]
+
+        icp = xml_helper.load("./{*}GeoData/{*}ImageCorners")
+
+        subhdr["IID1"].value = seginfo.iid1
+        subhdr["IDATIM"].value = xml_helper.load(
+            "./{*}ExploitationFeatures/{*}Collection/{*}Information/{*}CollectionDateTime"
+        ).strftime("%Y%m%d%H%M%S")
+        subhdr["TGTID"].value = imageinfo.im_subheader_part.tgtid
+        subhdr["IID2"].value = imageinfo.im_subheader_part.iid2
+        imageinfo.im_subheader_part.security._set_nitf_fields("IS", subhdr)
+        subhdr["ISORCE"].value = xml_helper.load(
+            "./{*}ExploitationFeatures/{*}Collection/{*}Information/{*}SensorName"
+        )
+        subhdr["NROWS"].value = seginfo.nrows
+        subhdr["NCOLS"].value = seginfo.ncols
+        subhdr["PVTYPE"].value = "INT"
+        subhdr["IREP"].value = pixel_info["IREP"]
+        subhdr["ICAT"].value = "SAR"
+        subhdr["ABPP"].value = pixel_info["NBPP"]
+        subhdr["PJUST"].value = "R"
+        subhdr["ICORDS"].value = "G"
+        subhdr["IGEOLO"].value = seginfo.igeolo
+        subhdr["IC"].value = "NC"
+        subhdr["NICOM"].value = len(imageinfo.im_subheader_part.icom)
+        for icomidx, icom in enumerate(imageinfo.im_subheader_part.icom):
+            subhdr[f"ICOM{icomidx + 1}"].value = icom
+        subhdr["NBANDS"].value = len(pixel_info["IREPBANDn"])
+        for bandnum, irepband in enumerate(pixel_info["IREPBANDn"]):
+            subhdr[f"IREPBAND{bandnum + 1:05d}"].value = irepband
+
+        if "LU" in pixel_type:
+            if imageinfo.lookup_table is None:
+                raise ValueError(f"lookup table must be set for PixelType={pixel_type}")
+
+            if pixel_type == "RGB8LU":
+                subhdr["NLUTS00001"].value = 3
+                subhdr["NELUT00001"].value = 256
+                subhdr["LUTD000011"].value = imageinfo.lookup_table["R"].tobytes()
+                subhdr["LUTD000012"].value = imageinfo.lookup_table["G"].tobytes()
+                subhdr["LUTD000013"].value = imageinfo.lookup_table["B"].tobytes()
+            elif pixel_type == "MONO8LU":
+                if imageinfo.lookup_table.dtype == np.uint8:
+                    subhdr["NLUTS00001"].value = 1
+                    subhdr["NELUT00001"].value = 256
+                    subhdr["LUTD000011"].value = imageinfo.lookup_table.tobytes()
+                elif imageinfo.lookup_table.dtype == np.uint16:
+                    subhdr["NLUTS00001"].value = 2
+                    subhdr["NELUT00001"].value = 256
+                    subhdr["LUTD000011"].value = (
+                        (imageinfo.lookup_table >> 8).astype(np.uint8).tobytes()
+                    )  # MSB
+                    subhdr["LUTD000012"].value = (
+                        (imageinfo.lookup_table & 0xFF).astype(np.uint8).tobytes()
+                    )  # LSB
+
+        subhdr["IMODE"].value = pixel_info["IMODE"]
+        subhdr["NBPR"].value = 1
+        subhdr["NBPC"].value = 1
+
+        if subhdr["NCOLS"].value > 8192:
+            subhdr["NPPBH"].value = 0
+        else:
+            subhdr["NPPBH"].value = subhdr["NCOLS"].value
+
+        if subhdr["NROWS"].value > 8192:
+            subhdr["NPPBV"].value = 0
+        else:
+            subhdr["NPPBV"].value = subhdr["NROWS"].value
+
+        subhdr["NBPP"].value = pixel_info["NBPP"]
+        subhdr["IDLVL"].value = seginfo.idlvl
+        subhdr["IALVL"].value = seginfo.ialvl
+        subhdr["ILOC"].value = (int(seginfo.iloc[:5]), int(seginfo.iloc[5:]))
+        subhdr["IMAG"].value = "1.0 "
+
+        jbp["ImageSegments"][idx]["Data"].size = (
+            # No compression, no masking, no blocking
+            subhdr["NROWS"].value
+            * subhdr["NCOLS"].value
+            * subhdr["NBANDS"].value
+            * subhdr["NBPP"].value
+            // 8
+        )
+
+    # TODO add image_managers for legends
+    assert not any(x.legends for x in metadata.images)
+    # TODO add image_managers for DED
+    assert not metadata.ded
+
+    # DE Segments
+    jbp["FileHeader"]["NUMDES"].value = (
+        len(metadata.images)
+        + len(metadata.product_support_xmls)
+        + len(metadata.sicd_xmls)
+    )
+
+    desidx = 0
+    to_write = []
+    for imageinfo in metadata.images:
+        xmlns = lxml.etree.QName(imageinfo.xmltree.getroot()).namespace
+        xml_helper = sksidd.XmlHelper(imageinfo.xmltree)
+
+        deseg = jbp["DataExtensionSegments"][desidx]
+        subhdr = deseg["subheader"]
+        subhdr["DESID"].value = "XML_DATA_CONTENT"
+        subhdr["DESVER"].value = 1
+        imageinfo.de_subheader_part.security._set_nitf_fields("DES", subhdr)
+        subhdr["DESSHL"].value = 773
+        subhdr["DESSHF"]["DESCRC"].value = 99999
+        subhdr["DESSHF"]["DESSHFT"].value = "XML"
+        subhdr["DESSHF"]["DESSHDT"].value = now_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+        subhdr["DESSHF"]["DESSHRP"].value = imageinfo.de_subheader_part.desshrp
+        subhdr["DESSHF"]["DESSHSI"].value = SPECIFICATION_IDENTIFIER
+        subhdr["DESSHF"]["DESSHSV"].value = VERSION_INFO[xmlns]["version"]
+        subhdr["DESSHF"]["DESSHSD"].value = VERSION_INFO[xmlns]["date"]
+        subhdr["DESSHF"]["DESSHTN"].value = xmlns
+
+        icp = xml_helper.load("./{*}GeoData/{*}ImageCorners")
+        desshlpg = ""
+        for icp_lat, icp_lon in itertools.chain(icp, [icp[0]]):
+            desshlpg += f"{icp_lat:0=+12.8f}{icp_lon:0=+13.8f}"
+        subhdr["DESSHF"]["DESSHLPG"].value = desshlpg
+        subhdr["DESSHF"]["DESSHLI"].value = imageinfo.de_subheader_part.desshli
+        subhdr["DESSHF"]["DESSHLIN"].value = imageinfo.de_subheader_part.desshlin
+        subhdr["DESSHF"]["DESSHABS"].value = imageinfo.de_subheader_part.desshabs
+
+        xml_bytes = lxml.etree.tostring(imageinfo.xmltree)
+        deseg["DESDATA"].size = len(xml_bytes)
+        to_write.append((deseg["DESDATA"].get_offset(), xml_bytes))
+
+        desidx += 1
+
+    # Product Support XML DES
+    for prodinfo in metadata.product_support_xmls:
+        deseg = jbp["DataExtensionSegments"][desidx]
+        subhdr = deseg["subheader"]
+        sidd_uh = jbp["DataExtensionSegments"][0]["subheader"]["DESSHF"]
+
+        xmlns = lxml.etree.QName(prodinfo.xmltree.getroot()).namespace or ""
+
+        subhdr["DESID"].value = "XML_DATA_CONTENT"
+        subhdr["DESVER"].value = 1
+        prodinfo.de_subheader_part.security._set_nitf_fields("DES", subhdr)
+        subhdr["DESSHL"].value = 773
+        subhdr["DESSHF"]["DESCRC"].value = 99999
+        subhdr["DESSHF"]["DESSHFT"].value = "XML"
+        subhdr["DESSHF"]["DESSHDT"].value = now_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+        subhdr["DESSHF"]["DESSHRP"].value = prodinfo.de_subheader_part.desshrp
+        subhdr["DESSHF"]["DESSHSI"].value = sidd_uh["DESSHSI"].value
+        subhdr["DESSHF"]["DESSHSV"].value = "v" + sidd_uh["DESSHSV"].value
+        subhdr["DESSHF"]["DESSHSD"].value = sidd_uh["DESSHSD"].value
+        subhdr["DESSHF"]["DESSHTN"].value = xmlns
+        subhdr["DESSHF"]["DESSHLPG"].value = ""
+        subhdr["DESSHF"]["DESSHLI"].value = prodinfo.de_subheader_part.desshli
+        subhdr["DESSHF"]["DESSHLIN"].value = prodinfo.de_subheader_part.desshlin
+        subhdr["DESSHF"]["DESSHABS"].value = prodinfo.de_subheader_part.desshabs
+
+        xml_bytes = lxml.etree.tostring(prodinfo.xmltree)
+        deseg["DESDATA"].size = len(xml_bytes)
+
+        desidx += 1
+
+    # SICD XML DES
+    for sicd_xml_info in metadata.sicd_xmls:
+        deseg = jbp["DataExtensionSegments"][desidx]
+        sarkit.sicd._io._populate_de_segment(
+            deseg, sicd_xml_info.xmltree, sicd_xml_info.de_subheader_part
+        )
+
+        xml_bytes = lxml.etree.tostring(sicd_xml_info.xmltree)
+        deseg["DESDATA"].size = len(xml_bytes)
+
+        desidx += 1
+
+    jbp.finalize()
+    return jbp
+
+
+def _is_sidd_product_image_segment(segment):
+    if segment["subheader"]["ICAT"].value != "SAR":
+        return False
+
+    iid1 = segment["subheader"]["IID1"].value
+    if re.fullmatch(r"SIDD\d{6}", iid1):
+        product_image_number = int(iid1[4:7])
+        segment_of_image = int(iid1[7:])
+        if product_image_number >= 1 and segment_of_image >= 1:
+            return True
+
+    return False
+
+
+def product_image_segment_mapping(jbp: jbpy.Jbp) -> dict[str, list[int]]:
+    """Determine which JBP segments comprise each SIDD product image
+
+    Parameters
+    ----------
+    jbp : ``jbpy.Jbp``
+        JBP/NITF object
+
+    Returns
+    -------
+    dict
+        Mapping of partial SIDD IID1 identifier to ImageSegment indices.
+
+    """
+    mapping: dict[str, list[int]] = {}
+    sorted_by_iid1 = sorted(
+        enumerate(jbp["ImageSegments"]),
+        key=lambda pair: pair[1]["subheader"]["IID1"].value,
+    )
+    for im_idx, imseg in sorted_by_iid1:
+        iid1 = imseg["subheader"]["IID1"].value
+        if _is_sidd_product_image_segment(imseg):
+            name = iid1[:7]
+            mapping.setdefault(name, []).append(im_idx)
+    return mapping
+
+
 class NitfWriter:
     """Write a SIDD NITF
 
@@ -545,6 +786,8 @@ class NitfWriter:
         SIDD NITF file to write
     metadata : NitfMetadata
         SIDD NITF metadata to write (copied on construction)
+    jbp_override : ``jbpy.Jbp`` or ``None``, optional
+        Jbp (NITF) object to use.  If not provided, one will be created using `jbp_from_nitf_metadata`.
 
     See Also
     --------
@@ -597,219 +840,70 @@ class NitfWriter:
         ...     w.write_image(0, img_to_write)
     """
 
-    def __init__(self, file, metadata: NitfMetadata):
+    def __init__(
+        self, file, metadata: NitfMetadata, jbp_override: jbpy.Jbp | None = None
+    ):
         self._file = file
-        self._metadata = copy.deepcopy(metadata)
+        self._metadata = metadata
+        self._jbp = jbp_override or jbp_from_nitf_metadata(metadata)
         self._images_written: set[int] = set()
-        now_dt = datetime.datetime.now(datetime.timezone.utc)
 
-        self._ntf = sarkit._nitf_io.Nitf()
-        self._ntf["FileHeader"]["OSTAID"].value = self._metadata.file_header_part.ostaid
-        self._ntf["FileHeader"]["FTITLE"].value = self._metadata.file_header_part.ftitle
-        self._metadata.file_header_part.security._set_nitf_fields(
-            "FS", self._ntf["FileHeader"]
-        )
-        self._ntf["FileHeader"]["ONAME"].value = self._metadata.file_header_part.oname
-        self._ntf["FileHeader"]["OPHONE"].value = self._metadata.file_header_part.ophone
+        self._jbp.finalize()
+        self._jbp.dump(file)
 
-        _, _, seginfos = segmentation_algorithm(
-            (img.xmltree for img in self._metadata.images)
-        )
-        self._ntf["FileHeader"]["NUMI"].value = len(
-            seginfos
-        )  # TODO + num DES + num LEG
-
-        for idx, seginfo in enumerate(seginfos):
-            subhdr = self._ntf["ImageSegments"][idx]["SubHeader"]
-            image_num = int(seginfo.iid1[4:7]) - 1
-
-            imageinfo = self._metadata.images[image_num]
-            xml_helper = sarkit.sidd._xml.XmlHelper(imageinfo.xmltree)
-            pixel_type = xml_helper.load("./{*}Display/{*}PixelType")
-            pixel_info = PIXEL_TYPES[pixel_type]
-
-            icp = xml_helper.load("./{*}GeoData/{*}ImageCorners")
-
-            subhdr["IID1"].value = seginfo.iid1
-            subhdr["IDATIM"].value = xml_helper.load(
-                "./{*}ExploitationFeatures/{*}Collection/{*}Information/{*}CollectionDateTime"
-            ).strftime("%Y%m%d%H%M%S")
-            subhdr["TGTID"].value = imageinfo.im_subheader_part.tgtid
-            subhdr["IID2"].value = imageinfo.im_subheader_part.iid2
-            imageinfo.im_subheader_part.security._set_nitf_fields("IS", subhdr)
-            subhdr["ISORCE"].value = xml_helper.load(
-                "./{*}ExploitationFeatures/{*}Collection/{*}Information/{*}SensorName"
-            )
-            subhdr["NROWS"].value = seginfo.nrows
-            subhdr["NCOLS"].value = seginfo.ncols
-            subhdr["PVTYPE"].value = "INT"
-            subhdr["IREP"].value = pixel_info["IREP"]
-            subhdr["ICAT"].value = "SAR"
-            subhdr["ABPP"].value = pixel_info["NBPP"]
-            subhdr["PJUST"].value = "R"
-            subhdr["ICORDS"].value = "G"
-            subhdr["IGEOLO"].value = seginfo.igeolo
-            subhdr["IC"].value = "NC"
-            subhdr["NICOM"].value = len(imageinfo.im_subheader_part.icom)
-            for icomidx, icom in enumerate(imageinfo.im_subheader_part.icom):
-                subhdr[f"ICOM{icomidx + 1}"].value = icom
-            subhdr["NBANDS"].value = len(pixel_info["IREPBANDn"])
-            for bandnum, irepband in enumerate(pixel_info["IREPBANDn"]):
-                subhdr[f"IREPBAND{bandnum + 1:05d}"].value = irepband
-
-            if "LU" in pixel_type:
-                if imageinfo.lookup_table is None:
-                    raise ValueError(
-                        f"lookup table must be set for PixelType={pixel_type}"
-                    )
-
-                if pixel_type == "RGB8LU":
-                    subhdr["NLUTS00001"].value = 3
-                    subhdr["NELUT00001"].value = 256
-                    subhdr["LUTD000011"].value = imageinfo.lookup_table["R"].tobytes()
-                    subhdr["LUTD000012"].value = imageinfo.lookup_table["G"].tobytes()
-                    subhdr["LUTD000013"].value = imageinfo.lookup_table["B"].tobytes()
-                elif pixel_type == "MONO8LU":
-                    if imageinfo.lookup_table.dtype == np.uint8:
-                        subhdr["NLUTS00001"].value = 1
-                        subhdr["NELUT00001"].value = 256
-                        subhdr["LUTD000011"].value = imageinfo.lookup_table.tobytes()
-                    elif imageinfo.lookup_table.dtype == np.uint16:
-                        subhdr["NLUTS00001"].value = 2
-                        subhdr["NELUT00001"].value = 256
-                        subhdr["LUTD000011"].value = (
-                            (imageinfo.lookup_table >> 8).astype(np.uint8).tobytes()
-                        )  # MSB
-                        subhdr["LUTD000012"].value = (
-                            (imageinfo.lookup_table & 0xFF).astype(np.uint8).tobytes()
-                        )  # LSB
-
-            subhdr["IMODE"].value = pixel_info["IMODE"]
-            subhdr["NBPR"].value = 1
-            subhdr["NBPC"].value = 1
-
-            if subhdr["NCOLS"].value > 8192:
-                subhdr["NPPBH"].value = 0
-            else:
-                subhdr["NPPBH"].value = subhdr["NCOLS"].value
-
-            if subhdr["NROWS"].value > 8192:
-                subhdr["NPPBV"].value = 0
-            else:
-                subhdr["NPPBV"].value = subhdr["NROWS"].value
-
-            subhdr["NBPP"].value = pixel_info["NBPP"]
-            subhdr["IDLVL"].value = seginfo.idlvl
-            subhdr["IALVL"].value = seginfo.ialvl
-            subhdr["ILOC"].value = (int(seginfo.iloc[:5]), int(seginfo.iloc[5:]))
-            subhdr["IMAG"].value = "1.0 "
-
-            self._ntf["ImageSegments"][idx]["Data"].size = (
-                # No compression, no masking, no blocking
-                subhdr["NROWS"].value
-                * subhdr["NCOLS"].value
-                * subhdr["NBANDS"].value
-                * subhdr["NBPP"].value
-                // 8
-            )
-
-        # TODO add image_managers for legends
-        assert not any(x.legends for x in self._metadata.images)
-        # TODO add image_managers for DED
-        assert not self._metadata.ded
-
-        # DE Segments
-        self._ntf["FileHeader"]["NUMDES"].value = (
-            len(self._metadata.images)
-            + len(self._metadata.product_support_xmls)
-            + len(self._metadata.sicd_xmls)
-        )
-
-        desidx = 0
         to_write = []
-        for imageinfo in self._metadata.images:
-            xmlns = lxml.etree.QName(imageinfo.xmltree.getroot()).namespace
-            xml_helper = sksidd.XmlHelper(imageinfo.xmltree)
-
-            deseg = self._ntf["DESegments"][desidx]
-            subhdr = deseg["SubHeader"]
-            subhdr["DESID"].value = "XML_DATA_CONTENT"
-            subhdr["DESVER"].value = 1
-            imageinfo.de_subheader_part.security._set_nitf_fields("DES", subhdr)
-            subhdr["DESSHL"].value = 773
-            subhdr["DESSHF"]["DESCRC"].value = 99999
-            subhdr["DESSHF"]["DESSHFT"].value = "XML"
-            subhdr["DESSHF"]["DESSHDT"].value = now_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-            subhdr["DESSHF"]["DESSHRP"].value = imageinfo.de_subheader_part.desshrp
-            subhdr["DESSHF"]["DESSHSI"].value = SPECIFICATION_IDENTIFIER
-            subhdr["DESSHF"]["DESSHSV"].value = VERSION_INFO[xmlns]["version"]
-            subhdr["DESSHF"]["DESSHSD"].value = VERSION_INFO[xmlns]["date"]
-            subhdr["DESSHF"]["DESSHTN"].value = xmlns
-
-            icp = xml_helper.load("./{*}GeoData/{*}ImageCorners")
-            desshlpg = ""
-            for icp_lat, icp_lon in itertools.chain(icp, [icp[0]]):
-                desshlpg += f"{icp_lat:0=+12.8f}{icp_lon:0=+13.8f}"
-            subhdr["DESSHF"]["DESSHLPG"].value = desshlpg
-            subhdr["DESSHF"]["DESSHLI"].value = imageinfo.de_subheader_part.desshli
-            subhdr["DESSHF"]["DESSHLIN"].value = imageinfo.de_subheader_part.desshlin
-            subhdr["DESSHF"]["DESSHABS"].value = imageinfo.de_subheader_part.desshabs
-
+        desidx = 0
+        for imageinfo in metadata.images:
+            deseg = self._jbp["DataExtensionSegments"][desidx]
             xml_bytes = lxml.etree.tostring(imageinfo.xmltree)
-            deseg["DESDATA"].size = len(xml_bytes)
+            assert deseg["DESDATA"].size == len(xml_bytes)
             to_write.append((deseg["DESDATA"].get_offset(), xml_bytes))
 
             desidx += 1
 
-        # Product Support XML DES
-        for prodinfo in self._metadata.product_support_xmls:
-            deseg = self._ntf["DESegments"][desidx]
-            subhdr = deseg["SubHeader"]
-            sidd_uh = self._ntf["DESegments"][0]["SubHeader"]["DESSHF"]
-
-            xmlns = lxml.etree.QName(prodinfo.xmltree.getroot()).namespace or ""
-
-            subhdr["DESID"].value = "XML_DATA_CONTENT"
-            subhdr["DESVER"].value = 1
-            prodinfo.de_subheader_part.security._set_nitf_fields("DES", subhdr)
-            subhdr["DESSHL"].value = 773
-            subhdr["DESSHF"]["DESCRC"].value = 99999
-            subhdr["DESSHF"]["DESSHFT"].value = "XML"
-            subhdr["DESSHF"]["DESSHDT"].value = now_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-            subhdr["DESSHF"]["DESSHRP"].value = prodinfo.de_subheader_part.desshrp
-            subhdr["DESSHF"]["DESSHSI"].value = sidd_uh["DESSHSI"].value
-            subhdr["DESSHF"]["DESSHSV"].value = "v" + sidd_uh["DESSHSV"].value
-            subhdr["DESSHF"]["DESSHSD"].value = sidd_uh["DESSHSD"].value
-            subhdr["DESSHF"]["DESSHTN"].value = xmlns
-            subhdr["DESSHF"]["DESSHLPG"].value = ""
-            subhdr["DESSHF"]["DESSHLI"].value = prodinfo.de_subheader_part.desshli
-            subhdr["DESSHF"]["DESSHLIN"].value = prodinfo.de_subheader_part.desshlin
-            subhdr["DESSHF"]["DESSHABS"].value = prodinfo.de_subheader_part.desshabs
-
+        for prodinfo in metadata.product_support_xmls:
+            deseg = self._jbp["DataExtensionSegments"][desidx]
             xml_bytes = lxml.etree.tostring(prodinfo.xmltree)
-            deseg["DESDATA"].size = len(xml_bytes)
+            assert deseg["DESDATA"].size == len(xml_bytes)
             to_write.append((deseg["DESDATA"].get_offset(), xml_bytes))
 
             desidx += 1
 
-        # SICD XML DES
-        for sicd_xml_info in self._metadata.sicd_xmls:
-            deseg = self._ntf["DESegments"][desidx]
-            sksicd.NitfWriter._set_de_segment(
-                deseg, sicd_xml_info.xmltree, sicd_xml_info.de_subheader_part
-            )
-
+        for sicd_xml_info in metadata.sicd_xmls:
+            deseg = self._jbp["DataExtensionSegments"][desidx]
             xml_bytes = lxml.etree.tostring(sicd_xml_info.xmltree)
-            deseg["DESDATA"].size = len(xml_bytes)
+            assert deseg["DESDATA"].size == len(xml_bytes)
             to_write.append((deseg["DESDATA"].get_offset(), xml_bytes))
 
             desidx += 1
 
-        self._ntf.finalize()  # compute lengths, CLEVEL, etc...
-        self._ntf.dump(file)
         for offset, xml_bytes in to_write:
             file.seek(offset, os.SEEK_SET)
             file.write(xml_bytes)
+
+    def _product_image_info(self, image_number):
+        shape = np.array([0, 0], dtype=np.int64)
+        imseg_indices = product_image_segment_mapping(self._jbp)[
+            f"SIDD{image_number + 1:03d}"
+        ]
+        imsegs = [self._jbp["ImageSegments"][idx] for idx in imseg_indices]
+
+        shape[0] = np.sum(imseg["subheader"]["NROWS"].value for imseg in imsegs)
+        shape[1] = imsegs[0]["subheader"]["NCOLS"].value
+
+        irep = imsegs[0]["subheader"]["IREP"].value
+        irepband0 = imsegs[0]["subheader"]["IREPBAND00001"].value
+        nbands = imsegs[0]["subheader"]["NBANDS"].value
+        abpp = imsegs[0]["subheader"]["ABPP"].value
+        pixel_type = {
+            ("MONO", "M", 1, 8): "MONO8I",
+            ("MONO", "LU", 1, 8): "MONO8LU",
+            ("MONO", "M", 1, 16): "MONO16I",
+            ("RGB/LUT", "LU", 1, 8): "RGB8LU",
+            ("RGB", "R", 3, 8): "RGB24I",
+        }[(irep, irepband0, nbands, abpp)]
+
+        return shape, pixel_type, imsegs
 
     def write_image(
         self,
@@ -829,16 +923,7 @@ class NitfWriter:
             The start index (first_row, first_col) of `array` in the SIDD image.
             If not given, `array` must be the full SIDD image.
         """
-
-        xml_helper = sksidd.XmlHelper(self._metadata.images[image_number].xmltree)
-        pixel_type = xml_helper.load("./{*}Display/{*}PixelType")
-        if PIXEL_TYPES[pixel_type]["dtype"] != array.dtype.newbyteorder("="):
-            raise ValueError(
-                f"Array dtype ({array.dtype}) does not match expected dtype ({PIXEL_TYPES[pixel_type]['dtype']}) "
-                f"for PixelType={pixel_type}"
-            )
-
-        shape = xml_helper.load("{*}Measurement/{*}PixelFootprint")
+        shape, pixel_type, imsegs = self._product_image_info(image_number)
 
         if start is None:
             # require array to be full image
@@ -865,18 +950,8 @@ class NitfWriter:
                 f"array goes beyond end of image. start + array.shape = {stop} image shape={shape}"
             )
 
-        imsegs = sorted(
-            [
-                imseg
-                for imseg in self._ntf["ImageSegments"]
-                if imseg["SubHeader"]["IID1"].value.startswith(
-                    f"SIDD{image_number + 1:03d}"
-                )
-            ],
-            key=lambda seg: seg["SubHeader"]["IID1"].value,
-        )
         first_rows = np.cumsum(
-            [0] + [imseg["SubHeader"]["NROWS"].value for imseg in imsegs[:-1]]
+            [0] + [imseg["subheader"]["NROWS"].value for imseg in imsegs[:-1]]
         )
 
         if pixel_type == "RGB24I":
@@ -892,7 +967,7 @@ class NitfWriter:
 
             # Could break this into blocks to reduce memory usage from byte swapping
             raw_array = input_array[
-                first_row : first_row + imseg["SubHeader"]["NROWS"].value
+                first_row : first_row + imseg["subheader"]["NROWS"].value
             ]
             raw_array = raw_array.astype(raw_dtype.newbyteorder(">"), copy=False)
             raw_array.tofile(self._file)
@@ -925,7 +1000,7 @@ class NitfWriter:
         return self
 
     def __exit__(self, *args, **kwargs):
-        images_expected = set(range(len(self._metadata.images)))
+        images_expected = set(range(len(product_image_segment_mapping(self._jbp))))
         images_missing = images_expected - self._images_written
         if images_missing:
             logger.warning(
