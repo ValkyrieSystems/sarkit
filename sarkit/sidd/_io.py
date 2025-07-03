@@ -888,7 +888,7 @@ class NitfWriter:
         ]
         imsegs = [self._jbp["ImageSegments"][idx] for idx in imseg_indices]
 
-        shape[0] = np.sum(imseg["subheader"]["NROWS"].value for imseg in imsegs)
+        shape[0] = sum(imseg["subheader"]["NROWS"].value for imseg in imsegs)
         shape[1] = imsegs[0]["subheader"]["NCOLS"].value
 
         irep = imsegs[0]["subheader"]["IREP"].value
