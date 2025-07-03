@@ -2124,6 +2124,27 @@ class CrsdConsistency(con.ConsistencyChecker):
                 ):
                     assert prev_end == int(self.kvp_list["SIGNAL_BLOCK_SIZE"])
 
+    def check_compressed_signal_block(self):
+        """Metadata properly indicates signal arrays are stored in compressed format"""
+        with self.precondition():
+            compressed_size_str = self.crsdroot.findtext(
+                "{*}Data/{*}Receive/{*}SignalCompression/{*}CompressedSignalSize"
+            )
+            assert compressed_size_str is not None
+            for rcv_chan in self.crsdroot.findall("{*}Data/{*}Receive/{*}Channel"):
+                with self.need(
+                    f"SignalArrayByteOffset is 0 for ChId={rcv_chan.findtext('{*}Identifier')}"
+                ):
+                    assert int(rcv_chan.findtext("{*}SignalArrayByteOffset")) == 0
+            with self.precondition():
+                assert self.kvp_list is not None
+                with self.need(
+                    "SIGNAL_BLOCK_SIZE is set equal to CompressedSignalSize"
+                ):
+                    assert int(self.kvp_list["SIGNAL_BLOCK_SIZE"]) == int(
+                        compressed_size_str
+                    )
+
     def check_end_of_file_at_last_block(self):
         """Last block is at the end of the file."""
         with self.precondition():

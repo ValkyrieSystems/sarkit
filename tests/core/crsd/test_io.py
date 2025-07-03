@@ -1,11 +1,45 @@
 import pathlib
 
+import lxml.builder
 import lxml.etree
 import numpy as np
+import pytest
 
 import sarkit.crsd as skcrsd
 
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
+
+
+def _random_array(shape, dtype, reshape=True):
+    rng = np.random.default_rng()
+    retval = np.frombuffer(
+        rng.bytes(np.prod(shape) * dtype.itemsize), dtype=dtype
+    ).copy()
+
+    def _zerofill(arr):
+        if arr.dtype.names is None:
+            arr[~np.isfinite(arr)] = 0
+        else:
+            for name in arr.dtype.names:
+                _zerofill(arr[name])
+
+    _zerofill(retval)
+    return retval.reshape(shape) if reshape else retval
+
+
+def _random_support_array(crsd_xmltree, sa_id):
+    xmlhelp = skcrsd.XmlHelper(crsd_xmltree)
+    data_sa_elem = crsd_xmltree.find(
+        f"{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}SAId='{sa_id}']"
+    )
+    sa_id = xmlhelp.load_elem(data_sa_elem.find("./{*}SAId"))
+    nrows = xmlhelp.load_elem(data_sa_elem.find("./{*}NumRows"))
+    ncols = xmlhelp.load_elem(data_sa_elem.find("./{*}NumCols"))
+    sa_elem = crsd_xmltree.find(f"./{{*}}SupportArray/*[{{*}}Identifier='{sa_id}']")
+    format_str = sa_elem.findtext("{*}ElementFormat")
+    return _random_array(
+        (nrows, ncols), skcrsd.binary_format_string_to_dtype(format_str)
+    )
 
 
 def test_roundtrip(tmp_path, caplog):
@@ -24,18 +58,6 @@ def test_roundtrip(tmp_path, caplog):
         for x in basis_etree.findall("./{*}TxSequence/{*}Parameters/{*}Identifier")
     ]
     assert len(sequence_ids) == 1
-    rng = np.random.default_rng()
-
-    def _random_array(shape, dtype, reshape=True):
-        retval = np.frombuffer(
-            rng.bytes(np.prod(shape) * dtype.itemsize), dtype=dtype
-        ).copy()
-        if dtype.names is None:
-            retval[~np.isfinite(retval)] = 0
-        else:
-            for name in dtype.names:
-                retval[name][~np.isfinite(retval[name])] = 0
-        return retval.reshape(shape) if reshape else retval
 
     signal_dtype = skcrsd.binary_format_string_to_dtype(
         basis_etree.findtext("./{*}Data/{*}Receive/{*}SignalArrayFormat")
@@ -56,13 +78,7 @@ def test_roundtrip(tmp_path, caplog):
     support_arrays = {}
     for data_sa_elem in basis_etree.findall("./{*}Data/{*}Support/{*}SupportArray"):
         sa_id = xmlhelp.load_elem(data_sa_elem.find("./{*}SAId"))
-        nrows = xmlhelp.load_elem(data_sa_elem.find("./{*}NumRows"))
-        ncols = xmlhelp.load_elem(data_sa_elem.find("./{*}NumCols"))
-        format_str = basis_etree.findtext(
-            f"./{{*}}SupportArray//{{*}}Identifier[.='{sa_id}']/../{{*}}ElementFormat"
-        )
-        dt = skcrsd.binary_format_string_to_dtype(format_str)
-        support_arrays[sa_id] = _random_array((nrows, ncols), dt)
+        support_arrays[sa_id] = _random_support_array(basis_etree, sa_id)
 
     crsd_metadata = skcrsd.Metadata(
         file_header_part=skcrsd.FileHeaderPart(
@@ -101,3 +117,60 @@ def test_roundtrip(tmp_path, caplog):
         reader.metadata.xmltree, method="c14n"
     ) == lxml.etree.tostring(basis_etree, method="c14n")
     assert not caplog.text
+
+
+def test_roundtrip_compressed(tmp_path):
+    basis_etree = lxml.etree.parse(DATAPATH / "example-crsd-1.0.xml")
+    basis_version = lxml.etree.QName(basis_etree.getroot()).namespace
+    data_rcv = basis_etree.find("{*}Data/{*}Receive")
+    assert data_rcv is not None
+    assert data_rcv.find("{*}SignalCompression") is None
+    channel_ids = [
+        x.text for x in basis_etree.findall("./{*}Channel/{*}Parameters/{*}Identifier")
+    ]
+    assert len(channel_ids) == 1
+    ch_id = channel_ids[0]
+
+    em = lxml.builder.ElementMaker(namespace=basis_version, nsmap={None: basis_version})
+    signal_block_str = "the identifier is the signal block!"
+    data_rcv.find("{*}NumCRSDChannels").addnext(
+        em.SignalCompression(
+            em.Identifier(signal_block_str),
+            em.CompressedSignalSize(str(len(signal_block_str))),
+        )
+    )
+    schema = lxml.etree.XMLSchema(file=skcrsd.VERSION_INFO[basis_version]["schema"])
+    schema.assertValid(basis_etree)
+    xmlhelp = skcrsd.XmlHelper(basis_etree)
+    num_vectors = int(data_rcv.findtext("{*}Channel/{*}NumVectors"))
+    pvps = np.zeros(num_vectors, dtype=skcrsd.get_pvp_dtype(basis_etree))
+
+    support_arrays = {}
+    for data_sa_elem in basis_etree.findall("./{*}Data/{*}SupportArray"):
+        sa_id = xmlhelp.load_elem(data_sa_elem.find("./{*}Identifier"))
+        support_arrays[sa_id] = _random_support_array(basis_etree, sa_id)
+
+    meta = skcrsd.Metadata(
+        xmltree=basis_etree,
+    )
+    out_crsd = tmp_path / "out.crsd"
+    with open(out_crsd, "wb") as f, skcrsd.Writer(f, meta) as writer:
+        with pytest.raises(RuntimeError, match="Signal block is compressed.*"):
+            writer.write_signal(
+                ch_id, np.frombuffer(signal_block_str.encode(), dtype=np.uint8)
+            )
+
+        writer.write_signal_compressed(
+            np.frombuffer(signal_block_str.encode(), dtype=np.uint8)
+        )
+        writer.write_pvp(ch_id, pvps)
+        for k, v in support_arrays.items():
+            writer.write_support_array(k, v)
+
+    with open(out_crsd, "rb") as f, skcrsd.Reader(f) as reader:
+        with pytest.raises(RuntimeError, match="Signal block is compressed.*"):
+            reader.read_signal(ch_id)
+
+        sig_array = reader.read_signal_compressed()
+
+    assert sig_array.tobytes().decode() == signal_block_str
