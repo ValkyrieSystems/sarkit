@@ -5,9 +5,7 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
-import sarkit._xmlhelp2
 import sarkit.sidd as sksidd
-import sarkit.sidd._xmlhelp2
 from tests.core import testing
 
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
@@ -109,12 +107,12 @@ def test_transcoders():
 def test_elementwrapper_tofromdict(xmlpath):
     siddroot = lxml.etree.parse(xmlpath).getroot()
     root_ns = lxml.etree.QName(siddroot).namespace
-    xsdhelp = sarkit.sidd._xmlhelp2.XsdHelper(root_ns)
-    wrapped_siddroot = sarkit._xmlhelp2.ElementWrapper(siddroot, xsdhelper=xsdhelp)
+    xsdhelp = sksidd.XsdHelper(root_ns)
+    wrapped_siddroot = sksidd.ElementWrapper(siddroot)
 
     dict1 = wrapped_siddroot.to_dict()
-    wrapped_root_fromdict = sarkit._xmlhelp2.ElementWrapper(
-        lxml.etree.Element(lxml.etree.QName(root_ns, "SIDD")), xsdhelper=xsdhelp
+    wrapped_root_fromdict = sksidd.ElementWrapper(
+        lxml.etree.Element(lxml.etree.QName(root_ns, "SIDD")),
     )
     wrapped_root_fromdict.from_dict(dict1)
     dict2 = wrapped_root_fromdict.to_dict()

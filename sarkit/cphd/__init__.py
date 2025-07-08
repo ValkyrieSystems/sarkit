@@ -35,6 +35,8 @@ XML Metadata
    :toctree: generated/
 
    XmlHelper
+   ElementWrapper
+   XsdHelper
    TxtType
    EnuType
    BoolType
@@ -113,6 +115,7 @@ from ._xml import (
     AddedPvpType,
     BoolType,
     DblType,
+    ElementWrapper,
     EnuType,
     HexType,
     ImageAreaCornerPointsType,
@@ -140,6 +143,7 @@ __all__ = [
     "AddedPvpType",
     "BoolType",
     "DblType",
+    "ElementWrapper",
     "EnuType",
     "FileHeaderPart",
     "HexType",

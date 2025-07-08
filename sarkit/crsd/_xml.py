@@ -7,99 +7,99 @@ import pathlib
 
 import lxml.etree
 
-import sarkit._xmlhelp as skxml
-import sarkit._xmlhelp2 as skxml2
 import sarkit.cphd as skcphd
+import sarkit.xmlhelp as skxml
+import sarkit.xmlhelp._transcoders as skxt
 
 from . import _constants as crsdconst
 
 
 # The following transcoders happen to share common implementation across several standards
-@skxml.inheritdocstring
-class TxtType(skxml.TxtType):
+@skxt.inheritdocstring
+class TxtType(skxt.TxtType):
     pass
 
 
-@skxml.inheritdocstring
-class EnuType(skxml.EnuType):
+@skxt.inheritdocstring
+class EnuType(skxt.EnuType):
     pass
 
 
-@skxml.inheritdocstring
-class BoolType(skxml.BoolType):
+@skxt.inheritdocstring
+class BoolType(skxt.BoolType):
     pass
 
 
-@skxml.inheritdocstring
-class XdtType(skxml.XdtType):
+@skxt.inheritdocstring
+class XdtType(skxt.XdtType):
     pass
 
 
-@skxml.inheritdocstring
-class IntType(skxml.IntType):
+@skxt.inheritdocstring
+class IntType(skxt.IntType):
     pass
 
 
-@skxml.inheritdocstring
-class DblType(skxml.DblType):
+@skxt.inheritdocstring
+class DblType(skxt.DblType):
     pass
 
 
-@skxml.inheritdocstring
-class HexType(skxml.HexType):
+@skxt.inheritdocstring
+class HexType(skxt.HexType):
     pass
 
 
-@skxml.inheritdocstring
-class LineSampType(skxml.LineSampType):
+@skxt.inheritdocstring
+class LineSampType(skxt.LineSampType):
     pass
 
 
-@skxml.inheritdocstring
-class XyType(skxml.XyType):
+@skxt.inheritdocstring
+class XyType(skxt.XyType):
     pass
 
 
-@skxml.inheritdocstring
-class XyzType(skxml.XyzType):
+@skxt.inheritdocstring
+class XyzType(skxt.XyzType):
     pass
 
 
-@skxml.inheritdocstring
-class LatLonType(skxml.LatLonType):
+@skxt.inheritdocstring
+class LatLonType(skxt.LatLonType):
     pass
 
 
-@skxml.inheritdocstring
-class LatLonHaeType(skxml.LatLonHaeType):
+@skxt.inheritdocstring
+class LatLonHaeType(skxt.LatLonHaeType):
     pass
 
 
-@skxml.inheritdocstring
-class PolyType(skxml.PolyType):
+@skxt.inheritdocstring
+class PolyType(skxt.PolyType):
     pass
 
 
-@skxml.inheritdocstring
-class Poly2dType(skxml.Poly2dType):
+@skxt.inheritdocstring
+class Poly2dType(skxt.Poly2dType):
     pass
 
 
-@skxml.inheritdocstring
-class XyzPolyType(skxml.XyzPolyType):
+@skxt.inheritdocstring
+class XyzPolyType(skxt.XyzPolyType):
     pass
 
 
 # PxP/APxP are below
 
 
-@skxml.inheritdocstring
-class MtxType(skxml.MtxType):
+@skxt.inheritdocstring
+class MtxType(skxt.MtxType):
     pass
 
 
-@skxml.inheritdocstring
-class ParameterType(skxml.ParameterType):
+@skxt.inheritdocstring
+class ParameterType(skxt.ParameterType):
     pass
 
 
@@ -112,12 +112,12 @@ class AddedPxpType(skcphd.AddedPvpType):
     """Transcoder for Added Per-x-Parameter (APxP) XML parameter types."""
 
 
-@skxml.inheritdocstring
+@skxt.inheritdocstring
 class ImageAreaCornerPointsType(skcphd.ImageAreaCornerPointsType):
     pass
 
 
-class EdfType(skxml.SequenceType):
+class EdfType(skxt.SequenceType):
     """
     Transcoder for Error Decorrelation Function (EDF) XML parameter types.
 
@@ -125,7 +125,7 @@ class EdfType(skxml.SequenceType):
 
     def __init__(self) -> None:
         super().__init__(
-            subelements={c: skxml.DblType() for c in ("CorrCoefZero", "DecorrRate")}
+            subelements={c: skxt.DblType() for c in ("CorrCoefZero", "DecorrRate")}
         )
 
     def parse_elem(self, elem) -> tuple[float, float]:
@@ -137,9 +137,9 @@ class EdfType(skxml.SequenceType):
         super().set_subelements(elem, {"CorrCoefZero": val[0], "DecorrRate": val[1]})
 
 
-class XmlHelper(skxml2.XmlHelper):
+class XmlHelper(skxml.XmlHelper):
     """
-    XmlHelper for Compensated Radar Signal Data (CRSD).
+    :py:class:`~sarkit.xmlhelp.XmlHelper` for CRSD
 
     """
 
@@ -148,7 +148,12 @@ class XmlHelper(skxml2.XmlHelper):
         super().__init__(element_tree, XsdHelper(root_ns))
 
 
-class XsdHelper(skxml2.XsdHelper):
+class XsdHelper(skxml.XsdHelper):
+    """
+    :py:class:`~sarkit.xmlhelp.XsdHelper` for CRSD
+
+    """
+
     def _read_xsdtypes_json(self, root_ns: str) -> str:
         """Return the text contents of the appropriate xsdtypes JSON"""
         schema_name = crsdconst.VERSION_INFO[root_ns]["schema"].name
@@ -179,19 +184,19 @@ class XsdHelper(skxml2.XsdHelper):
                 "/{http://api.nsgreg.nga.mil/schema/crsd/1.0}SegmentList"
                 "/{http://api.nsgreg.nga.mil/schema/crsd/1.0}Segment"
                 "/{http://api.nsgreg.nga.mil/schema/crsd/1.0}SegmentPolygon"
-            ): skxml.NdArrayType("SV", LineSampType()),
+            ): skxt.NdArrayType("SV", LineSampType()),
             "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/crsd/1.0}XYPolygonType/{http://api.nsgreg.nga.mil/schema/crsd/1.0}Vertex": XyType(),
             "{http://api.nsgreg.nga.mil/schema/crsd/1.0}ErrorDecorrFuncType": EdfType(),
             "{http://api.nsgreg.nga.mil/schema/crsd/1.0}LSType": LineSampType(),
             "{http://api.nsgreg.nga.mil/schema/crsd/1.0}LSVertexType": LineSampType(),
             "{http://api.nsgreg.nga.mil/schema/crsd/1.0}LatLonCornerRestrictionType": LatLonType(),
             "{http://api.nsgreg.nga.mil/schema/crsd/1.0}LatLonHAERestrictionType": LatLonHaeType(),
-            "{http://api.nsgreg.nga.mil/schema/crsd/1.0}LatLonPolygonType": skxml.NdArrayType(
+            "{http://api.nsgreg.nga.mil/schema/crsd/1.0}LatLonPolygonType": skxt.NdArrayType(
                 "Vertex", LatLonType()
             ),
             "{http://api.nsgreg.nga.mil/schema/crsd/1.0}LatLonRestrictionType": LatLonType(),
             "{http://api.nsgreg.nga.mil/schema/crsd/1.0}LatLonType": LatLonType(),
-            "{http://api.nsgreg.nga.mil/schema/crsd/1.0}LineType": skxml.NdArrayType(
+            "{http://api.nsgreg.nga.mil/schema/crsd/1.0}LineType": skxt.NdArrayType(
                 "Endpoint", LatLonType()
             ),
             "{http://api.nsgreg.nga.mil/schema/crsd/1.0}Matrix2x2Type": MtxType((2, 2)),
@@ -208,7 +213,7 @@ class XsdHelper(skxml2.XsdHelper):
             "{http://api.nsgreg.nga.mil/schema/crsd/1.0}Poly2DType": Poly2dType(),
             "{http://api.nsgreg.nga.mil/schema/crsd/1.0}UserDefinedPxPType": AddedPxpType(),
             "{http://api.nsgreg.nga.mil/schema/crsd/1.0}XDTType": XdtType(),
-            "{http://api.nsgreg.nga.mil/schema/crsd/1.0}XYPolygonType": skxml.NdArrayType(
+            "{http://api.nsgreg.nga.mil/schema/crsd/1.0}XYPolygonType": skxt.NdArrayType(
                 "Vertex", XyType()
             ),
             "{http://api.nsgreg.nga.mil/schema/crsd/1.0}XYType": XyType(),
@@ -221,3 +226,26 @@ class XsdHelper(skxml2.XsdHelper):
         if not typedef.children:
             return known_builtins.get(typedef.text_typename, TxtType())
         return None
+
+
+class ElementWrapper(skxml.ElementWrapper):
+    """:py:class:`~sarkit.xmlhelp.ElementWrapper` for CRSD that can set ``xsdhelper`` automatically.
+
+    Refer to :py:class:`sarkit.xmlhelp.ElementWrapper` for full documentation.
+    """
+
+    def __init__(
+        self,
+        elem,
+        xsdhelper=None,
+        wrapped_parent=None,
+        typename=None,
+        elementpath=None,
+        roottag=None,
+    ):
+        if xsdhelper is None:
+            root_ns = lxml.etree.QName(roottag or elem).namespace
+            xsdhelper = XsdHelper(root_ns)
+        super().__init__(
+            elem, xsdhelper, wrapped_parent, typename, elementpath, roottag
+        )

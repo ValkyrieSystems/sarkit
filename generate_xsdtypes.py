@@ -9,11 +9,11 @@ import tempfile
 import lxml.etree
 import xmlschema
 
-import sarkit._xmlhelp2 as skxh2
 import sarkit.cphd as skcphd
 import sarkit.crsd as skcrsd
 import sarkit.sicd as sksicd
 import sarkit.sidd as sksidd
+import sarkit.xmlhelp as skxml
 
 
 def generate_xsdtypes(xs: xmlschema.XMLSchema):
@@ -52,7 +52,7 @@ def get_typename(elemobj: xmlschema.XsdElement):
 
 
 def make_childdef(elemobj: xmlschema.XsdElement):
-    return skxh2.ChildDef(
+    return skxml.ChildDef(
         tag=elemobj.name,
         typename=get_typename(elemobj),
         repeat=elemobj.max_occurs is None or elemobj.max_occurs > 1,
@@ -68,7 +68,7 @@ def make_typedef(typeobj: xmlschema.XsdType):
             kwargs["text_typename"] = typeobj.base_type.name
     if typeobj.is_element_only() or typeobj.has_mixed_content():
         kwargs["children"] = [make_childdef(c) for c in typeobj.content.iter_elements()]
-    return skxh2.XsdTypeDef(
+    return skxml.XsdTypeDef(
         attributes=list(getattr(typeobj, "attributes", [])), **kwargs
     )
 
@@ -109,7 +109,7 @@ def main(args=None):
             outdir = pathlib.Path(outdir)
             outdir.mkdir(exist_ok=True)
             output_file = outdir / f"{schema.stem}.json"
-            output_file.write_text(skxh2.dumps_xsdtypes(xsdtypes))
+            output_file.write_text(skxml.dumps_xsdtypes(xsdtypes))
 
             if config.check and not filecmp.cmp(
                 storage_dir / output_file.name, output_file

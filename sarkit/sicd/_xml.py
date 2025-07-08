@@ -7,109 +7,108 @@ import importlib.resources
 import pathlib
 from collections.abc import Sequence
 
-import lxml.builder
 import lxml.etree
 import numpy as np
 import numpy.polynomial.polynomial as npp
 import numpy.typing as npt
 
-import sarkit._xmlhelp as skxml
-import sarkit._xmlhelp2 as skxml2
 import sarkit.sicd.projection as ss_proj
+import sarkit.xmlhelp as skxml
+import sarkit.xmlhelp._transcoders as skxt
 from sarkit import _constants
 
 from . import _constants as sicdconst
 
 
 # The following transcoders happen to share common implementation across several standards
-@skxml.inheritdocstring
-class TxtType(skxml.TxtType):
+@skxt.inheritdocstring
+class TxtType(skxt.TxtType):
     pass
 
 
-@skxml.inheritdocstring
-class EnuType(skxml.EnuType):
+@skxt.inheritdocstring
+class EnuType(skxt.EnuType):
     pass
 
 
-@skxml.inheritdocstring
-class BoolType(skxml.BoolType):
+@skxt.inheritdocstring
+class BoolType(skxt.BoolType):
     pass
 
 
-@skxml.inheritdocstring
-class IntType(skxml.IntType):
+@skxt.inheritdocstring
+class IntType(skxt.IntType):
     pass
 
 
-@skxml.inheritdocstring
-class DblType(skxml.DblType):
+@skxt.inheritdocstring
+class DblType(skxt.DblType):
     pass
 
 
-@skxml.inheritdocstring
-class XdtType(skxml.XdtType):
+@skxt.inheritdocstring
+class XdtType(skxt.XdtType):
     pass
 
 
-@skxml.inheritdocstring
-class RowColType(skxml.RowColType):
+@skxt.inheritdocstring
+class RowColType(skxt.RowColType):
     pass
 
 
-@skxml.inheritdocstring
-class CmplxType(skxml.CmplxType):
+@skxt.inheritdocstring
+class CmplxType(skxt.CmplxType):
     pass
 
 
-@skxml.inheritdocstring
-class XyzType(skxml.XyzType):
+@skxt.inheritdocstring
+class XyzType(skxt.XyzType):
     pass
 
 
-@skxml.inheritdocstring
-class LatLonHaeType(skxml.LatLonHaeType):
+@skxt.inheritdocstring
+class LatLonHaeType(skxt.LatLonHaeType):
     pass
 
 
-@skxml.inheritdocstring
-class LatLonType(skxml.LatLonType):
+@skxt.inheritdocstring
+class LatLonType(skxt.LatLonType):
     pass
 
 
-@skxml.inheritdocstring
-class PolyType(skxml.PolyType):
+@skxt.inheritdocstring
+class PolyType(skxt.PolyType):
     pass
 
 
-@skxml.inheritdocstring
-class Poly2dType(skxml.Poly2dType):
+@skxt.inheritdocstring
+class Poly2dType(skxt.Poly2dType):
     pass
 
 
-@skxml.inheritdocstring
-class XyzPolyType(skxml.XyzPolyType):
+@skxt.inheritdocstring
+class XyzPolyType(skxt.XyzPolyType):
     pass
 
 
-@skxml.inheritdocstring
-class MtxType(skxml.MtxType):
+@skxt.inheritdocstring
+class MtxType(skxt.MtxType):
     pass
 
 
-@skxml.inheritdocstring
-class ParameterType(skxml.ParameterType):
+@skxt.inheritdocstring
+class ParameterType(skxt.ParameterType):
     pass
 
 
-class ImageCornersType(skxml.NdArrayType):
+class ImageCornersType(skxt.NdArrayType):
     """
     Transcoder for SICD-like GeoData/ImageCorners XML parameter types.
 
     """
 
     def __init__(self) -> None:
-        super().__init__("ICP", skxml.LatLonType())
+        super().__init__("ICP", skxt.LatLonType())
 
     def parse_elem(self, elem: lxml.etree.Element) -> npt.NDArray:
         """Returns the array of ImageCorners encoded in ``elem``.
@@ -156,9 +155,9 @@ class ImageCornersType(skxml.NdArrayType):
             self.sub_type.set_elem(icp, coord)
 
 
-class XmlHelper(skxml2.XmlHelper):
+class XmlHelper(skxml.XmlHelper):
     """
-    XmlHelper for Sensor Independent Complex Data (SICD).
+    :py:class:`~sarkit.xmlhelp.XmlHelper` for SICD
 
     """
 
@@ -167,7 +166,12 @@ class XmlHelper(skxml2.XmlHelper):
         super().__init__(element_tree, XsdHelper(root_ns))
 
 
-class XsdHelper(skxml2.XsdHelper):
+class XsdHelper(skxml.XsdHelper):
+    """
+    :py:class:`~sarkit.xmlhelp.XsdHelper` for SICD
+
+    """
+
     def _read_xsdtypes_json(self, root_ns: str) -> str:
         """Return the text contents of the appropriate xsdtypes JSON"""
         schema_name = sicdconst.VERSION_INFO[root_ns]["schema"].name
@@ -190,36 +194,36 @@ class XsdHelper(skxml2.XsdHelper):
         }
         typedef = self.xsdtypes[typename]
         sicd_110 = {
-            "<UNNAMED>-{urn:SICD:1.1.0}DirParamType/{urn:SICD:1.1.0}WgtFunct": skxml.NdArrayType(
+            "<UNNAMED>-{urn:SICD:1.1.0}DirParamType/{urn:SICD:1.1.0}WgtFunct": skxt.NdArrayType(
                 "Wgt", DblType()
             ),
             "<UNNAMED>-{urn:SICD:1.1.0}GeoDataType/{urn:SICD:1.1.0}ImageCorners": ImageCornersType(),
-            "<UNNAMED>-{urn:SICD:1.1.0}ImageDataType/{urn:SICD:1.1.0}AmpTable": skxml.NdArrayType(
+            "<UNNAMED>-{urn:SICD:1.1.0}ImageDataType/{urn:SICD:1.1.0}AmpTable": skxt.NdArrayType(
                 "Amplitude", DblType(), index_start=0
             ),
-            "<UNNAMED>-{urn:SICD:1.1.0}ImageDataType/{urn:SICD:1.1.0}ValidData": skxml.NdArrayType(
+            "<UNNAMED>-{urn:SICD:1.1.0}ImageDataType/{urn:SICD:1.1.0}ValidData": skxt.NdArrayType(
                 "Vertex", RowColType()
             ),
             "<UNNAMED>-{urn:SICD:1.1.0}LineType/{urn:SICD:1.1.0}Endpoint": LatLonType(),
             "<UNNAMED>-{urn:SICD:1.1.0}PolygonType/{urn:SICD:1.1.0}Vertex": LatLonType(),
-            "<UNNAMED>-{urn:SICD:1.1.0}PositionType/{urn:SICD:1.1.0}RcvAPC": skxml.ListType(
+            "<UNNAMED>-{urn:SICD:1.1.0}PositionType/{urn:SICD:1.1.0}RcvAPC": skxt.ListType(
                 "RcvAPCPoly", XyzPolyType()
             ),
             (
                 "<UNNAMED>-{urn:SICD:1.1.0}RadarCollectionType"
                 "/{urn:SICD:1.1.0}Area"
                 "/{urn:SICD:1.1.0}Corner"
-            ): skxml.NdArrayType("ACP", LatLonHaeType(), include_size_attr=False),
+            ): skxt.NdArrayType("ACP", LatLonHaeType(), include_size_attr=False),
             "{urn:SICD:1.1.0}ComplexType": CmplxType(),
             "{urn:SICD:1.1.0}LatLonCornerStringType": LatLonType(),
             "{urn:SICD:1.1.0}LatLonHAECornerRestrictType": LatLonHaeType(),
             "{urn:SICD:1.1.0}LatLonHAERestrictionType": LatLonHaeType(),
             "{urn:SICD:1.1.0}LatLonRestrictionType": LatLonType(),
-            "{urn:SICD:1.1.0}LineType": skxml.NdArrayType("Endpoint", LatLonType()),
+            "{urn:SICD:1.1.0}LineType": skxt.NdArrayType("Endpoint", LatLonType()),
             "{urn:SICD:1.1.0}ParameterType": ParameterType(),
             "{urn:SICD:1.1.0}Poly1DType": PolyType(),
             "{urn:SICD:1.1.0}Poly2DType": Poly2dType(),
-            "{urn:SICD:1.1.0}PolygonType": skxml.NdArrayType("Vertex", LatLonType()),
+            "{urn:SICD:1.1.0}PolygonType": skxt.NdArrayType("Vertex", LatLonType()),
             "{urn:SICD:1.1.0}RowColType": RowColType(),
             "{urn:SICD:1.1.0}RowColvertexType": RowColType(),
             "{urn:SICD:1.1.0}XYZPolyAttributeType": XyzPolyType(),
@@ -260,6 +264,29 @@ class XsdHelper(skxml2.XsdHelper):
         return None
 
 
+class ElementWrapper(skxml.ElementWrapper):
+    """:py:class:`~sarkit.xmlhelp.ElementWrapper` for SICD that can set ``xsdhelper`` automatically.
+
+    Refer to :py:class:`sarkit.xmlhelp.ElementWrapper` for full documentation.
+    """
+
+    def __init__(
+        self,
+        elem,
+        xsdhelper=None,
+        wrapped_parent=None,
+        typename=None,
+        elementpath=None,
+        roottag=None,
+    ):
+        if xsdhelper is None:
+            root_ns = lxml.etree.QName(roottag or elem).namespace
+            xsdhelper = XsdHelper(root_ns)
+        super().__init__(
+            elem, xsdhelper, wrapped_parent, typename, elementpath, roottag
+        )
+
+
 def compute_scp_coa(sicd_xmltree: lxml.etree.ElementTree) -> lxml.etree.ElementTree:
     """Return a SICD/SCPCOA XML containing parameters computed from other metadata.
 
@@ -276,8 +303,8 @@ def compute_scp_coa(sicd_xmltree: lxml.etree.ElementTree) -> lxml.etree.ElementT
         New SICD/SCPCOA XML element
     """
     version_ns = lxml.etree.QName(sicd_xmltree.getroot()).namespace
-    sicdroot = skxml2.ElementWrapper(
-        copy.deepcopy(sicd_xmltree).getroot(), XsdHelper(version_ns)
+    sicdroot = ElementWrapper(
+        copy.deepcopy(sicd_xmltree).getroot(),
     )
     sicd_versions = list(sicdconst.VERSION_INFO)
     pre_1_4 = sicd_versions.index(version_ns) < sicd_versions.index("urn:SICD:1.4.0")

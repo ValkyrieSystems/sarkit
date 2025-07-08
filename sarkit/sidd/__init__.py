@@ -42,6 +42,8 @@ XML Metadata
    :toctree: generated/
 
    XmlHelper
+   ElementWrapper
+   XsdHelper
    BoolType
    DblType
    EnuType
@@ -154,6 +156,7 @@ from ._xml import (
     AngleMagnitudeType,
     BoolType,
     DblType,
+    ElementWrapper,
     EnuType,
     FilterCoefficientType,
     ImageCornersType,
@@ -171,6 +174,7 @@ from ._xml import (
     TxtType,
     XdtType,
     XmlHelper,
+    XsdHelper,
     XyzPolyType,
     XyzType,
 )
@@ -189,6 +193,7 @@ __all__ = [
     "AngleMagnitudeType",
     "BoolType",
     "DblType",
+    "ElementWrapper",
     "EnuType",
     "FilterCoefficientType",
     "ImageCornersType",
@@ -219,6 +224,7 @@ __all__ = [
     "TxtType",
     "XdtType",
     "XmlHelper",
+    "XsdHelper",
     "XyzPolyType",
     "XyzType",
     "compute_angles",

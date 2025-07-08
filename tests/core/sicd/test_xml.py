@@ -6,7 +6,6 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
-import sarkit._xmlhelp2 as skxml2
 import sarkit.sicd as sksicd
 from tests.core import testing
 
@@ -69,11 +68,11 @@ def test_elementwrapper_tofromdict(xmlpath):
     xmlroot = lxml.etree.parse(xmlpath).getroot()
     root_ns = lxml.etree.QName(xmlroot).namespace
     xsdhelp = sksicd.XsdHelper(root_ns)
-    wrapped_sicdroot = skxml2.ElementWrapper(xmlroot, xsdhelper=xsdhelp)
+    wrapped_sicdroot = sksicd.ElementWrapper(xmlroot)
 
     dict1 = wrapped_sicdroot.to_dict()
-    wrapped_root_fromdict = skxml2.ElementWrapper(
-        lxml.etree.Element(xmlroot.tag), xsdhelper=xsdhelp
+    wrapped_root_fromdict = sksicd.ElementWrapper(
+        lxml.etree.Element(xmlroot.tag),
     )
     wrapped_root_fromdict.from_dict(dict1)
     dict2 = wrapped_root_fromdict.to_dict()

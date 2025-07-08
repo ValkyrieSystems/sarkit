@@ -38,6 +38,8 @@ XML Metadata
    :toctree: generated/
 
    XmlHelper
+   ElementWrapper
+   XsdHelper
    TxtType
    EnuType
    BoolType
@@ -189,6 +191,7 @@ from ._xml import (
     BoolType,
     CmplxType,
     DblType,
+    ElementWrapper,
     EnuType,
     ImageCornersType,
     IntType,
@@ -220,6 +223,7 @@ __all__ = [
     "BoolType",
     "CmplxType",
     "DblType",
+    "ElementWrapper",
     "EnuType",
     "ImageCornersType",
     "IntType",

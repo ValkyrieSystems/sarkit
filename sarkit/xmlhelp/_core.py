@@ -9,6 +9,8 @@ import lxml.etree
 
 @dataclasses.dataclass
 class ChildDef:
+    """XSD child element definition"""
+
     tag: str
     typename: str
     repeat: bool = False
@@ -16,15 +18,18 @@ class ChildDef:
 
 @dataclasses.dataclass
 class XsdTypeDef:
+    """XSD type definition"""
+
     attributes: list[str] = dataclasses.field(default_factory=list)
     children: list[ChildDef] = dataclasses.field(default_factory=list)
     text_typename: str | None = None
 
-    def get_childdef(self, tag):
+    def get_childdef(self, tag) -> ChildDef | None:
         """Return the first ChildDef in children whose tag matches tag."""
         return next((cdef for cdef in self.children if cdef.tag == tag), None)
 
-    def get_childdef_from_localname(self, localname: str):
+    def get_childdef_from_localname(self, localname: str) -> ChildDef | None:
+        """Return the `ChildDef` in ``children`` by localname (e.g. no namespace) or ``None``."""
         return next(
             (
                 cdef
@@ -34,7 +39,8 @@ class XsdTypeDef:
             None,
         )
 
-    def get_attribute_from_localname(self, localname: str):
+    def get_attribute_from_localname(self, localname: str) -> str | None:
+        """Return attribute by localname (e.g. no namespace) or ``None``."""
         for attrib in self.attributes:
             if lxml.etree.QName(attrib).localname == localname:
                 return attrib
@@ -75,6 +81,14 @@ def split_elempath(elempath: str) -> list[str]:
 
 
 class XsdHelper(abc.ABC):
+    """Abstract base class that retrieves transcoders and type info for elements of a given XML schema.
+
+    Parameters
+    ----------
+    root_ns : str
+        Target namespace of the schema document
+    """
+
     def __init__(self, root_ns: str):
         xsdtypes_json_str = self._read_xsdtypes_json(root_ns)
         self.xsdtypes = loads_xsdtypes(xsdtypes_json_str)
@@ -106,6 +120,7 @@ class XsdHelper(abc.ABC):
         """Return the appropriate transcoder given the typename (and optionally tag)."""
 
     def get_elem_transcoder(self, elem: lxml.etree.Element):
+        """Return the appropriate transcoder given an element."""
         return self.get_transcoder(self.get_elem_typeinfo(elem)[0], tag=elem.tag)
 
 
@@ -124,25 +139,25 @@ class ElementWrapper(collections.abc.MutableMapping):
     ----------
     elem : lxml.etree.Element or None
         Element to wrap or ``None`` for a placeholder element.
-        If `elem` is ``None``, `elementpath` must be set.
+        If ``elem`` is ``None``, ``elementpath`` must be set.
     xsdhelper : XsdHelper
-        XML helper for the root namespace of the document that contains `elem`
+        XML helper for the root namespace of the document that contains ``elem``
     wrapped_parent : ElementWrapper or None
-        Wrapper for the parent of `elem` or ``None``. Only used when trying to set an item of a wrapped placeholder.
+        Wrapper for the parent of ``elem`` or ``None``. Only used when trying to set an item of a wrapped placeholder.
     typename : str or None
         XSD typename of the element being wrapped. If ``None``, the type information is retrieved from the XML Helper.
     elementpath : str or None
-        ElementPath expression that identifies the location of `elem` in its tree.
+        ElementPath expression that identifies the location of ``elem`` in its tree.
         If ``None``, the path is retrieved from the element.
-        Required if `elem` is ``None``.
+        Required if ``elem`` is ``None``.
     roottag : str or None
-        Tag of the root element of `elem`'s tree.
+        Tag of the root element of ``elem``'s tree.
         If ``None``, the tag is retrieved from the element.
-        Required if `elem` is ``None``.
+        Required if ``elem`` is ``None``.
 
     Notes
     -----
-    The wrapped element must be located in a tree with a root element expected by `xsdhelper`.
+    The wrapped element must be located in a tree with a root element expected by ``xsdhelper``.
     """
 
     def __init__(
@@ -301,7 +316,8 @@ class ElementWrapper(collections.abc.MutableMapping):
 
         Returns
         -------
-        the new transcoded or wrapped subelement
+        Any
+            the new transcoded or wrapped subelement
         """
         childdef = self.typedef.get_childdef_from_localname(localname)
         if childdef is None:
@@ -373,7 +389,7 @@ class ElementWrapper(collections.abc.MutableMapping):
     def from_dict(self, val):
         """Populate the ElementWrapper with the contents of a dictionary.
 
-        Similar to `dict.update`
+        Similar to ``dict.update``
         """
         for k, v in val.items():
             self[k] = v
@@ -388,7 +404,8 @@ class XmlHelper:
     ----------
     element_tree : lxml.etree.ElementTree
         An XML element tree containing the data being operated on.
-
+    xsdhelper : XsdHelper
+        XsdHelper object corresponding to ``element_tree``'s schema
     """
 
     def __init__(self, element_tree, xsdhelper):

@@ -5,7 +5,6 @@ Common XML Helper functionality
 import abc
 import datetime
 import inspect
-import re
 from collections.abc import Iterator, Sequence
 from typing import Any
 
@@ -642,77 +641,3 @@ class MtxType(Type):
         for indices, entry in np.ndenumerate(mtx):
             attribs = {f"index{d + 1}": str(c + 1) for d, c in enumerate(indices)}
             lxml.etree.SubElement(elem, ns + "Entry", attrib=attribs).text = str(entry)
-
-
-class XmlHelper:
-    """
-    Base Class for generic XmlHelpers, which provide methods for transcoding data
-    between XML and more convenient Python objects.
-
-    Transcoders are known to a helper by names constructed from a simplified element
-    path, without namespaces or position indices.
-
-    For example, the transcoder for an element with the structural, absolute path:
-
-        ``{ns}level0/{not-ns}level1[24]``
-
-    would have the following transcoder name:
-
-        ``level0/level1``
-
-    Parameters
-    ----------
-    element_tree : lxml.etree.ElementTree
-        An XML element tree containing the data being operated on.
-
-    """
-
-    _transcoders_: dict[str, Type] = {}
-
-    def __init__(self, element_tree):
-        self.element_tree = element_tree
-
-    def _get_simple_path(self, elem):
-        element_path = self.element_tree.getelementpath(elem)
-        return re.sub(r"\{.*?\}|\[.*?\]", "", element_path)
-
-    def get_transcoder_name(self, elem):
-        """Returns the transcoder name associated with ``elem``."""
-        simple_path = self._get_simple_path(elem)
-        if simple_path not in self._transcoders_:
-            raise LookupError(f"{simple_path} is not transcodable")
-        return simple_path
-
-    def _get_transcoder(self, elem):
-        return self._transcoders_[self.get_transcoder_name(elem)]
-
-    def load_elem(self, elem):
-        """Decode ``elem`` (an XML element) to a Python object."""
-        return self._get_transcoder(elem).parse_elem(elem)
-
-    def load(self, pattern):
-        """
-        Find and load the first subelement matching ``pattern`` in ``element_tree``.
-
-        Returns the decoded Python object or `None`.
-
-        """
-        elem = self.element_tree.find(pattern)
-        if elem is None:
-            return
-        return self.load_elem(elem)
-
-    def set_elem(self, elem, val):
-        """Encode ``val`` (a Python object) into the XML element ``elem``."""
-        self._get_transcoder(elem).set_elem(elem, val)
-
-    def set(self, pattern, val):
-        """
-        Find and set the first subelement matching ``pattern`` in ``element_tree`` using
-        ``val``.
-
-        """
-        elem = self.element_tree.find(pattern)
-        if elem is None:
-            raise ValueError(f"{pattern=} did not match any elements")
-        self.set_elem(elem, val)

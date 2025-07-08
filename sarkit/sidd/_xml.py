@@ -2,7 +2,9 @@
 Functions for interacting with SIDD XML
 """
 
+import importlib.resources
 import numbers
+import pathlib
 from collections.abc import Sequence
 from typing import Any
 
@@ -10,10 +12,10 @@ import lxml.etree
 import numpy as np
 import numpy.typing as npt
 
-import sarkit._xmlhelp as skxml
-import sarkit._xmlhelp2 as skxml2
+import sarkit.xmlhelp as skxml
+import sarkit.xmlhelp._transcoders as skxt
 
-from . import _xmlhelp2
+from . import _constants as siddconst
 
 NSMAP = {
     "sicommon": "urn:SICommon:1.0",
@@ -21,37 +23,37 @@ NSMAP = {
 
 
 # The following transcoders happen to share common implementation across several standards
-@skxml.inheritdocstring
-class BoolType(skxml.BoolType):
+@skxt.inheritdocstring
+class BoolType(skxt.BoolType):
     pass
 
 
-@skxml.inheritdocstring
-class DblType(skxml.DblType):
+@skxt.inheritdocstring
+class DblType(skxt.DblType):
     pass
 
 
-@skxml.inheritdocstring
-class EnuType(skxml.EnuType):
+@skxt.inheritdocstring
+class EnuType(skxt.EnuType):
     pass
 
 
-@skxml.inheritdocstring
-class IntType(skxml.IntType):
+@skxt.inheritdocstring
+class IntType(skxt.IntType):
     pass
 
 
-@skxml.inheritdocstring
-class TxtType(skxml.TxtType):
+@skxt.inheritdocstring
+class TxtType(skxt.TxtType):
     pass
 
 
-@skxml.inheritdocstring
-class XdtType(skxml.XdtType):
+@skxt.inheritdocstring
+class XdtType(skxt.XdtType):
     pass
 
 
-class XyzType(skxml.XyzType):
+class XyzType(skxt.XyzType):
     """Transcoder for XML parameter types containing scalar X, Y, and Z components.
 
     Children are in the SICommon namespace.
@@ -61,7 +63,7 @@ class XyzType(skxml.XyzType):
         super().__init__(child_ns=NSMAP["sicommon"])
 
 
-class AngleMagnitudeType(skxml.ArrayType):
+class AngleMagnitudeType(skxt.ArrayType):
     """Transcoder for double-precision floating point angle magnitude XML parameter type.
 
     Children are in the SICommon namespace.
@@ -69,12 +71,12 @@ class AngleMagnitudeType(skxml.ArrayType):
 
     def __init__(self) -> None:
         super().__init__(
-            subelements={c: skxml.DblType() for c in ("Angle", "Magnitude")},
+            subelements={c: skxt.DblType() for c in ("Angle", "Magnitude")},
             child_ns=NSMAP["sicommon"],
         )
 
 
-class LatLonType(skxml.LatLonType):
+class LatLonType(skxt.LatLonType):
     """Transcoder for XML parameter types containing scalar Lat and Lon components.
 
     Children are in the SICommon namespace.
@@ -84,12 +86,12 @@ class LatLonType(skxml.LatLonType):
         super().__init__(child_ns=NSMAP["sicommon"])
 
 
-@skxml.inheritdocstring
-class ParameterType(skxml.ParameterType):
+@skxt.inheritdocstring
+class ParameterType(skxt.ParameterType):
     pass
 
 
-class PolyCoef1dType(skxml.PolyType):
+class PolyCoef1dType(skxt.PolyType):
     """Transcoder for one-dimensional polynomial (PolyCoef1D) XML parameter types.
 
     Children are in the SICommon namespace.
@@ -99,7 +101,7 @@ class PolyCoef1dType(skxml.PolyType):
         super().__init__(child_ns=NSMAP["sicommon"])
 
 
-class PolyCoef2dType(skxml.Poly2dType):
+class PolyCoef2dType(skxt.Poly2dType):
     """Transcoder for two-dimensional polynomial (PolyCoef2D) XML parameter types.
 
     Children are in the SICommon namespace.
@@ -109,7 +111,7 @@ class PolyCoef2dType(skxml.Poly2dType):
         super().__init__(child_ns=NSMAP["sicommon"])
 
 
-class RowColIntType(skxml.RowColType):
+class RowColIntType(skxt.RowColType):
     """Transcoder for XML parameter types containing scalar, integer Row and Col components (RC_INT).
 
     Children are in the SICommon namespace.
@@ -119,7 +121,7 @@ class RowColIntType(skxml.RowColType):
         super().__init__(child_ns=NSMAP["sicommon"])
 
 
-class XyzPolyType(skxml.XyzPolyType):
+class XyzPolyType(skxt.XyzPolyType):
     """Transcoder for XYZ_POLY XML parameter types containing triplets of 1D polynomials.
 
     Children are in the SICommon namespace.
@@ -129,7 +131,7 @@ class XyzPolyType(skxml.XyzPolyType):
         super().__init__(child_ns=NSMAP["sicommon"])
 
 
-class FilterCoefficientType(skxml.Type):
+class FilterCoefficientType(skxt.Type):
     """
     Transcoder for FilterCoefficients.
     Attributes may either be (row, col) or (phasing, point)
@@ -211,7 +213,7 @@ class FilterCoefficientType(skxml.Type):
             lxml.etree.SubElement(elem, ns + "Coef", attrib=attribs).text = str(coef)
 
 
-class IntListType(skxml.Type):
+class IntListType(skxt.Type):
     """
     Transcoder for ints in a list XML parameter types.
 
@@ -229,7 +231,7 @@ class IntListType(skxml.Type):
         elem.text = " ".join([str(entry) for entry in val])
 
 
-class ImageCornersType(skxml.NdArrayType):
+class ImageCornersType(skxt.NdArrayType):
     """
     Transcoder for GeoData/ImageCorners XML parameter types.
 
@@ -284,7 +286,7 @@ class ImageCornersType(skxml.NdArrayType):
             self.sub_type.set_elem(icp, coord)
 
 
-class RangeAzimuthType(skxml.ArrayType):
+class RangeAzimuthType(skxt.ArrayType):
     """
     Transcoder for double-precision floating point range and azimuth XML parameter types.
 
@@ -294,12 +296,12 @@ class RangeAzimuthType(skxml.ArrayType):
 
     def __init__(self) -> None:
         super().__init__(
-            subelements={c: skxml.DblType() for c in ("Range", "Azimuth")},
+            subelements={c: skxt.DblType() for c in ("Range", "Azimuth")},
             child_ns=NSMAP["sicommon"],
         )
 
 
-class RowColDblType(skxml.ArrayType):
+class RowColDblType(skxt.ArrayType):
     """
     Transcoder for double-precision floating point row and column XML parameter types.
 
@@ -309,20 +311,20 @@ class RowColDblType(skxml.ArrayType):
 
     def __init__(self) -> None:
         super().__init__(
-            subelements={c: skxml.DblType() for c in ("Row", "Col")},
+            subelements={c: skxt.DblType() for c in ("Row", "Col")},
             child_ns=NSMAP["sicommon"],
         )
 
 
-class SfaPointType(skxml.ArrayType):
+class SfaPointType(skxt.ArrayType):
     """
     Transcoder for double-precision floating point Simple Feature Access 2D or 3D Points.
 
     """
 
     def __init__(self) -> None:
-        self._subelem_superset: dict[str, skxml.Type] = {
-            c: skxml.DblType() for c in ("X", "Y", "Z")
+        self._subelem_superset: dict[str, skxt.Type] = {
+            c: skxt.DblType() for c in ("X", "Y", "Z")
         }
         super().__init__(subelements=self._subelem_superset, child_ns="urn:SFA:1.2.0")
 
@@ -349,7 +351,7 @@ class SfaPointType(skxml.ArrayType):
         super().set_elem(elem, val)
 
 
-class LUTInfoType(skxml.Type):
+class LUTInfoType(skxt.Type):
     """
     Transcoder for LUTInfo nodes under LookupTableType's Custom child.
 
@@ -387,12 +389,116 @@ class LUTInfoType(skxml.Type):
             subelem.set("lut", str(index + 1))
 
 
-class XmlHelper(skxml2.XmlHelper):
+class XmlHelper(skxml.XmlHelper):
     """
-    XmlHelper for Sensor Independent Derived Data (SIDD).
+    :py:class:`~sarkit.xmlhelp.XmlHelper` for SIDD
 
     """
 
     def __init__(self, element_tree):
         root_ns = lxml.etree.QName(element_tree.getroot()).namespace
-        super().__init__(element_tree, _xmlhelp2.XsdHelper(root_ns))
+        super().__init__(element_tree, XsdHelper(root_ns))
+
+
+class XsdHelper(skxml.XsdHelper):
+    """
+    :py:class:`~sarkit.xmlhelp.XsdHelper` for SIDD
+
+    """
+
+    def _read_xsdtypes_json(self, root_ns: str) -> str:
+        """Return the text contents of the appropriate xsdtypes JSON"""
+        schema_name = siddconst.VERSION_INFO[root_ns]["schema"].name
+        return importlib.resources.read_text(
+            "sarkit.sidd.xsdtypes",
+            pathlib.PurePath(schema_name).with_suffix(".json").name,
+        )
+
+    def get_transcoder(self, typename, tag=None):
+        """Return the appropriate transcoder given the typename (and optionally tag)."""
+        known_builtins = {
+            "{http://www.w3.org/2001/XMLSchema}string": TxtType(),
+            "{http://www.w3.org/2001/XMLSchema}dateTime": XdtType(),
+            "{http://www.w3.org/2001/XMLSchema}int": IntType(),
+            "{http://www.w3.org/2001/XMLSchema}double": DblType(),
+        }
+        typedef = self.xsdtypes[typename]
+        easy = {
+            "{urn:SFA:1.2.0}PointType": SfaPointType(),
+            "{urn:SICommon:1.0}AngleZeroToExclusive360MagnitudeType": AngleMagnitudeType(),
+            "{urn:SICommon:1.0}LatLonRestrictionType": LatLonType(),
+            "{urn:SICommon:1.0}LatLonType": LatLonType(),
+            "{urn:SICommon:1.0}LatLonVertexType": LatLonType(),
+            "{urn:SICommon:1.0}LineType": skxt.NdArrayType("Endpoint", LatLonType()),
+            "{urn:SICommon:1.0}ParameterType": ParameterType(),
+            "{urn:SICommon:1.0}Poly1DType": PolyCoef1dType(),
+            "{urn:SICommon:1.0}Poly2DType": PolyCoef2dType(),
+            "{urn:SICommon:1.0}PolygonType": skxt.NdArrayType("Vertex", LatLonType()),
+            "{urn:SICommon:1.0}RangeAzimuthType": RangeAzimuthType(),
+            "{urn:SICommon:1.0}RowColDoubleType": RowColDblType(),
+            "{urn:SICommon:1.0}RowColIntType": RowColIntType(),
+            "{urn:SICommon:1.0}RowColVertexType": RowColIntType(),
+            "{urn:SICommon:1.0}XYZPolyType": XyzPolyType(),
+            "{urn:SICommon:1.0}XYZType": XyzType(),
+            "<UNNAMED>-{urn:SICommon:1.0}LineType/{urn:SICommon:1.0}Endpoint": LatLonType(),
+            "<UNNAMED>-{urn:SICommon:1.0}PolygonType/{urn:SICommon:1.0}Vertex": LatLonType(),
+            "{urn:SIDD:3.0.0}FilterBankCoefType": FilterCoefficientType("phasingpoint"),
+            "{urn:SIDD:3.0.0}FilterKernelCoefType": FilterCoefficientType("rowcol"),
+            "{urn:SIDD:3.0.0}ImageCornersType": ImageCornersType(),
+            "{urn:SIDD:3.0.0}LookupTableType": IntListType(),
+            "{urn:SIDD:3.0.0}LUTInfoType": LUTInfoType(),
+            "{urn:SIDD:3.0.0}PolygonType": skxt.NdArrayType("Vertex", LatLonType()),
+            "{urn:SIDD:3.0.0}ValidDataType": skxt.NdArrayType(
+                "Vertex", RowColIntType()
+            ),
+            "<UNNAMED>-{urn:SIDD:3.0.0}ImageCornersType/{urn:SIDD:3.0.0}ICP": LatLonType(),
+        }
+        easy["{urn:SIDD:2.0.0}FilterBankCoefType"] = easy[
+            "{urn:SIDD:3.0.0}FilterBankCoefType"
+        ]
+        easy["{urn:SIDD:2.0.0}FilterKernelCoefType"] = easy[
+            "{urn:SIDD:3.0.0}FilterKernelCoefType"
+        ]
+        easy["{urn:SIDD:2.0.0}ImageCornersType"] = easy[
+            "{urn:SIDD:3.0.0}ImageCornersType"
+        ]
+        easy["{urn:SIDD:2.0.0}LookupTableType"] = easy[
+            "{urn:SIDD:3.0.0}LookupTableType"
+        ]
+        easy["{urn:SIDD:2.0.0}LUTInfoType"] = easy["{urn:SIDD:3.0.0}LUTInfoType"]
+        easy["{urn:SIDD:2.0.0}PolygonType"] = easy["{urn:SIDD:3.0.0}PolygonType"]
+        easy["{urn:SIDD:2.0.0}ValidDataType"] = easy["{urn:SIDD:3.0.0}ValidDataType"]
+        easy["<UNNAMED>-{urn:SIDD:2.0.0}ImageCornersType/{urn:SIDD:2.0.0}ICP"] = easy[
+            "<UNNAMED>-{urn:SIDD:3.0.0}ImageCornersType/{urn:SIDD:3.0.0}ICP"
+        ]
+
+        if typename.startswith("{http://www.w3.org/2001/XMLSchema}"):
+            return known_builtins[typename]
+        if typename in easy:
+            return easy[typename]
+        if not typedef.children:
+            return known_builtins.get(typedef.text_typename, TxtType())
+        return None
+
+
+class ElementWrapper(skxml.ElementWrapper):
+    """:py:class:`~sarkit.xmlhelp.ElementWrapper` for SIDD that can set ``xsdhelper`` automatically.
+
+    Refer to :py:class:`sarkit.xmlhelp.ElementWrapper` for full documentation.
+    """
+
+    def __init__(
+        self,
+        elem,
+        xsdhelper=None,
+        wrapped_parent=None,
+        typename=None,
+        elementpath=None,
+        roottag=None,
+    ):
+        if xsdhelper is None:
+            root_ns = lxml.etree.QName(roottag or elem).namespace
+            xsdhelper = XsdHelper(root_ns)
+        super().__init__(
+            elem, xsdhelper, wrapped_parent, typename, elementpath, roottag
+        )
