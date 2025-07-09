@@ -42,6 +42,7 @@ dev-lint = [
 ]
 dev-test = [
     "pytest>=7.4.4",
+    "smart_open[http]>=7.1.0",
 ]
 dev = [
     "sarkit[dev-test,dev-lint]",
