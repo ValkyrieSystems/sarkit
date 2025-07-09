@@ -379,6 +379,8 @@ def test_image_sizing():
 
 
 def test_remote_read():
-    with smart_open.open("https://www.govsco.com/content/spotlight.sicd", mode='rb') as file_object:
+    with smart_open.open(
+        "https://www.govsco.com/content/spotlight.sicd", mode="rb"
+    ) as file_object:
         with sksicd.NitfReader(file_object) as r:
             _ = r.read_image()

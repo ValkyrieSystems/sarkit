@@ -648,6 +648,8 @@ def test_version_info():
 
 
 def test_remote_read():
-    with smart_open.open("https://www.govsco.com/content/spotlight.sidd", mode='rb') as file_object:
+    with smart_open.open(
+        "https://www.govsco.com/content/spotlight.sidd", mode="rb"
+    ) as file_object:
         with sksidd.NitfReader(file_object) as r:
             _ = r.read_image(0)

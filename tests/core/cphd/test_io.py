@@ -268,7 +268,9 @@ def test_write_support_array(is_masked, nodata_in_xml, tmp_path):
 
 
 def test_remote_read():
-    with smart_open.open("https://www.govsco.com/content/spotlight.cphd", mode='rb') as file_object:
+    with smart_open.open(
+        "https://www.govsco.com/content/spotlight.cphd", mode="rb"
+    ) as file_object:
         with skcphd.Reader(file_object) as r:
             ch_id = r.metadata.xmltree.findtext("{*}Data/{*}Channel/{*}Identifier")
             _, _ = r.read_channel(ch_id)
