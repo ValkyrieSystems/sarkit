@@ -5,6 +5,7 @@ import lxml.builder
 import lxml.etree
 import numpy as np
 import pytest
+import smart_open
 
 import sarkit.cphd as skcphd
 
@@ -264,3 +265,10 @@ def test_write_support_array(is_masked, nodata_in_xml, tmp_path):
     with open(out_cphd, "rb") as f, skcphd.Reader(f) as reader:
         read_sa = reader.read_support_array(sa_id)
         assert np.array_equal(mx, read_sa)
+
+
+def test_remote_read():
+    with smart_open.open("https://www.govsco.com/content/spotlight.cphd", mode='rb') as file_object:
+        with skcphd.Reader(file_object) as r:
+            ch_id = r.metadata.xmltree.findtext("{*}Data/{*}Channel/{*}Identifier")
+            _, _ = r.read_channel(ch_id)
