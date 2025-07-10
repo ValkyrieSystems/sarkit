@@ -1124,10 +1124,10 @@ class SicdConsistency(con.ConsistencyChecker):
                 # create a polygon for each segment
                 for seg in list_of_segs:
                     segment_polygon = shg.box(
-                        int(seg.findtext("StartLine")),
-                        int(seg.findtext("StartSample")),
-                        int(seg.findtext("EndLine")),
-                        int(seg.findtext("EndSample")),
+                        int(seg.findtext("{*}StartLine")),
+                        int(seg.findtext("{*}StartSample")),
+                        int(seg.findtext("{*}EndLine")),
+                        int(seg.findtext("{*}EndSample")),
                         ccw=False,
                     )
                     with self.need(
@@ -1150,7 +1150,7 @@ class SicdConsistency(con.ConsistencyChecker):
             # and reference a segment within the list
             with self.need("SegmentList has SegmentIdentifier"):
                 assert (
-                    segment_list.find(f'./{{*}}Segment[Identifier="{seg_id}"]')
+                    segment_list.find(f'./{{*}}Segment[{{*}}Identifier="{seg_id}"]')
                     is not None
                 )
         else:

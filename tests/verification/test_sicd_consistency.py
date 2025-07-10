@@ -653,6 +653,73 @@ def test_check_rma_inca_polys(sicd_con_bad_inca, poly_to_invalidate):
     assert sicd_con.failures()
 
 
+def test_segment_bounds(sicd_con, em):
+    rca_plane = sicd_con.sicdroot.find("./{*}RadarCollection/{*}Area/{*}Plane")
+    assert rca_plane.find("./{*}SegmentList") is None
+
+    first_line = sicd_con.xmlhelp.load(
+        "./{*}RadarCollection/{*}Area/{*}Plane/{*}XDir/{*}FirstLine"
+    )
+    first_sample = sicd_con.xmlhelp.load(
+        "./{*}RadarCollection/{*}Area/{*}Plane/{*}YDir/{*}FirstSample"
+    )
+    num_lines = sicd_con.xmlhelp.load(
+        "./{*}RadarCollection/{*}Area/{*}Plane/{*}XDir/{*}NumLines"
+    )
+    num_samples = sicd_con.xmlhelp.load(
+        "./{*}RadarCollection/{*}Area/{*}Plane/{*}YDir/{*}NumSamples"
+    )
+
+    rca_plane.append(
+        em.SegmentList(
+            em.Segment(
+                em.StartLine(str(first_line)),
+                em.StartSample(str(first_sample)),
+                em.EndLine(str(int(first_line + num_lines // 2 - 1))),
+                em.EndSample(str(int(first_sample + num_samples // 2 - 1))),
+            ),
+            em.Segment(
+                em.StartLine(str(int(first_line + num_lines // 2))),
+                em.StartSample(str(int(first_sample + num_samples // 2))),
+                em.EndLine(str(int(first_line + num_lines - 1))),
+                em.EndSample(str(int(first_sample + num_samples - 1))),
+            ),
+        )
+    )
+    sicd_con.check("check_segmentlist_bounds")
+    assert sicd_con.passes()
+
+    rca_plane.find("./{*}XDir/{*}NumLines").text = str(num_lines - 10)
+    sicd_con.check("check_segmentlist_bounds")
+    testing.assert_failures(
+        sicd_con, "All segments within the segment_list are bounded"
+    )
+
+
+def test_segment_identifier(sicd_con, em):
+    imform = sicd_con.sicdroot.find("./{*}ImageFormation")
+    assert imform.find("./{*}SegmentIdentifier") is None
+    rca_plane = sicd_con.sicdroot.find("./{*}RadarCollection/{*}Area/{*}Plane")
+    assert rca_plane.find("./{*}SegmentList") is None
+
+    rca_plane.append(
+        em.SegmentList(
+            em.Segment(em.Identifier("SegmentID 1")),
+            em.Segment(em.Identifier("SegmentID 2")),
+        )
+    )
+    sicd_con.check("check_segment_identifier")
+    testing.assert_failures(sicd_con, "SegmentIdentifier is included")
+
+    segid = em.SegmentIdentifier("not found ID")
+    imform.append(segid)
+    sicd_con.check("check_segment_identifier")
+    testing.assert_failures(sicd_con, "SegmentList has SegmentIdentifier")
+    segid.text = "SegmentID 2"
+    sicd_con.check("check_segment_identifier")
+    assert sicd_con.passes()
+
+
 def test_check_image_formation_timeline(sicd_con):
     sicd_con.xmlhelp.set(
         "./{*}ImageFormation/{*}TStartProc",
