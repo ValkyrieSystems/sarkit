@@ -718,3 +718,62 @@ def test_check_nitf_imseg(example_sicd_file, tmp_path):
         sicd_con = SicdConsistency.from_file(f)
     sicd_con.check("check_nitf_imseg")
     testing.assert_failures(sicd_con, "Sequential IID1")
+
+
+def test_check_error_components_posvel_stddev(sicd_con, em):
+    p2 = em.P2("0.2")
+    assert sicd_con.sicdroot.find("./{*}ErrorStatistics") is None
+    sicd_con.sicdroot.append(
+        em.ErrorStatistics(
+            em.Components(
+                em.PosVelErr(
+                    em.P1("0.1"),
+                    p2,
+                    em.P3("0.3"),
+                    em.V1("0.4"),
+                    em.V2("0.5"),
+                    em.V3("0.6"),
+                )
+            )
+        )
+    )
+    sicd_con.check("check_error_components_posvel_stddev")
+    assert sicd_con.passes()
+    p2.text = "-1.0"
+    sicd_con.check("check_error_components_posvel_stddev")
+    testing.assert_failures(sicd_con, "PosVelErr P2 >= 0.0")
+
+
+def test_check_error_components_posvel_corr(sicd_con, em):
+    p1v1 = em.P1V1("0.17")
+    assert sicd_con.sicdroot.find("./{*}ErrorStatistics") is None
+    sicd_con.sicdroot.append(
+        em.ErrorStatistics(
+            em.Components(
+                em.PosVelErr(
+                    em.CorrCoefs(
+                        em.P1P2("0.12"),
+                        em.P1P3("0.13"),
+                        p1v1,
+                        em.P1V2("0.18"),
+                        em.P1V3("0.19"),
+                        em.P2P3("0.23"),
+                        em.P2V1("0.27"),
+                        em.P2V2("-0.28"),
+                        em.P2V3("-0.29"),
+                        em.P3V1("-0.37"),
+                        em.P3V2("-0.38"),
+                        em.P3V3("-0.39"),
+                        em.V1V2("-0.78"),
+                        em.V1V3("-0.79"),
+                        em.V2V3("-0.89"),
+                    )
+                )
+            )
+        )
+    )
+    sicd_con.check("check_error_components_posvel_corr")
+    assert sicd_con.passes()
+    p1v1.text = "-1.1"
+    sicd_con.check("check_error_components_posvel_corr")
+    testing.assert_failures(sicd_con, "CorrCoefs P1V1 <= 1.0")
