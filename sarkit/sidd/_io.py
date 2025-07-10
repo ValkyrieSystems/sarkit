@@ -23,6 +23,7 @@ import sarkit.sicd as sksicd
 import sarkit.sicd._io
 import sarkit.sidd as sksidd
 import sarkit.wgs84
+from sarkit import _iohelp
 
 logger = logging.getLogger(__name__)
 
@@ -521,8 +522,9 @@ class NitfReader:
             np.array_split(image_pixels, splits, axis=0), imseg_sizes, imseg_offsets
         ):
             self._file_object.seek(offset)
-            array = self._file_object.read(sz)
-            split[...] = np.frombuffer(array, dtype).reshape(split.shape)
+            split[...] = _iohelp.fromfile(
+                self._file_object, dtype, np.prod(split.shape)
+            ).reshape(split.shape)
 
         return image_pixels
 

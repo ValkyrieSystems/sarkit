@@ -20,6 +20,7 @@ import numpy.typing as npt
 
 import sarkit.sicd._xml as sicd_xml
 import sarkit.wgs84
+from sarkit import _iohelp
 
 SPECIFICATION_IDENTIFIER: Final[str] = (
     "SICD Volume 1 Design & Implementation Description Document"
@@ -476,8 +477,9 @@ class NitfReader:
             np.array_split(sicd_pixels, splits, axis=0), imseg_sizes, imseg_offsets
         ):
             self._file_object.seek(offset)
-            array = self._file_object.read(sz)
-            split[...] = np.frombuffer(array, dtype).reshape(split.shape)
+            split[...] = _iohelp.fromfile(
+                self._file_object, dtype, np.prod(split.shape)
+            ).reshape(split.shape)
         return sicd_pixels
 
     def read_sub_image(

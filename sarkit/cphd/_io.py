@@ -13,6 +13,8 @@ import lxml.etree
 import numpy as np
 import numpy.typing as npt
 
+from sarkit import _iohelp
+
 SCHEMA_DIR = importlib.resources.files("sarkit.cphd.schemas")
 SECTION_TERMINATOR: Final[bytes] = b"\f\n"
 DEFINED_HEADER_KEYS: Final[set] = {
@@ -473,12 +475,7 @@ class Reader:
         self._file_object.seek(signal_offset + self._signal_block_byte_offset)
         shape, dtype = _describe_signal(self.metadata.xmltree, channel_identifier)
         dtype = dtype.newbyteorder(">")
-        nbytes = np.prod(shape) * dtype.itemsize
-        sigarray = self._file_object.read(nbytes)
-        nbytes_read = len(sigarray)
-        if nbytes != nbytes_read:
-            raise RuntimeError(f"Expected {nbytes=}; only read {nbytes_read}")
-        return np.frombuffer(sigarray, dtype=dtype).reshape(shape)
+        return _iohelp.fromfile(self._file_object, dtype, np.prod(shape)).reshape(shape)
 
     def read_pvps(self, channel_identifier: str) -> npt.NDArray:
         """Read pvp data from a CPHD file
@@ -503,12 +500,7 @@ class Reader:
         self._file_object.seek(pvp_offset + self._pvp_block_byte_offset)
 
         pvp_dtype = get_pvp_dtype(self.metadata.xmltree).newbyteorder("B")
-        nbytes = pvp_dtype.itemsize * num_vect
-        array = self._file_object.read(nbytes)
-        nbytes_read = len(array)
-        if nbytes != nbytes_read:
-            raise RuntimeError(f"Expected {nbytes=}; only read {nbytes_read}")
-        return np.frombuffer(array, pvp_dtype).copy()
+        return _iohelp.fromfile(self._file_object, pvp_dtype, num_vect)
 
     def read_channel(self, channel_identifier: str) -> tuple[npt.NDArray, npt.NDArray]:
         """Read signal and pvp data from a CPHD file channel
@@ -544,12 +536,7 @@ class Reader:
         sa_offset = int(sa_info.find("./{*}ArrayByteOffset").text)
         self._file_object.seek(sa_offset + self._support_block_byte_offset)
         assert dtype.itemsize == int(sa_info.find("./{*}BytesPerElement").text)
-        nbytes = dtype.itemsize * np.prod(shape)
-        array = self._file_object.read(nbytes)
-        nbytes_read = len(array)
-        if nbytes != nbytes_read:
-            raise RuntimeError(f"Expected {nbytes=}; only read {nbytes_read}")
-        return np.frombuffer(array, dtype).reshape(shape).copy()
+        return _iohelp.fromfile(self._file_object, dtype, np.prod(shape)).reshape(shape)
 
     def read_support_array(self, sa_identifier, masked=True):
         """Read SupportArray"""
