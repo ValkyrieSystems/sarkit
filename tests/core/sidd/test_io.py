@@ -6,6 +6,7 @@ import jbpy
 import lxml.etree
 import numpy as np
 import pytest
+import smart_open
 
 import sarkit.sidd as sksidd
 import sarkit.sidd._io
@@ -644,3 +645,11 @@ def test_version_info():
 
     for urn, info in sksidd.VERSION_INFO.items():
         assert lxml.etree.parse(info["schema"]).getroot().get("targetNamespace") == urn
+
+
+def test_remote_read():
+    with smart_open.open(
+        "https://www.govsco.com/content/spotlight.sidd", mode="rb"
+    ) as file_object:
+        with sksidd.NitfReader(file_object) as r:
+            _ = r.read_image(0)
