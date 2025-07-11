@@ -473,8 +473,8 @@ class NitfReader:
         imseg_sizes = np.asarray([imseg["Data"].size for imseg in imsegs])
         imseg_offsets = np.asarray([imseg["Data"].get_offset() for imseg in imsegs])
         splits = np.cumsum(imseg_sizes // (ncols * dtype.itemsize))[:-1]
-        for split, sz, offset in zip(
-            np.array_split(sicd_pixels, splits, axis=0), imseg_sizes, imseg_offsets
+        for split, offset in zip(
+            np.array_split(sicd_pixels, splits, axis=0), imseg_offsets
         ):
             self._file_object.seek(offset)
             split[...] = _iohelp.fromfile(
