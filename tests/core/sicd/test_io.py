@@ -5,6 +5,7 @@ import jbpy.core
 import lxml.etree
 import numpy as np
 import pytest
+import smart_open
 
 import sarkit.sicd as sksicd
 
@@ -375,3 +376,11 @@ def test_image_sizing():
     ]
 
     assert expected_imhdrs == imhdrs
+
+
+def test_remote_read():
+    with smart_open.open(
+        "https://www.govsco.com/content/spotlight.sicd", mode="rb"
+    ) as file_object:
+        with sksicd.NitfReader(file_object) as r:
+            _ = r.read_image()
