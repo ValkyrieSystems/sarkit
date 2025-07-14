@@ -567,7 +567,7 @@
         </ACP>
       </Corner>
       <Plane>
-        <RefPt>
+        <RefPt name="Null Island">
           <ECF>
             <X>6378137.0</X>
             <Y>0.0</Y>
