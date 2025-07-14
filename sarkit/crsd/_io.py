@@ -36,6 +36,21 @@ binary_format_string_to_dtype.__doc__ = getattr(
 mask_support_array = skcphd.mask_support_array
 
 
+def _describe_signal(
+    xmltree: lxml.etree.ElementTree,
+    channel_identifier: str,
+) -> tuple[tuple[int, int], np.dtype]:
+    """Return the shape and dtype of the signal array in standard format identified by ``channel_identifier``."""
+    data_rcv = xmltree.find("{*}Data/{*}Receive")
+    channel_info = data_rcv.find(f"{{*}}Channel[{{*}}ChId='{channel_identifier}']")
+    dtype = binary_format_string_to_dtype(data_rcv.findtext("{*}SignalArrayFormat"))
+    shape = (
+        int(channel_info.find("{*}NumVectors").text),
+        int(channel_info.find("{*}NumSamples").text),
+    )
+    return shape, dtype
+
+
 @dataclasses.dataclass(kw_only=True)
 class FileHeaderPart:
     """CRSD header fields which are set per program specific Product Design Document
@@ -277,27 +292,73 @@ class Reader:
         Returns
         -------
         ndarray
-            2D array of complex samples
+            Signal array identified by ``channel_identifier``;
+            shape=(NumVectors, NumSamples), dtype determined by SignalArrayFormat.
 
+        Raises
+        ------
+        RuntimeError
+            If the signal block is compressed.
+
+        See Also
+        --------
+        read_signal_compressed
         """
-        channel_info = self.metadata.xmltree.find(
-            f"{{*}}Data/{{*}}Receive/{{*}}Channel[{{*}}ChId='{channel_identifier}']"
+        data_rcv = self.metadata.xmltree.find("{*}Data/{*}Receive")
+        if data_rcv.find("{*}SignalCompression") is not None:
+            raise RuntimeError(
+                "Signal block is compressed; use read_signal_compressed instead."
+            )
+        signal_offset = int(
+            data_rcv.findtext(
+                f"{{*}}Channel[{{*}}ChId='{channel_identifier}']/{{*}}SignalArrayByteOffset"
+            )
         )
-        num_vect = int(channel_info.find("./{*}NumVectors").text)
-        num_samp = int(channel_info.find("./{*}NumSamples").text)
-        shape = (num_vect, num_samp)
-
-        signal_offset = int(channel_info.find("./{*}SignalArrayByteOffset").text)
         assert self._signal_block_byte_offset is not None  # placate mypy
         self._file_object.seek(signal_offset + self._signal_block_byte_offset)
+        shape, dtype = _describe_signal(self.metadata.xmltree, channel_identifier)
+        dtype = dtype.newbyteorder(">")
+        nbytes = np.prod(shape) * dtype.itemsize
+        sigarray = self._file_object.read(nbytes)
+        nbytes_read = len(sigarray)
+        if nbytes != nbytes_read:
+            raise RuntimeError(f"Expected {nbytes=}; only read {nbytes_read}")
+        return np.frombuffer(sigarray, dtype=dtype).reshape(shape)
 
-        signal_dtype = binary_format_string_to_dtype(
-            self.metadata.xmltree.find("./{*}Data/{*}Receive/{*}SignalArrayFormat").text
-        ).newbyteorder("B")
+    def read_signal_compressed(self) -> npt.NDArray:
+        """Read signal data from a CRSD file with signal arrays stored in compressed format
 
-        return np.fromfile(
-            self._file_object, signal_dtype, count=np.prod(shape)
-        ).reshape(shape)
+        Returns
+        -------
+        ndarray
+            Compressed signal byte sequence;
+            shape=(CompressedSignalSize,), dtype= `numpy.uint8`
+
+        Raises
+        ------
+        RuntimeError
+            If the metadata indicates the signal block is not compressed
+
+        See Also
+        --------
+        read_signal
+        """
+        compressed_size_str = self.metadata.xmltree.findtext(
+            "{*}Data/{*}Receive/{*}SignalCompression/{*}CompressedSignalSize"
+        )
+        if compressed_size_str is None:
+            raise RuntimeError(
+                "Signal block is not compressed; use read_signal instead."
+            )
+        assert self._signal_block_byte_offset is not None  # placate mypy
+        self._file_object.seek(self._signal_block_byte_offset)
+        dtype = np.dtype("uint8")
+        nbytes = int(compressed_size_str)
+        sigarray = self._file_object.read(nbytes)
+        nbytes_read = len(sigarray)
+        if nbytes != nbytes_read:
+            raise RuntimeError(f"Expected {nbytes=}; only read {nbytes_read}")
+        return np.frombuffer(sigarray, dtype=dtype)
 
     def read_pvps(self, channel_identifier: str) -> npt.NDArray:
         """Read pvp data from a CRSD file
@@ -495,9 +556,6 @@ class Writer:
 
         self._channel_size_offsets = {}
         if crsd_xmltree.find("./{*}Data/{*}Receive") is not None:
-            signal_itemsize = binary_format_string_to_dtype(
-                crsd_xmltree.find("./{*}Data/{*}Receive/{*}SignalArrayFormat").text
-            ).itemsize
             pvp_itemsize = int(
                 crsd_xmltree.find("./{*}Data/{*}Receive/{*}NumBytesPVP").text
             )
@@ -506,12 +564,8 @@ class Writer:
                 channel_signal_offset = int(
                     chan_node.find("./{*}SignalArrayByteOffset").text
                 )
-                channel_signal_size = (
-                    int(chan_node.find("./{*}NumVectors").text)
-                    * int(chan_node.find("./{*}NumSamples").text)
-                    * signal_itemsize
-                )
-
+                shape, dtype = _describe_signal(crsd_xmltree, channel_identifier)
+                channel_signal_size = int(np.prod(shape)) * dtype.itemsize
                 channel_pvp_offset = int(chan_node.find("./{*}PVPArrayByteOffset").text)
                 channel_pvp_size = (
                     int(chan_node.find("./{*}NumVectors").text) * pvp_itemsize
@@ -564,10 +618,23 @@ class Writer:
                 }
             )
         if self._channel_size_offsets:
-            signal_block_size = max(
-                chan["signal_size"] + chan["signal_offset"]
-                for chan in self._channel_size_offsets.values()
+            compressed_size_str = crsd_xmltree.findtext(
+                "{*}Data/{*}Receive/{*}SignalCompression/{*}CompressedSignalSize"
             )
+            if compressed_size_str is not None:
+                signal_block_size = int(compressed_size_str)
+                if not all(
+                    chan["signal_offset"] == 0
+                    for chan in self._channel_size_offsets.values()
+                ):
+                    logging.warning(
+                        "Signal compression is indicated but some SignalArrayByteOffsets are not 0"
+                    )
+            else:
+                signal_block_size = max(
+                    chan["signal_size"] + chan["signal_offset"]
+                    for chan in self._channel_size_offsets.values()
+                )
             pvp_block_size = max(
                 chan["pvp_size"] + chan["pvp_offset"]
                 for chan in self._channel_size_offsets.values()
@@ -648,22 +715,87 @@ class Writer:
         channel_identifier : str
             Channel unique identifier
         signal_array : ndarray
-            2D array of complex samples
+            Signal data to write;
+            shape=(NumVectors, NumSamples), dtype determined by SignalArrayFormat.
 
+        Raises
+        ------
+        RuntimeError
+            If the signal block is compressed.
+
+        See Also
+        --------
+        write_signal_compressed
         """
         # TODO Add support for partial CRSD writing
-        assert (
-            signal_array.nbytes
-            == self._channel_size_offsets[channel_identifier]["signal_size"]
-        )
+        data_rcv = self._metadata.xmltree.find("{*}Data/{*}Receive")
+        if data_rcv.find("{*}SignalCompression") is not None:
+            raise RuntimeError(
+                "Signal block is compressed; use write_signal_compressed instead."
+            )
+        shape, dtype = _describe_signal(self._metadata.xmltree, channel_identifier)
+        if dtype != signal_array.dtype.newbyteorder("="):
+            raise ValueError(f"{signal_array.dtype=} is not compatible with {dtype=}")
+        if shape != signal_array.shape:
+            raise ValueError(f"{signal_array.shape=} does not match {shape=}")
 
-        self._signal_arrays_written.add(channel_identifier)
-        self._file_object.seek(self._file_header_kvp["SIGNAL_BLOCK_BYTE_OFFSET"])
+        buff_to_write = signal_array.astype(dtype.newbyteorder(">"), copy=False).data
+        expected_nbytes = self._channel_size_offsets[channel_identifier]["signal_size"]
+        if buff_to_write.nbytes != expected_nbytes:
+            raise ValueError(
+                f"{buff_to_write.nbytes=} does not match {expected_nbytes=}"
+            )
+
         self._file_object.seek(
-            self._channel_size_offsets[channel_identifier]["signal_offset"], os.SEEK_CUR
+            self._file_header_kvp["SIGNAL_BLOCK_BYTE_OFFSET"]
+            + self._channel_size_offsets[channel_identifier]["signal_offset"]
         )
-        output_dtype = signal_array.dtype.newbyteorder(">")
-        signal_array.astype(output_dtype, copy=False).tofile(self._file_object)
+        self._file_object.write(buff_to_write)
+        self._signal_arrays_written.add(channel_identifier)
+
+    def write_signal_compressed(self, signal_array: npt.NDArray):
+        """Write signal data in compressed format to a CRSD file
+
+        Parameters
+        ----------
+        signal_array : ndarray
+            Compressed signal byte sequence to write;
+            shape=(CompressedSignalSize,), dtype= `numpy.uint8`
+
+        Raises
+        ------
+        RuntimeError
+            If the metadata indicates the signal block is not compressed
+
+        See Also
+        --------
+        write_signal
+        """
+        compressed_size_str = self._metadata.xmltree.findtext(
+            "{*}Data/{*}Receive/{*}SignalCompression/{*}CompressedSignalSize"
+        )
+        if compressed_size_str is None:
+            raise RuntimeError(
+                "Signal block is not compressed; use write_signal instead."
+            )
+
+        shape = (int(compressed_size_str),)
+        dtype = np.dtype("uint8")
+        if dtype != signal_array.dtype:
+            raise ValueError(f"{signal_array.dtype=} is not compatible with {dtype=}")
+        if shape != signal_array.shape:
+            raise ValueError(f"{signal_array.shape=} does not match {shape=}")
+
+        buff_to_write = signal_array.data
+        expected_nbytes = self._file_header_kvp["SIGNAL_BLOCK_SIZE"]
+        if buff_to_write.nbytes != expected_nbytes:
+            raise ValueError(
+                f"{buff_to_write.nbytes=} does not match {expected_nbytes=}"
+            )
+
+        self._file_object.seek(self._file_header_kvp["SIGNAL_BLOCK_BYTE_OFFSET"])
+        self._file_object.write(buff_to_write)
+        self._signal_arrays_written.update(self._channel_size_offsets.keys())
 
     def write_pvp(self, channel_identifier: str, pvp_array: npt.NDArray):
         """Write pvp data to a CRSD file

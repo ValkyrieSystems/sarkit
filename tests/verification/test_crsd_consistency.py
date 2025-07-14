@@ -5,6 +5,7 @@ import pathlib
 import re
 import types
 
+import lxml.builder
 import numpy as np
 import pytest
 from lxml import etree
@@ -298,6 +299,42 @@ def example_crsdrcv_file(tmp_path_factory, example_crsdsar_file):
         cw.write_pvp(channel_id, new_pvps)
         cw.write_signal(channel_id, signal)
     assert not main([str(tmp_crsd), "-vvv"])
+    with tmp_crsd.open("rb") as f:
+        yield f
+
+
+@pytest.fixture(scope="session")
+def example_crsdrcvcompressed_file(tmp_path_factory, example_crsdrcv_file):
+    example_crsdrcv_file.seek(0)
+    with skcrsd.Reader(example_crsdrcv_file) as r:
+        channel_id = r.metadata.xmltree.findtext(
+            "{*}Channel/{*}Parameters/{*}Identifier"
+        )
+        pvps = r.read_pvps(channel_id)
+        support_arrays = {
+            said.text: r.read_support_array(said.text, masked=False)
+            for said in r.metadata.xmltree.findall("{*}SupportArray/*/{*}Identifier")
+        }
+
+    new_meta = r.metadata
+    data_rcv = new_meta.xmltree.find("{*}Data/{*}Receive")
+    assert data_rcv.find("{*}Data/{*}SignalCompression") is None
+    ns = etree.QName(new_meta.xmltree.getroot()).namespace
+    em = lxml.builder.ElementMaker(namespace=ns, nsmap={None: ns})
+    compressed_data = b"ultra-compressed"
+    data_rcv.find("{*}NumCRSDChannels").addnext(
+        em.SignalCompression(
+            em.Identifier("is constant!"),
+            em.CompressedSignalSize(str(len(compressed_data))),
+        )
+    )
+    tmp_crsd = tmp_path_factory.mktemp("data") / "faux-compressed.crsd"
+    with tmp_crsd.open("wb") as f, skcrsd.Writer(f, new_meta) as w:
+        w.write_pvp(channel_id, pvps)
+        for sa_id, arr in support_arrays.items():
+            w.write_support_array(sa_id, arr)
+        w.write_signal_compressed(np.frombuffer(compressed_data, np.uint8))
+    assert not main([str(tmp_crsd)])
     with tmp_crsd.open("rb") as f:
         yield f
 
@@ -2220,3 +2257,20 @@ def test_assert_iac_matches_ecf_hae(crsd_con):
         crsd_con.assert_iac_matches_ecf([10, 0], iarp_ecf)
     with pytest.raises(AssertionError):
         crsd_con.assert_iac_matches_ecf([0, 10], pt_ecf)
+
+
+def test_check_compressed_signal_block_offsets(example_crsdrcvcompressed_file):
+    crsd_con = CrsdConsistency.from_file(example_crsdrcvcompressed_file)
+    crsd_con.xmlhelp.set("{*}Data/{*}Receive/{*}Channel/{*}SignalArrayByteOffset", 24)
+    crsd_con.check("check_compressed_signal_block")
+    assert_failures(crsd_con, "SignalArrayByteOffset is 0")
+
+
+def test_check_compressed_signal_block_size(example_crsdrcvcompressed_file):
+    crsd_con = CrsdConsistency.from_file(example_crsdrcvcompressed_file)
+    css = crsd_con.crsdroot.find(
+        "{*}Data/{*}Receive/{*}SignalCompression/{*}CompressedSignalSize"
+    )
+    crsd_con.xmlhelp.set_elem(css, crsd_con.xmlhelp.load_elem(css) + 1)
+    crsd_con.check("check_compressed_signal_block")
+    assert_failures(crsd_con, "SIGNAL_BLOCK_SIZE is set equal to CompressedSignalSize")
