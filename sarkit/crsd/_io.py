@@ -14,6 +14,7 @@ import numpy as np
 import numpy.typing as npt
 
 import sarkit.cphd as skcphd
+from sarkit import _iohelp
 
 SCHEMA_DIR = importlib.resources.files("sarkit.crsd.schemas")
 SECTION_TERMINATOR: Final[bytes] = b"\f\n"
@@ -343,12 +344,7 @@ class Reader:
         self._file_object.seek(signal_offset + self._signal_block_byte_offset)
         shape, dtype = _describe_signal(self.metadata.xmltree, channel_identifier)
         dtype = dtype.newbyteorder(">")
-        nbytes = np.prod(shape) * dtype.itemsize
-        sigarray = self._file_object.read(nbytes)
-        nbytes_read = len(sigarray)
-        if nbytes != nbytes_read:
-            raise RuntimeError(f"Expected {nbytes=}; only read {nbytes_read}")
-        return np.frombuffer(sigarray, dtype=dtype).reshape(shape)
+        return _iohelp.fromfile(self._file_object, dtype, np.prod(shape)).reshape(shape)
 
     def read_signal_compressed(self) -> npt.NDArray:
         """Read signal data from a CRSD file with signal arrays stored in compressed format
@@ -379,11 +375,7 @@ class Reader:
         self._file_object.seek(self._signal_block_byte_offset)
         dtype = np.dtype("uint8")
         nbytes = int(compressed_size_str)
-        sigarray = self._file_object.read(nbytes)
-        nbytes_read = len(sigarray)
-        if nbytes != nbytes_read:
-            raise RuntimeError(f"Expected {nbytes=}; only read {nbytes_read}")
-        return np.frombuffer(sigarray, dtype=dtype)
+        return _iohelp.fromfile(self._file_object, dtype, nbytes)
 
     def read_pvps(self, channel_identifier: str) -> npt.NDArray:
         """Read pvp data from a CRSD file
@@ -409,7 +401,7 @@ class Reader:
         self._file_object.seek(pvp_offset + self._pvp_block_byte_offset)
 
         pvp_dtype = get_pvp_dtype(self.metadata.xmltree).newbyteorder("B")
-        return np.fromfile(self._file_object, pvp_dtype, count=num_vect)
+        return _iohelp.fromfile(self._file_object, pvp_dtype, num_vect)
 
     def read_channel(self, channel_identifier: str) -> tuple[npt.NDArray, npt.NDArray]:
         """Read signal and pvp data from a CRSD file channel
@@ -453,7 +445,7 @@ class Reader:
         self._file_object.seek(ppp_offset + self._ppp_block_byte_offset)
 
         ppp_dtype = get_ppp_dtype(self.metadata.xmltree).newbyteorder("B")
-        return np.fromfile(self._file_object, ppp_dtype, count=num_pulse)
+        return _iohelp.fromfile(self._file_object, ppp_dtype, num_pulse)
 
     def _read_support_array(self, sa_identifier):
         elem_format = self.metadata.xmltree.find(
@@ -471,10 +463,7 @@ class Reader:
         sa_offset = int(sa_info.find("./{*}ArrayByteOffset").text)
         self._file_object.seek(sa_offset + self._support_block_byte_offset)
         assert dtype.itemsize == int(sa_info.find("./{*}BytesPerElement").text)
-        array = np.fromfile(self._file_object, dtype, count=np.prod(shape)).reshape(
-            shape
-        )
-        return array
+        return _iohelp.fromfile(self._file_object, dtype, np.prod(shape)).reshape(shape)
 
     def read_support_array(self, sa_identifier, masked=True):
         """Read SupportArray"""
