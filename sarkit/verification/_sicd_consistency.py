@@ -1722,7 +1722,7 @@ class SicdConsistency(con.ConsistencyChecker):
             assert posvelerr is not None
             for param in ("P1", "P2", "P3", "V1", "V2", "V3"):
                 with self.need(f"PosVelErr {param} >= 0.0"):
-                    assert float(posvelerr.findtext(param)) >= con.Approx(0.0)
+                    assert float(posvelerr.findtext("./{*}" + param)) >= con.Approx(0.0)
 
     def check_error_components_posvel_corr(self) -> None:
         """Checks consistency of the values in the ErrorStatistics CorrCoefs elements."""
@@ -1749,7 +1749,7 @@ class SicdConsistency(con.ConsistencyChecker):
                 "V2V3",
             ):
                 with self.need(f"CorrCoefs {param} <= 1.0"):
-                    corr_coef = abs(float(corrcoefs.findtext(param)))
+                    corr_coef = abs(float(corrcoefs.findtext("./{*}" + param)))
                     assert corr_coef <= con.Approx(1.0)
 
     def check_error_radarsensor_rangebias(self) -> None:

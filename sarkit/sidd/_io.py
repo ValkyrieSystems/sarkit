@@ -22,6 +22,7 @@ import sarkit.sicd as sksicd
 import sarkit.sicd._io
 import sarkit.sidd as sksidd
 import sarkit.wgs84
+from sarkit import _iohelp
 
 from . import _constants as siddconst
 
@@ -445,12 +446,12 @@ class NitfReader:
         imseg_sizes = np.asarray([imseg["Data"].size for imseg in imsegs])
         imseg_offsets = np.asarray([imseg["Data"].get_offset() for imseg in imsegs])
         splits = np.cumsum(imseg_sizes // (shape[-1] * dtype.itemsize))[:-1]
-        for split, sz, offset in zip(
-            np.array_split(image_pixels, splits, axis=0), imseg_sizes, imseg_offsets
+        for split, offset in zip(
+            np.array_split(image_pixels, splits, axis=0), imseg_offsets
         ):
-            this_os = offset - self._file_object.tell()
-            split[...] = np.fromfile(
-                self._file_object, dtype, count=sz // dtype.itemsize, offset=this_os
+            self._file_object.seek(offset)
+            split[...] = _iohelp.fromfile(
+                self._file_object, dtype, np.prod(split.shape)
             ).reshape(split.shape)
 
         return image_pixels
