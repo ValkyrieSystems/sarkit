@@ -38,6 +38,8 @@ XML Metadata
    :toctree: generated/
 
    XmlHelper
+   ElementWrapper
+   XsdHelper
    TxtType
    EnuType
    BoolType
@@ -80,8 +82,6 @@ Constants
      - `dict` of {xml namespace: version-specific information}
    * - ``PIXEL_TYPES``
      - `dict` of {PixelType: pixel-type-specific information}
-   * - ``TRANSCODERS``
-     - `dict` of {name: transcoder}
 
 References
 ==========
@@ -171,9 +171,11 @@ SICD 1.4.0
    https://nsgreg.nga.mil/doc/view?i=5538
 """
 
-from ._io import (
+from ._constants import (
     PIXEL_TYPES,
     VERSION_INFO,
+)
+from ._io import (
     NitfDeSubheaderPart,
     NitfFileHeaderPart,
     NitfImSubheaderPart,
@@ -186,10 +188,10 @@ from ._io import (
     jbp_from_nitf_metadata,
 )
 from ._xml import (
-    TRANSCODERS,
     BoolType,
     CmplxType,
     DblType,
+    ElementWrapper,
     EnuType,
     ImageCornersType,
     IntType,
@@ -203,6 +205,7 @@ from ._xml import (
     TxtType,
     XdtType,
     XmlHelper,
+    XsdHelper,
     XyzPolyType,
     XyzType,
     compute_scp_coa,
@@ -216,11 +219,11 @@ from .projection._derived import (
 
 __all__ = [
     "PIXEL_TYPES",
-    "TRANSCODERS",
     "VERSION_INFO",
     "BoolType",
     "CmplxType",
     "DblType",
+    "ElementWrapper",
     "EnuType",
     "ImageCornersType",
     "IntType",
@@ -242,6 +245,7 @@ __all__ = [
     "TxtType",
     "XdtType",
     "XmlHelper",
+    "XsdHelper",
     "XyzPolyType",
     "XyzType",
     "compute_scp_coa",

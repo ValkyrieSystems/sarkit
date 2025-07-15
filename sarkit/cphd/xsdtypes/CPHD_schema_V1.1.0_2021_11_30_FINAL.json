@@ -1,0 +1,3165 @@
+{
+  "/": {
+    "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CPHD": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CPHD"
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AntPatternType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AntPolRef": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AmpX",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ZeroToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AmpY",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ZeroToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PhaseY",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NegHalfToHalfType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AntPatternType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}EB": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}DCXPoly",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Poly1DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}DCYPoly",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Poly1DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}UseEBPVP",
+        "typename": "{http://www.w3.org/2001/XMLSchema}boolean"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AntPatternType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}EBFreqShiftSF": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}DCXSF",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ZeroToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}DCYSF",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ZeroToOneType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AntPatternType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GainPhaseArray": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Freq",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ArrayId",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ElementId",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AntPatternType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}MLFreqDilationSF": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}DCXSF",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ZeroToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}DCYSF",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ZeroToOneType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CPHD": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CollectionID",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CollectionIDType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Global",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GlobalType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SceneCoordinates",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SceneCoordinatesType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Data",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}DataType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Channel",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ChannelType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PVP",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PVPType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SupportArray",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SupportArrayType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Dwell",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}DwellType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ReferenceGeometry",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ReferenceGeometryType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Antenna",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AntennaType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TxRcv",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TxRcvType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ErrorParameters",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ErrorParametersType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ProductInfo",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ProductInfoType"
+      },
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GeoInfo",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GeoInfoType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}MatchInfo",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}MatchInfoType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ChannelParametersType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Antenna": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TxAPCId",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TxAPATId",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RcvAPCId",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RcvAPATId",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ChannelParametersType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}DwellTimes": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CODId",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}DwellId",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}DTAId",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}UseDTA",
+        "typename": "{http://www.w3.org/2001/XMLSchema}boolean"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ChannelParametersType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NoiseLevel": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PNRef",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}BNRef",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ZeroToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}FxNoiseProfile",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ChannelParametersType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NoiseLevel/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}FxNoiseProfile"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ChannelParametersType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NoiseLevel/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}FxNoiseProfile": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Point",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ChannelParametersType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NoiseLevel/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}FxNoiseProfile/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Point"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ChannelParametersType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NoiseLevel/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}FxNoiseProfile/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Point": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Fx",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PN",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ChannelParametersType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Polarization": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TxPol",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PolarizationType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RcvPol",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PolarizationType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TxPolRef",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PolRefType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RcvPolRef",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PolRefType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ChannelParametersType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TOAExtended": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TOAExtSaved",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}LFMEclipse",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ChannelParametersType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TOAExtended/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}LFMEclipse"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ChannelParametersType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TOAExtended/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}LFMEclipse": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}FxEarlyLow",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}FxEarlyHigh",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}FxLateLow",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}FxLateHigh",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositiveDoubleType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ChannelParametersType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TgtRefLevel": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PTRef",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositiveDoubleType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ChannelParametersType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TxRcv": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TxWFId",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RcvId",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ChannelType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AddedParameters": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Parameter",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ParameterType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CollectionIDType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CollectType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CollectionIDType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RadarMode": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ModeType",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CollectionIDType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RadarMode/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ModeType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ModeID",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CollectionIDType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RadarMode/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ModeType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}DataType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SignalArrayFormat": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ErrorParametersType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Bistatic": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TxPlatform",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ErrorParametersType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Bistatic/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TxPlatform"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RcvPlatform",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ErrorParametersType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Bistatic/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RcvPlatform"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AddedParameters",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AddedParametersType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ErrorParametersType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Bistatic/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RcvPlatform": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PosVelErr",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PosVelErrType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RadarSensor",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}BistaticRadarSensorType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ErrorParametersType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Bistatic/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TxPlatform": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PosVelErr",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PosVelErrType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RadarSensor",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}BistaticRadarSensorType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ErrorParametersType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Monostatic": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PosVelErr",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PosVelErrType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RadarSensor",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ErrorParametersType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Monostatic/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RadarSensor"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TropoError",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ErrorParametersType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Monostatic/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TropoError"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}IonoError",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ErrorParametersType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Monostatic/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}IonoError"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AddedParameters",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AddedParametersType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ErrorParametersType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Monostatic/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}IonoError": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}IonoRangeVertical",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}IonoRangeRateVertical",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}IonoRgRgRateCC",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}IonoRangeVertDecorr",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ErrorDecorrFuncType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ErrorParametersType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Monostatic/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RadarSensor": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RangeBias",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ClockFreqSF",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CollectionStartTime",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RangeBiasDecorr",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ErrorDecorrFuncType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ErrorParametersType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Monostatic/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TropoError": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TropoRangeVertical",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TropoRangeSlant",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TropoRangeDecorr",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ErrorDecorrFuncType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GlobalType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}DomainType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GlobalType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}FxBand": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}FxMin",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}FxMax",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NonNegativeDoubleType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GlobalType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}IonoParameters": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TECV",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}F2Height",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NonNegativeDoubleType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GlobalType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SGN": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}integer"
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GlobalType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TOASwath": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TOAMin",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TOAMax",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GlobalType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Timeline": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CollectionStart",
+        "typename": "{http://www.w3.org/2001/XMLSchema}dateTime"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RcvCollectionStart",
+        "typename": "{http://www.w3.org/2001/XMLSchema}dateTime"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TxTime1",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TxTime2",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NonNegativeDoubleType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GlobalType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TropoParameters": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}N0",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RefHeight",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GlobalType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TropoParameters/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RefHeight"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GlobalType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TropoParameters/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RefHeight": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}LatLonPolygonType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Vertex": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Lat",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Neg90To90Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Lon",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Neg180To180Type"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}LineType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Endpoint": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Lat",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Neg90To90Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Lon",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Neg180To180Type"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}MatchInfoType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}MatchType": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TypeID",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CurrentIndex",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NumMatchCollections",
+        "typename": "{http://www.w3.org/2001/XMLSchema}nonNegativeInteger"
+      },
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}MatchCollection",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}MatchInfoType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}MatchType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}MatchCollection"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}MatchInfoType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}MatchType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}MatchCollection": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CoreName",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}MatchIndex",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Parameter",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ParameterType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PVPType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RcvAntenna": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RcvACX",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterXYZ"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RcvACY",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterXYZ"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RcvEB",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterEB"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PVPType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TxAntenna": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TxACX",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterXYZ"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TxACY",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterXYZ"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TxEB",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterEB"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterEB/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Format": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterF8/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Format": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterI8/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Format": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterXYZ/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Format": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PosVelErrType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CorrCoefs": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}P1P2",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}P1P3",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}P1V1",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}P1V2",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}P1V3",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}P2P3",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}P2V1",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}P2V2",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}P2V3",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}P3V1",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}P3V2",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}P3V3",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}V1V2",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}V1V3",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}V2V3",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NegOneToOneType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PosVelErrType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Frame": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ProductInfoType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CreationInfo": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Application",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}DateTime",
+        "typename": "{http://www.w3.org/2001/XMLSchema}dateTime"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Site",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Parameter",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ParameterType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ReferenceGeometryCore/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SideOfTrack": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ReferenceGeometryType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Bistatic": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AzimuthAngle",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ZeroTo360Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AzimuthAngleRate",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}BistaticAngle",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ZeroTo180Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}BistaticAngleRate",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GrazeAngle",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ZeroTo90Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TwistAngle",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Neg90To90Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SlopeAngle",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ZeroTo90Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}LayoverAngle",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ZeroTo360Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TxPlatform",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}BistaticTxRcvType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RcvPlatform",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}BistaticTxRcvType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ReferenceGeometryType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Monostatic": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ARPPos",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ARPVel",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SideOfTrack",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ReferenceGeometryCore/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SideOfTrack"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SlantRange",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GroundRange",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}DopplerConeAngle",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ZeroTo180Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GrazeAngle",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ZeroTo90Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}IncidenceAngle",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ZeroTo90Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AzimuthAngle",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ZeroTo360Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TwistAngle",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Neg90To90Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SlopeAngle",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ZeroTo90Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}LayoverAngle",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ZeroTo360Type"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ReferenceGeometryType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SRP": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ECF",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}IAC",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}XYZType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SceneCoordinatesType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}IARP": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ECF",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}LLH",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}LatLonHAERestrictionType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SceneCoordinatesType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ImageAreaCornerPoints": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}IACP",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}LatLonCornerRestrictionType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SceneCoordinatesType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ImageGrid": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Identifier",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}IARPLocation",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}LSType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}IAXExtent",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SceneCoordinatesType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ImageGrid/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}IAXExtent"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}IAYExtent",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SceneCoordinatesType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ImageGrid/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}IAYExtent"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SegmentList",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SceneCoordinatesType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ImageGrid/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SegmentList"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SceneCoordinatesType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ImageGrid/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}IAXExtent": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}LineSpacing",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}FirstLine",
+        "typename": "{http://www.w3.org/2001/XMLSchema}integer"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NumLines",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SceneCoordinatesType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ImageGrid/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}IAYExtent": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SampleSpacing",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}FirstSample",
+        "typename": "{http://www.w3.org/2001/XMLSchema}integer"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NumSamples",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SceneCoordinatesType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ImageGrid/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SegmentList": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NumSegments",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Segment",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SceneCoordinatesType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ImageGrid/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SegmentList/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Segment"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SceneCoordinatesType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ImageGrid/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SegmentList/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Segment": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Identifier",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}StartLine",
+        "typename": "{http://www.w3.org/2001/XMLSchema}integer"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}StartSample",
+        "typename": "{http://www.w3.org/2001/XMLSchema}integer"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}EndLine",
+        "typename": "{http://www.w3.org/2001/XMLSchema}integer"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}EndSample",
+        "typename": "{http://www.w3.org/2001/XMLSchema}integer"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SegmentPolygon",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SceneCoordinatesType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ImageGrid/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SegmentList/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Segment/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SegmentPolygon"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SceneCoordinatesType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ImageGrid/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SegmentList/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Segment/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SegmentPolygon": {
+    "attributes": [
+      "size"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SV",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}LSVertexType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SceneCoordinatesType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ReferenceSurface": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Planar",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SceneCoordinatesType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ReferenceSurface/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Planar"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}HAE",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SceneCoordinatesType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ReferenceSurface/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}HAE"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SceneCoordinatesType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ReferenceSurface/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}HAE": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}uIAXLL",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}LatLonType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}uIAYLL",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}LatLonType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SceneCoordinatesType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ReferenceSurface/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Planar": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}uIAX",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}uIAY",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}XYZType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TxRcvType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RcvParameters": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Identifier",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}WindowLength",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SampleRate",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}IFFilterBW",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}FreqCenter",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}LFMRate",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Polarization",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PolarizationType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PathGain",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TxRcvType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TxWFParameters": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Identifier",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PulseLength",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RFBandwidth",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}FreqCenter",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}LFMRate",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Polarization",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PolarizationType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Power",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}XYPolygonType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Vertex": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}X",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Y",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AddedParametersType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Parameter",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ParameterType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AddedSupportArrayType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Identifier",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ElementFormat",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ElementFormatType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}X0",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Y0",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}XSS",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}YSS",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NODATA",
+        "typename": "{http://www.w3.org/2001/XMLSchema}hexBinary"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}XUnits",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}YUnits",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ZUnits",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Parameter",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ParameterType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AntCoordFrameType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Identifier",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}XAxisPoly",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}XYZPolyType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}YAxisPoly",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}XYZPolyType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}UseACFPVP",
+        "typename": "{http://www.w3.org/2001/XMLSchema}boolean"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AntGainPhaseType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Identifier",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ElementFormat",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}X0",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Y0",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}XSS",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}YSS",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NODATA",
+        "typename": "{http://www.w3.org/2001/XMLSchema}hexBinary"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AntPatternType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Identifier",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}FreqZero",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GainZero",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}EBFreqShift",
+        "typename": "{http://www.w3.org/2001/XMLSchema}boolean"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}EBFreqShiftSF",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AntPatternType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}EBFreqShiftSF"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}MLFreqDilation",
+        "typename": "{http://www.w3.org/2001/XMLSchema}boolean"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}MLFreqDilationSF",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AntPatternType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}MLFreqDilationSF"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GainBSPoly",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Poly1DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AntPolRef",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AntPatternType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AntPolRef"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}EB",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AntPatternType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}EB"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Array",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GainPhasePolyType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Element",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GainPhasePolyType"
+      },
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GainPhaseArray",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AntPatternType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GainPhaseArray"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AntPhaseCenterType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Identifier",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ACFId",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}APCXYZ",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}XYZType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AntennaType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NumACFs",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NumAPCs",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NumAntPats",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AntCoordFrame",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AntCoordFrameType"
+      },
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AntPhaseCenter",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AntPhaseCenterType"
+      },
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AntPattern",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AntPatternType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AreaType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}X1Y1",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}XYType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}X2Y2",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}XYType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Polygon",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}XYPolygonType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}BistaticRadarSensorType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}DelayBias",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ClockFreqSF",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CollectionStartTime",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NonNegativeDoubleType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}BistaticTxRcvType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Time",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Pos",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Vel",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SideOfTrack",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ReferenceGeometryCore/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SideOfTrack"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SlantRange",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GroundRange",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}DopplerConeAngle",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ZeroTo180Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GrazeAngle",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ZeroTo90Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}IncidenceAngle",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ZeroTo90Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AzimuthAngle",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ZeroTo360Type"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CODTimeType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Identifier",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CODTimePoly",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Poly2DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ChannelParametersType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Identifier",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RefVectorIndex",
+        "typename": "{http://www.w3.org/2001/XMLSchema}nonNegativeInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}FXFixed",
+        "typename": "{http://www.w3.org/2001/XMLSchema}boolean"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TOAFixed",
+        "typename": "{http://www.w3.org/2001/XMLSchema}boolean"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SRPFixed",
+        "typename": "{http://www.w3.org/2001/XMLSchema}boolean"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SignalNormal",
+        "typename": "{http://www.w3.org/2001/XMLSchema}boolean"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Polarization",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ChannelParametersType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Polarization"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}FxC",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}FxBW",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}FxBWNoise",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TOASaved",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TOAExtended",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ChannelParametersType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TOAExtended"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}DwellTimes",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ChannelParametersType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}DwellTimes"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ImageArea",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AreaType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Antenna",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ChannelParametersType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Antenna"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TxRcv",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ChannelParametersType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TxRcv"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TgtRefLevel",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ChannelParametersType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TgtRefLevel"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NoiseLevel",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ChannelParametersType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NoiseLevel"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ChannelSizeType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Identifier",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NumVectors",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NumSamples",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SignalArrayByteOffset",
+        "typename": "{http://www.w3.org/2001/XMLSchema}nonNegativeInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PVPArrayByteOffset",
+        "typename": "{http://www.w3.org/2001/XMLSchema}nonNegativeInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CompressedSignalSize",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ChannelType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RefChId",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}FXFixedCPHD",
+        "typename": "{http://www.w3.org/2001/XMLSchema}boolean"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TOAFixedCPHD",
+        "typename": "{http://www.w3.org/2001/XMLSchema}boolean"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SRPFixedCPHD",
+        "typename": "{http://www.w3.org/2001/XMLSchema}boolean"
+      },
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Parameters",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ChannelParametersType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AddedParameters",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ChannelType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AddedParameters"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CollectionIDType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CollectorName",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}IlluminatorName",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CoreName",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CollectType",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CollectionIDType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CollectType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RadarMode",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CollectionIDType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RadarMode"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Classification",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ReleaseInfo",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CountryCode",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Parameter",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ParameterType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}DataType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SignalArrayFormat",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}DataType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SignalArrayFormat"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NumBytesPVP",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NumCPHDChannels",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SignalCompressionID",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Channel",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ChannelSizeType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NumSupportArrays",
+        "typename": "{http://www.w3.org/2001/XMLSchema}nonNegativeInteger"
+      },
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SupportArray",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SupportArraySizeType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}DwellTimeArrayType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Identifier",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ElementFormat",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}X0",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Y0",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}XSS",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}YSS",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NODATA",
+        "typename": "{http://www.w3.org/2001/XMLSchema}hexBinary"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}DwellTimeType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Identifier",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}DwellTimePoly",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Poly2DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}DwellType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NumCODTimes",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CODTime",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CODTimeType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NumDwellTimes",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}DwellTime",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}DwellTimeType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ElementFormatType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ErrorDecorrFuncType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CorrCoefZero",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}DecorrRate",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NonNegativeDoubleType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ErrorParametersType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Monostatic",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ErrorParametersType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Monostatic"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Bistatic",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ErrorParametersType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Bistatic"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GainPhasePolyType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GainPoly",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Poly2DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PhasePoly",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Poly2DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AntGPId",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GeoInfoType": {
+    "attributes": [
+      "name"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Desc",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ParameterType"
+      },
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Point",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}LatLonRestrictionType"
+      },
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Line",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}LineType"
+      },
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Polygon",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}LatLonPolygonType"
+      },
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GeoInfo",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GeoInfoType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GlobalType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}DomainType",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GlobalType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}DomainType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SGN",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GlobalType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SGN"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Timeline",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GlobalType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Timeline"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}FxBand",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GlobalType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}FxBand"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TOASwath",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GlobalType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TOASwath"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TropoParameters",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GlobalType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TropoParameters"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}IonoParameters",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}GlobalType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}IonoParameters"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}IAZArrayType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Identifier",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ElementFormat",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}X0",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Y0",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}XSS",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}YSS",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NODATA",
+        "typename": "{http://www.w3.org/2001/XMLSchema}hexBinary"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}LSType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Line",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Sample",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}LSVertexType": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Line",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Sample",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}LatLonCornerRestrictionType": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Lat",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Neg90To90Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Lon",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Neg180To180Type"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}LatLonHAERestrictionType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Lat",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Neg90To90Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Lon",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Neg180To180Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}HAE",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}LatLonPolygonType": {
+    "attributes": [
+      "size"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Vertex",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}LatLonPolygonType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Vertex"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}LatLonRestrictionType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Lat",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Neg90To90Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Lon",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Neg180To180Type"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}LatLonType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Lat",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Lon",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}LineType": {
+    "attributes": [
+      "size"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Endpoint",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}LineType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Endpoint"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}MatchInfoType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NumMatchTypes",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}MatchType",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}MatchInfoType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}MatchType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Neg180To180Type": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Neg90To90Type": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NegHalfToHalfType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NegOneToOneType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NonNegativeDoubleType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PVPType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TxTime",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterF8"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TxPos",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterXYZ"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TxVel",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterXYZ"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RcvTime",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterF8"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RcvPos",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterXYZ"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RcvVel",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterXYZ"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SRPPos",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterXYZ"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AmpSF",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterF8"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}aFDOP",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterF8"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}aFRR1",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterF8"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}aFRR2",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterF8"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}FX1",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterF8"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}FX2",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterF8"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}FXN1",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterF8"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}FXN2",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterF8"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TOA1",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterF8"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TOA2",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterF8"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TOAE1",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterF8"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TOAE2",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterF8"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TDTropoSRP",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterF8"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TDIonoSRP",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterF8"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SC0",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterF8"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SCSS",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterF8"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SIGNAL",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterI8"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TxAntenna",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PVPType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TxAntenna"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RcvAntenna",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PVPType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RcvAntenna"
+      },
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AddedPVP",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}UserDefinedPVPType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ParameterType": {
+    "attributes": [
+      "name"
+    ],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterEB": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Offset",
+        "typename": "{http://www.w3.org/2001/XMLSchema}nonNegativeInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Size",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Format",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterEB/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Format"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterF8": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Offset",
+        "typename": "{http://www.w3.org/2001/XMLSchema}nonNegativeInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Size",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Format",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterF8/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Format"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterI8": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Offset",
+        "typename": "{http://www.w3.org/2001/XMLSchema}nonNegativeInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Size",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Format",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterI8/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Format"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterXYZ": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Offset",
+        "typename": "{http://www.w3.org/2001/XMLSchema}nonNegativeInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Size",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Format",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterXYZ/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Format"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PolRefType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AmpH",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ZeroToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AmpV",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ZeroToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PhaseV",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NegHalfToHalfType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PolarizationType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Poly1DType": {
+    "attributes": [
+      "order1"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Coef",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PolyCoef1DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Poly2DType": {
+    "attributes": [
+      "order1",
+      "order2"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Coef",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PolyCoef2DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PolyCoef1DType": {
+    "attributes": [
+      "exponent1"
+    ],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PolyCoef2DType": {
+    "attributes": [
+      "exponent1",
+      "exponent2"
+    ],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PosVelErrType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Frame",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PosVelErrType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Frame"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}P1",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}P2",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}P3",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}V1",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}V2",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}V3",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CorrCoefs",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PosVelErrType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CorrCoefs"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositionDecorr",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ErrorDecorrFuncType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PositiveDoubleType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ProductInfoType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Profile",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CreationInfo",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ProductInfoType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}CreationInfo"
+      },
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Parameter",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ParameterType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ReferenceGeometryType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SRP",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ReferenceGeometryType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SRP"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ReferenceTime",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SRPCODTime",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SRPDwellTime",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Monostatic",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ReferenceGeometryType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Monostatic"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Bistatic",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ReferenceGeometryType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Bistatic"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SceneCoordinatesType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}EarthModel",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}IARP",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SceneCoordinatesType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}IARP"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ReferenceSurface",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SceneCoordinatesType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ReferenceSurface"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ImageArea",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AreaType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ImageAreaCornerPoints",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SceneCoordinatesType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ImageAreaCornerPoints"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ExtendedArea",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AreaType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ImageGrid",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SceneCoordinatesType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ImageGrid"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SupportArraySizeType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Identifier",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NumRows",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NumCols",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}BytesPerElement",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ArrayByteOffset",
+        "typename": "{http://www.w3.org/2001/XMLSchema}nonNegativeInteger"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}SupportArrayType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}IAZArray",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}IAZArrayType"
+      },
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AntGainPhase",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AntGainPhaseType"
+      },
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}DwellTimeArray",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}DwellTimeArrayType"
+      },
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AddedSupportArray",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}AddedSupportArrayType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TxRcvType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NumTxWFs",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TxWFParameters",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TxRcvType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TxWFParameters"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}NumRcvs",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RcvParameters",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}TxRcvType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}RcvParameters"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}UserDefinedPVPType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Name",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Offset",
+        "typename": "{http://www.w3.org/2001/XMLSchema}nonNegativeInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Size",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Format",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ElementFormatType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}XYPolygonType": {
+    "attributes": [
+      "size"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Vertex",
+        "typename": "<UNNAMED>-{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}XYPolygonType/{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Vertex"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}XYType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}X",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Y",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}XYZPolyType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}X",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Poly1DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Y",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Poly1DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Z",
+        "typename": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Poly1DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}XYZType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}X",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Y",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}Z",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ZeroTo180Type": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ZeroTo360Type": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ZeroTo90Type": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}ZeroToOneType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "{http://www.w3.org/2001/XMLSchema}boolean": {
+    "attributes": [],
+    "children": [],
+    "text_typename": null
+  },
+  "{http://www.w3.org/2001/XMLSchema}dateTime": {
+    "attributes": [],
+    "children": [],
+    "text_typename": null
+  },
+  "{http://www.w3.org/2001/XMLSchema}double": {
+    "attributes": [],
+    "children": [],
+    "text_typename": null
+  },
+  "{http://www.w3.org/2001/XMLSchema}hexBinary": {
+    "attributes": [],
+    "children": [],
+    "text_typename": null
+  },
+  "{http://www.w3.org/2001/XMLSchema}integer": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}decimal"
+  },
+  "{http://www.w3.org/2001/XMLSchema}nonNegativeInteger": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}integer"
+  },
+  "{http://www.w3.org/2001/XMLSchema}positiveInteger": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}nonNegativeInteger"
+  },
+  "{http://www.w3.org/2001/XMLSchema}string": {
+    "attributes": [],
+    "children": [],
+    "text_typename": null
+  }
+}

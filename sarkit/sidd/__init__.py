@@ -42,6 +42,8 @@ XML Metadata
    :toctree: generated/
 
    XmlHelper
+   ElementWrapper
+   XsdHelper
    BoolType
    DblType
    EnuType
@@ -52,6 +54,7 @@ XML Metadata
    FilterCoefficientType
    IntListType
    SfaPointType
+   LUTInfoType
 
 Transcoders with children in the ``urn:SICommon:1.0`` namespace.
 
@@ -95,8 +98,6 @@ Constants
      - maximum NITF image segment length in bytes (:math:`10^{10}-2`)
    * - ``ILOC_MAX``
      - maximum number of rows contained in a NITF image segment (99,999)
-   * - ``TRANSCODERS``
-     - `dict` of {name: transcoder}
 
 References
 ==========
@@ -127,11 +128,13 @@ SIDD 3.0
 
 """
 
-from ._io import (
+from ._constants import (
     ILOC_MAX,
     LI_MAX,
     PIXEL_TYPES,
     VERSION_INFO,
+)
+from ._io import (
     NitfDedMetadata,
     NitfDeSubheaderPart,
     NitfFileHeaderPart,
@@ -150,16 +153,17 @@ from ._io import (
     segmentation_algorithm,
 )
 from ._xml import (
-    TRANSCODERS,
     AngleMagnitudeType,
     BoolType,
     DblType,
+    ElementWrapper,
     EnuType,
     FilterCoefficientType,
     ImageCornersType,
     IntListType,
     IntType,
     LatLonType,
+    LUTInfoType,
     ParameterType,
     PolyCoef1dType,
     PolyCoef2dType,
@@ -170,6 +174,7 @@ from ._xml import (
     TxtType,
     XdtType,
     XmlHelper,
+    XsdHelper,
     XyzPolyType,
     XyzType,
 )
@@ -184,16 +189,17 @@ __all__ = [
     "ILOC_MAX",
     "LI_MAX",
     "PIXEL_TYPES",
-    "TRANSCODERS",
     "VERSION_INFO",
     "AngleMagnitudeType",
     "BoolType",
     "DblType",
+    "ElementWrapper",
     "EnuType",
     "FilterCoefficientType",
     "ImageCornersType",
     "IntListType",
     "IntType",
+    "LUTInfoType",
     "LatLonType",
     "NitfDeSubheaderPart",
     "NitfDedMetadata",
@@ -218,6 +224,7 @@ __all__ = [
     "TxtType",
     "XdtType",
     "XmlHelper",
+    "XsdHelper",
     "XyzPolyType",
     "XyzType",
     "compute_angles",

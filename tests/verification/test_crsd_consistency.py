@@ -185,9 +185,11 @@ def _replace_error(crsd_etree, sensor_type):
     ndx = {"Tx": 0, "Rcv": 1}[sensor_type]
     helper.set_elem(
         retval.find(".//{*}TimeFreqCov"),
-        helper.load_elem(sar_error.find(".//{*}TimeFreqCov"))[[ndx, 2], :][:, [ndx, 2]],
+        skcrsd.MtxType((3, 3)).parse_elem(retval.find(".//{*}TimeFreqCov"))[
+            [ndx, 2], :
+        ][:, [ndx, 2]],
     )
-    time_decorr = copy.deepcopy(retval.find(".//{*}{sensor_type}TimeDecorr"))
+    time_decorr = copy.deepcopy(retval.find(f".//{{*}}{{{sensor_type}}}TimeDecorr"))
     if time_decorr is not None:
         time_decorr.tag = f"{{{elem_ns}}}TimeDecorr"
         _remove(retval, "{*}TxTimeDecorr")

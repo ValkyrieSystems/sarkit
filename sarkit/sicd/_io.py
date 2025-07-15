@@ -5,12 +5,11 @@ Functions to read and write SICD files.
 import copy
 import dataclasses
 import datetime
-import importlib.resources
 import itertools
 import logging
 import os
 import warnings
-from typing import Any, Final, Self, TypedDict
+from typing import Self
 
 import jbpy
 import jbpy.core
@@ -22,64 +21,7 @@ import sarkit.sicd._xml as sicd_xml
 import sarkit.wgs84
 from sarkit import _iohelp
 
-SPECIFICATION_IDENTIFIER: Final[str] = (
-    "SICD Volume 1 Design & Implementation Description Document"
-)
-
-SCHEMA_DIR = importlib.resources.files("sarkit.sicd.schemas")
-
-
-class VersionInfoType(TypedDict):
-    version: str
-    date: str
-    schema: importlib.resources.abc.Traversable
-
-
-# Keys must be in ascending order
-VERSION_INFO: Final[dict[str, VersionInfoType]] = {
-    "urn:SICD:1.1.0": {
-        "version": "1.1",
-        "date": "2014-09-30T00:00:00Z",
-        "schema": SCHEMA_DIR / "SICD_schema_V1.1.0_2014_09_30.xsd",
-    },
-    "urn:SICD:1.2.1": {
-        "version": "1.2.1",
-        "date": "2018-12-13T00:00:00Z",
-        "schema": SCHEMA_DIR / "SICD_schema_V1.2.1_2018_12_13.xsd",
-    },
-    "urn:SICD:1.3.0": {
-        "version": "1.3.0",
-        "date": "2021-11-30T00:00:00Z",
-        "schema": SCHEMA_DIR / "SICD_schema_V1.3.0_2021_11_30.xsd",
-    },
-    "urn:SICD:1.4.0": {
-        "version": "1.4.0",
-        "date": "2023-10-26T00:00:00Z",
-        "schema": SCHEMA_DIR / "SICD_schema_V1.4.0_2023_10_26.xsd",
-    },
-}
-
-
-PIXEL_TYPES: Final[dict[str, dict[str, Any]]] = {
-    "RE32F_IM32F": {
-        "bytes": 8,
-        "pvtype": "R",
-        "subcat": ("I", "Q"),
-        "dtype": np.dtype(np.complex64),
-    },
-    "RE16I_IM16I": {
-        "bytes": 4,
-        "pvtype": "SI",
-        "subcat": ("I", "Q"),
-        "dtype": np.dtype([("real", np.int16), ("imag", np.int16)]),
-    },
-    "AMP8I_PHS8I": {
-        "bytes": 2,
-        "pvtype": "INT",
-        "subcat": ("M", "P"),
-        "dtype": np.dtype([("amp", np.uint8), ("phase", np.uint8)]),
-    },
-}
+from . import _constants as sicdconst
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -451,7 +393,7 @@ class NitfReader:
         nrows = int(self.metadata.xmltree.findtext("{*}ImageData/{*}NumRows"))
         ncols = int(self.metadata.xmltree.findtext("{*}ImageData/{*}NumCols"))
         pixel_type = self.metadata.xmltree.findtext("{*}ImageData/{*}PixelType")
-        dtype = PIXEL_TYPES[pixel_type]["dtype"].newbyteorder(">")
+        dtype = sicdconst.PIXEL_TYPES[pixel_type]["dtype"].newbyteorder(">")
         sicd_pixels = np.empty((nrows, ncols), dtype)
 
         imsegs = sorted(
@@ -655,7 +597,7 @@ def jbp_from_nitf_metadata(metadata: NitfMetadata) -> jbpy.Jbp:
     xml_helper = sicd_xml.XmlHelper(sicd_xmltree)
     cols = xml_helper.load("./{*}ImageData/{*}NumCols")
     pixel_type = sicd_xmltree.findtext("./{*}ImageData/{*}PixelType")
-    bits_per_element = PIXEL_TYPES[pixel_type]["bytes"] * 8 / 2
+    bits_per_element = sicdconst.PIXEL_TYPES[pixel_type]["bytes"] * 8 / 2
 
     num_is, seginfos = image_segment_sizing_calculations(sicd_xmltree)
 
@@ -682,7 +624,7 @@ def jbp_from_nitf_metadata(metadata: NitfMetadata) -> jbpy.Jbp:
         subhdr["ISORCE"].value = metadata.im_subheader_part.isorce
         subhdr["NROWS"].value = seginfo.nrows
         subhdr["NCOLS"].value = cols
-        subhdr["PVTYPE"].value = PIXEL_TYPES[pixel_type]["pvtype"]
+        subhdr["PVTYPE"].value = sicdconst.PIXEL_TYPES[pixel_type]["pvtype"]
         subhdr["IREP"].value = "NODISPLY"
         subhdr["ICAT"].value = "SAR"
         subhdr["ABPP"].value = bits_per_element
@@ -694,8 +636,8 @@ def jbp_from_nitf_metadata(metadata: NitfMetadata) -> jbpy.Jbp:
         for icomidx, icom in enumerate(metadata.im_subheader_part.icom):
             subhdr[f"ICOM{icomidx + 1}"].value = icom
         subhdr["NBANDS"].value = 2
-        subhdr["ISUBCAT00001"].value = PIXEL_TYPES[pixel_type]["subcat"][0]
-        subhdr["ISUBCAT00002"].value = PIXEL_TYPES[pixel_type]["subcat"][1]
+        subhdr["ISUBCAT00001"].value = sicdconst.PIXEL_TYPES[pixel_type]["subcat"][0]
+        subhdr["ISUBCAT00002"].value = sicdconst.PIXEL_TYPES[pixel_type]["subcat"][1]
         subhdr["IMODE"].value = "P"
         subhdr["NBPR"].value = 1
         subhdr["NBPC"].value = 1
@@ -755,13 +697,13 @@ def _populate_de_segment(de_segment, sicd_xmltree, de_subheader_part):
 
     xml_helper = sicd_xml.XmlHelper(sicd_xmltree)
     xmlns = lxml.etree.QName(sicd_xmltree.getroot()).namespace
-    if xmlns not in VERSION_INFO:
+    if xmlns not in sicdconst.VERSION_INFO:
         logging.warning(f"Unknown SICD version: {xmlns}")
         spec_date = "0000-00-00T00:00:00Z"
         spec_version = "unknown"
     else:
-        spec_date = VERSION_INFO[xmlns]["date"]
-        spec_version = VERSION_INFO[xmlns]["version"]
+        spec_date = sicdconst.VERSION_INFO[xmlns]["date"]
+        spec_version = sicdconst.VERSION_INFO[xmlns]["version"]
 
     subhdr["DESSHF"]["DESSHSD"].value = spec_date
     subhdr["DESSHF"]["DESSHSV"].value = spec_version
@@ -844,7 +786,7 @@ class NitfWriter:
 
         sicd_xmltree = self._metadata.xmltree
         xmlns = lxml.etree.QName(sicd_xmltree.getroot()).namespace
-        schema = lxml.etree.XMLSchema(file=VERSION_INFO[xmlns]["schema"])
+        schema = lxml.etree.XMLSchema(file=sicdconst.VERSION_INFO[xmlns]["schema"])
         if not schema.validate(sicd_xmltree):
             warnings.warn(str(schema.error_log))
 
@@ -870,9 +812,9 @@ class NitfWriter:
 
         """
         pixel_type = self._metadata.xmltree.findtext("./{*}ImageData/{*}PixelType")
-        if PIXEL_TYPES[pixel_type]["dtype"] != array.dtype.newbyteorder("="):
+        if sicdconst.PIXEL_TYPES[pixel_type]["dtype"] != array.dtype.newbyteorder("="):
             raise ValueError(
-                f"Array dtype ({array.dtype}) does not match expected dtype ({PIXEL_TYPES[pixel_type]['dtype']}) "
+                f"Array dtype ({array.dtype}) does not match expected dtype ({sicdconst.PIXEL_TYPES[pixel_type]['dtype']}) "
                 f"for PixelType={pixel_type}"
             )
 

@@ -5,8 +5,7 @@ Common XML Helper functionality
 import abc
 import datetime
 import inspect
-import re
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from typing import Any
 
 import lxml.etree
@@ -493,11 +492,9 @@ class CmplxType(SequenceType):
         super().set_subelements(elem, {"Real": val.real, "Imag": val.imag})
 
 
-class ListType(Type):
+class SizedType(abc.ABC, Type):
     """
-    ListType(sub_tag, sub_type, *, include_size_attr=True, index_start=1)
-
-    Transcoder for XML parameter types containing an ordered list of subelements with a common tag.
+    Abstract base class for XML parameter types containing ordered subelements with a common tag.
 
     Parameters
     ----------
@@ -511,7 +508,6 @@ class ListType(Type):
         Starting index. Default is 1.
     child_ns : str, optional
         Namespace to use for child elements.  Parent namespace used if unspecified.
-
     """
 
     def __init__(
@@ -529,14 +525,14 @@ class ListType(Type):
         self.index_start = index_start
         self.child_ns = child_ns
 
-    def parse_elem(self, elem: lxml.etree.Element) -> npt.NDArray:
-        """Returns an array containing the sub-elements encoded in ``elem``."""
-        return np.array(
-            [
-                self.sub_type.parse_elem(x)
-                for x in sorted(elem, key=lambda x: int(x.get("index")))
-            ]
-        )
+    @abc.abstractmethod
+    def parse_elem(self, elem: lxml.etree.Element) -> Any:
+        pass
+
+    def iter_parse(self, elem: lxml.etree.Element) -> Iterator:
+        """Yield sub-elements encoded in ``elem`` in indexed order."""
+        for x in sorted(elem, key=lambda x: int(x.get("index"))):
+            yield self.sub_type.parse_elem(x)
 
     def set_elem(self, elem: lxml.etree.Element, val: Sequence[Any]) -> None:
         """Set ``elem`` node using ``val``.
@@ -558,6 +554,27 @@ class ListType(Type):
             subelem = lxml.etree.SubElement(elem, ns + self.sub_tag)
             self.sub_type.set_elem(subelem, sub_val)
             subelem.set("index", str(index + self.index_start))
+
+
+class ListType(SizedType):
+    """
+    Transcoder for XML parameter types containing an ordered list of subelements with a common tag.
+
+    """
+
+    def parse_elem(self, elem: lxml.etree.Element) -> list:
+        """Returns an list containing the sub-elements encoded in ``elem``."""
+        return list(self.iter_parse(elem))
+
+
+class NdArrayType(SizedType):
+    """
+    Like `ListType`, but returns an `ndarray`
+    """
+
+    def parse_elem(self, elem: lxml.etree.Element) -> npt.NDArray:
+        """Returns an array containing the sub-elements encoded in ``elem``."""
+        return np.array(list(self.iter_parse(elem)))
 
 
 class ParameterType(Type):
@@ -624,77 +641,3 @@ class MtxType(Type):
         for indices, entry in np.ndenumerate(mtx):
             attribs = {f"index{d + 1}": str(c + 1) for d, c in enumerate(indices)}
             lxml.etree.SubElement(elem, ns + "Entry", attrib=attribs).text = str(entry)
-
-
-class XmlHelper:
-    """
-    Base Class for generic XmlHelpers, which provide methods for transcoding data
-    between XML and more convenient Python objects.
-
-    Transcoders are known to a helper by names constructed from a simplified element
-    path, without namespaces or position indices.
-
-    For example, the transcoder for an element with the structural, absolute path:
-
-        ``{ns}level0/{not-ns}level1[24]``
-
-    would have the following transcoder name:
-
-        ``level0/level1``
-
-    Parameters
-    ----------
-    element_tree : lxml.etree.ElementTree
-        An XML element tree containing the data being operated on.
-
-    """
-
-    _transcoders_: dict[str, Type] = {}
-
-    def __init__(self, element_tree):
-        self.element_tree = element_tree
-
-    def _get_simple_path(self, elem):
-        element_path = self.element_tree.getelementpath(elem)
-        return re.sub(r"\{.*?\}|\[.*?\]", "", element_path)
-
-    def get_transcoder_name(self, elem):
-        """Returns the transcoder name associated with ``elem``."""
-        simple_path = self._get_simple_path(elem)
-        if simple_path not in self._transcoders_:
-            raise LookupError(f"{simple_path} is not transcodable")
-        return simple_path
-
-    def _get_transcoder(self, elem):
-        return self._transcoders_[self.get_transcoder_name(elem)]
-
-    def load_elem(self, elem):
-        """Decode ``elem`` (an XML element) to a Python object."""
-        return self._get_transcoder(elem).parse_elem(elem)
-
-    def load(self, pattern):
-        """
-        Find and load the first subelement matching ``pattern`` in ``element_tree``.
-
-        Returns the decoded Python object or `None`.
-
-        """
-        elem = self.element_tree.find(pattern)
-        if elem is None:
-            return
-        return self.load_elem(elem)
-
-    def set_elem(self, elem, val):
-        """Encode ``val`` (a Python object) into the XML element ``elem``."""
-        self._get_transcoder(elem).set_elem(elem, val)
-
-    def set(self, pattern, val):
-        """
-        Find and set the first subelement matching ``pattern`` in ``element_tree`` using
-        ``val``.
-
-        """
-        elem = self.element_tree.find(pattern)
-        if elem is None:
-            raise ValueError(f"{pattern=} did not match any elements")
-        self.set_elem(elem, val)
