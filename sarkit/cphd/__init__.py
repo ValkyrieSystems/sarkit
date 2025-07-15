@@ -35,6 +35,8 @@ XML Metadata
    :toctree: generated/
 
    XmlHelper
+   ElementWrapper
+   XsdHelper
    TxtType
    EnuType
    BoolType
@@ -66,8 +68,6 @@ Constants
      - :external:py:obj:`set` of KVP keys defined in the standard
    * - ``SECTION_TERMINATOR``
      - Two-byte sequence that marks the end of the file header
-   * - ``TRANSCODERS``
-     - `dict` of {name: transcoder}
 
 References
 ==========
@@ -95,10 +95,12 @@ CPHD 1.1.0
    https://nsgreg.nga.mil/doc/view?i=5421
 """
 
-from ._io import (
+from ._constants import (
     DEFINED_HEADER_KEYS,
     SECTION_TERMINATOR,
     VERSION_INFO,
+)
+from ._io import (
     FileHeaderPart,
     Metadata,
     Reader,
@@ -110,10 +112,10 @@ from ._io import (
     read_file_header,
 )
 from ._xml import (
-    TRANSCODERS,
     AddedPvpType,
     BoolType,
     DblType,
+    ElementWrapper,
     EnuType,
     HexType,
     ImageAreaCornerPointsType,
@@ -128,6 +130,7 @@ from ._xml import (
     TxtType,
     XdtType,
     XmlHelper,
+    XsdHelper,
     XyType,
     XyzPolyType,
     XyzType,
@@ -136,11 +139,11 @@ from ._xml import (
 __all__ = [
     "DEFINED_HEADER_KEYS",
     "SECTION_TERMINATOR",
-    "TRANSCODERS",
     "VERSION_INFO",
     "AddedPvpType",
     "BoolType",
     "DblType",
+    "ElementWrapper",
     "EnuType",
     "FileHeaderPart",
     "HexType",
@@ -159,6 +162,7 @@ __all__ = [
     "Writer",
     "XdtType",
     "XmlHelper",
+    "XsdHelper",
     "XyType",
     "XyzPolyType",
     "XyzType",

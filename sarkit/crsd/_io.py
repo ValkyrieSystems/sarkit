@@ -4,41 +4,17 @@ Functions to read and write CRSD files.
 
 import copy
 import dataclasses
-import importlib.resources
 import logging
 import os
-from typing import Final
 
 import lxml.etree
 import numpy as np
 import numpy.typing as npt
 
 import sarkit.cphd as skcphd
+from sarkit import _iohelp
 
-SCHEMA_DIR = importlib.resources.files("sarkit.crsd.schemas")
-SECTION_TERMINATOR: Final[bytes] = b"\f\n"
-DEFINED_HEADER_KEYS: Final[set] = {
-    "XML_BLOCK_SIZE",
-    "XML_BLOCK_BYTE_OFFSET",
-    "SUPPORT_BLOCK_SIZE",
-    "SUPPORT_BLOCK_BYTE_OFFSET",
-    "PPP_BLOCK_SIZE",
-    "PPP_BLOCK_BYTE_OFFSET",
-    "PVP_BLOCK_SIZE",
-    "PVP_BLOCK_BYTE_OFFSET",
-    "SIGNAL_BLOCK_SIZE",
-    "SIGNAL_BLOCK_BYTE_OFFSET",
-    "CLASSIFICATION",
-    "RELEASE_INFO",
-}
-
-VERSION_INFO: Final[dict] = {
-    "http://api.nsgreg.nga.mil/schema/crsd/1.0": {
-        "version": "1.0",
-        "date": "2025-02-25T00:00:00Z",
-        "schema": SCHEMA_DIR / "NGA.STND.0080-2_1.0_CRSD_schema_2025_02_25.xsd",
-    },
-}
+from . import _constants as crsdconst
 
 
 # Happens to match CPHD
@@ -233,7 +209,7 @@ class Reader:
         # skip the version line and read header
         _, self._kvp_list = read_file_header(self._file_object)
 
-        extra_header_keys = set(self._kvp_list.keys()) - DEFINED_HEADER_KEYS
+        extra_header_keys = set(self._kvp_list.keys()) - crsdconst.DEFINED_HEADER_KEYS
         additional_kvps = {key: self._kvp_list[key] for key in extra_header_keys}
 
         self._file_object.seek(self._xml_block_byte_offset)
@@ -343,12 +319,7 @@ class Reader:
         self._file_object.seek(signal_offset + self._signal_block_byte_offset)
         shape, dtype = _describe_signal(self.metadata.xmltree, channel_identifier)
         dtype = dtype.newbyteorder(">")
-        nbytes = np.prod(shape) * dtype.itemsize
-        sigarray = self._file_object.read(nbytes)
-        nbytes_read = len(sigarray)
-        if nbytes != nbytes_read:
-            raise RuntimeError(f"Expected {nbytes=}; only read {nbytes_read}")
-        return np.frombuffer(sigarray, dtype=dtype).reshape(shape)
+        return _iohelp.fromfile(self._file_object, dtype, np.prod(shape)).reshape(shape)
 
     def read_signal_compressed(self) -> npt.NDArray:
         """Read signal data from a CRSD file with signal arrays stored in compressed format
@@ -379,11 +350,7 @@ class Reader:
         self._file_object.seek(self._signal_block_byte_offset)
         dtype = np.dtype("uint8")
         nbytes = int(compressed_size_str)
-        sigarray = self._file_object.read(nbytes)
-        nbytes_read = len(sigarray)
-        if nbytes != nbytes_read:
-            raise RuntimeError(f"Expected {nbytes=}; only read {nbytes_read}")
-        return np.frombuffer(sigarray, dtype=dtype)
+        return _iohelp.fromfile(self._file_object, dtype, nbytes)
 
     def read_pvps(self, channel_identifier: str) -> npt.NDArray:
         """Read pvp data from a CRSD file
@@ -409,7 +376,7 @@ class Reader:
         self._file_object.seek(pvp_offset + self._pvp_block_byte_offset)
 
         pvp_dtype = get_pvp_dtype(self.metadata.xmltree).newbyteorder("B")
-        return np.fromfile(self._file_object, pvp_dtype, count=num_vect)
+        return _iohelp.fromfile(self._file_object, pvp_dtype, num_vect)
 
     def read_channel(self, channel_identifier: str) -> tuple[npt.NDArray, npt.NDArray]:
         """Read signal and pvp data from a CRSD file channel
@@ -453,7 +420,7 @@ class Reader:
         self._file_object.seek(ppp_offset + self._ppp_block_byte_offset)
 
         ppp_dtype = get_ppp_dtype(self.metadata.xmltree).newbyteorder("B")
-        return np.fromfile(self._file_object, ppp_dtype, count=num_pulse)
+        return _iohelp.fromfile(self._file_object, ppp_dtype, num_pulse)
 
     def _read_support_array(self, sa_identifier):
         elem_format = self.metadata.xmltree.find(
@@ -471,10 +438,7 @@ class Reader:
         sa_offset = int(sa_info.find("./{*}ArrayByteOffset").text)
         self._file_object.seek(sa_offset + self._support_block_byte_offset)
         assert dtype.itemsize == int(sa_info.find("./{*}BytesPerElement").text)
-        array = np.fromfile(self._file_object, dtype, count=np.prod(shape)).reshape(
-            shape
-        )
-        return array
+        return _iohelp.fromfile(self._file_object, dtype, np.prod(shape)).reshape(shape)
 
     def read_support_array(self, sa_identifier, masked=True):
         """Read SupportArray"""
@@ -681,9 +645,9 @@ class Writer:
         self._file_header_kvp.update(self._metadata.file_header_part.additional_kvps)
 
         def _serialize_header():
-            version = VERSION_INFO[lxml.etree.QName(crsd_xmltree.getroot()).namespace][
-                "version"
-            ]
+            version = crsdconst.VERSION_INFO[
+                lxml.etree.QName(crsd_xmltree.getroot()).namespace
+            ]["version"]
             if self._sequence_size_offsets and self._channel_size_offsets:
                 file_type = "CRSDsar"
             elif self._channel_size_offsets:
@@ -696,7 +660,7 @@ class Writer:
             header_str += "".join(
                 (f"{key} := {value}\n" for key, value in self._file_header_kvp.items())
             )
-            return header_str.encode() + SECTION_TERMINATOR
+            return header_str.encode() + crsdconst.SECTION_TERMINATOR
 
         next_offset = _align(len(_serialize_header()))
 
@@ -704,7 +668,7 @@ class Writer:
         next_offset = _align(
             next_offset
             + self._file_header_kvp["XML_BLOCK_SIZE"]
-            + len(SECTION_TERMINATOR)
+            + len(crsdconst.SECTION_TERMINATOR)
         )
 
         self._file_header_kvp["SUPPORT_BLOCK_BYTE_OFFSET"] = next_offset
@@ -725,7 +689,7 @@ class Writer:
         self._file_object.seek(0)
         self._file_object.write(_serialize_header())
         self._file_object.seek(self._file_header_kvp["XML_BLOCK_BYTE_OFFSET"])
-        self._file_object.write(xml_block_body + SECTION_TERMINATOR)
+        self._file_object.write(xml_block_body + crsdconst.SECTION_TERMINATOR)
 
         self._signal_arrays_written: set[str] = set()
         self._pvp_arrays_written: set[str] = set()

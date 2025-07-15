@@ -42,6 +42,7 @@ dev-lint = [
 ]
 dev-test = [
     "pytest>=7.4.4",
+    "smart_open[http]>=7.1.0",
 ]
 dev = [
     "sarkit[dev-test,dev-lint]",
@@ -50,12 +51,16 @@ dev = [
 [dependency-groups]
 test = [
     "nox>=2024.3.2",
+    "smart_open[http]>=7.1.0",
 ]
 doc = [
     "sphinx>=7.2.6",
     "numpydoc>=1.7.0",
     "sphinx-rtd-theme>=2.0.0",
     "sphinxcontrib-autoprogram>=0.1.9",
+]
+xsdtypes-generation = [
+    "xmlschema>=4.0.1",
 ]
 
 [project.scripts]

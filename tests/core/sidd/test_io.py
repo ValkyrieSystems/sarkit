@@ -6,9 +6,10 @@ import jbpy
 import lxml.etree
 import numpy as np
 import pytest
+import smart_open
 
 import sarkit.sidd as sksidd
-import sarkit.sidd._io
+import sarkit.sidd._constants
 
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
 
@@ -81,7 +82,7 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
     )[::-1]
     if force_segmentation:
         monkeypatch.setattr(
-            sarkit.sidd._io, "LI_MAX", basis_array0.nbytes // 5
+            sarkit.sidd._constants, "LI_MAX", basis_array0.nbytes // 5
         )  # reduce the segment size limit to force segmentation
 
     write_metadata = sksidd.NitfMetadata(
@@ -287,7 +288,7 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
             writer.write_image(5, basis_array5)
 
     def _num_imseg(array):
-        rows_per_seg = int(np.floor(sarkit.sidd._io.LI_MAX / array[0].nbytes))
+        rows_per_seg = int(np.floor(sarkit.sidd._constants.LI_MAX / array[0].nbytes))
         return int(np.ceil(array.shape[0] / rows_per_seg))
 
     num_expected_imseg = (
@@ -644,3 +645,11 @@ def test_version_info():
 
     for urn, info in sksidd.VERSION_INFO.items():
         assert lxml.etree.parse(info["schema"]).getroot().get("targetNamespace") == urn
+
+
+def test_remote_read():
+    with smart_open.open(
+        "https://www.govsco.com/content/spotlight.sidd", mode="rb"
+    ) as file_object:
+        with sksidd.NitfReader(file_object) as r:
+            _ = r.read_image(0)

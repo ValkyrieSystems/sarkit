@@ -2,8 +2,9 @@
 Functions for interacting with SIDD XML
 """
 
+import importlib.resources
 import numbers
-import re
+import pathlib
 from collections.abc import Sequence
 from typing import Any
 
@@ -11,7 +12,10 @@ import lxml.etree
 import numpy as np
 import numpy.typing as npt
 
-import sarkit._xmlhelp as skxml
+import sarkit.xmlhelp as skxml
+import sarkit.xmlhelp._transcoders as skxt
+
+from . import _constants as siddconst
 
 NSMAP = {
     "sicommon": "urn:SICommon:1.0",
@@ -19,37 +23,37 @@ NSMAP = {
 
 
 # The following transcoders happen to share common implementation across several standards
-@skxml.inheritdocstring
-class BoolType(skxml.BoolType):
+@skxt.inheritdocstring
+class BoolType(skxt.BoolType):
     pass
 
 
-@skxml.inheritdocstring
-class DblType(skxml.DblType):
+@skxt.inheritdocstring
+class DblType(skxt.DblType):
     pass
 
 
-@skxml.inheritdocstring
-class EnuType(skxml.EnuType):
+@skxt.inheritdocstring
+class EnuType(skxt.EnuType):
     pass
 
 
-@skxml.inheritdocstring
-class IntType(skxml.IntType):
+@skxt.inheritdocstring
+class IntType(skxt.IntType):
     pass
 
 
-@skxml.inheritdocstring
-class TxtType(skxml.TxtType):
+@skxt.inheritdocstring
+class TxtType(skxt.TxtType):
     pass
 
 
-@skxml.inheritdocstring
-class XdtType(skxml.XdtType):
+@skxt.inheritdocstring
+class XdtType(skxt.XdtType):
     pass
 
 
-class XyzType(skxml.XyzType):
+class XyzType(skxt.XyzType):
     """Transcoder for XML parameter types containing scalar X, Y, and Z components.
 
     Children are in the SICommon namespace.
@@ -59,7 +63,7 @@ class XyzType(skxml.XyzType):
         super().__init__(child_ns=NSMAP["sicommon"])
 
 
-class AngleMagnitudeType(skxml.ArrayType):
+class AngleMagnitudeType(skxt.ArrayType):
     """Transcoder for double-precision floating point angle magnitude XML parameter type.
 
     Children are in the SICommon namespace.
@@ -67,12 +71,12 @@ class AngleMagnitudeType(skxml.ArrayType):
 
     def __init__(self) -> None:
         super().__init__(
-            subelements={c: skxml.DblType() for c in ("Angle", "Magnitude")},
+            subelements={c: skxt.DblType() for c in ("Angle", "Magnitude")},
             child_ns=NSMAP["sicommon"],
         )
 
 
-class LatLonType(skxml.LatLonType):
+class LatLonType(skxt.LatLonType):
     """Transcoder for XML parameter types containing scalar Lat and Lon components.
 
     Children are in the SICommon namespace.
@@ -82,12 +86,12 @@ class LatLonType(skxml.LatLonType):
         super().__init__(child_ns=NSMAP["sicommon"])
 
 
-@skxml.inheritdocstring
-class ParameterType(skxml.ParameterType):
+@skxt.inheritdocstring
+class ParameterType(skxt.ParameterType):
     pass
 
 
-class PolyCoef1dType(skxml.PolyType):
+class PolyCoef1dType(skxt.PolyType):
     """Transcoder for one-dimensional polynomial (PolyCoef1D) XML parameter types.
 
     Children are in the SICommon namespace.
@@ -97,7 +101,7 @@ class PolyCoef1dType(skxml.PolyType):
         super().__init__(child_ns=NSMAP["sicommon"])
 
 
-class PolyCoef2dType(skxml.Poly2dType):
+class PolyCoef2dType(skxt.Poly2dType):
     """Transcoder for two-dimensional polynomial (PolyCoef2D) XML parameter types.
 
     Children are in the SICommon namespace.
@@ -107,7 +111,7 @@ class PolyCoef2dType(skxml.Poly2dType):
         super().__init__(child_ns=NSMAP["sicommon"])
 
 
-class RowColIntType(skxml.RowColType):
+class RowColIntType(skxt.RowColType):
     """Transcoder for XML parameter types containing scalar, integer Row and Col components (RC_INT).
 
     Children are in the SICommon namespace.
@@ -117,7 +121,7 @@ class RowColIntType(skxml.RowColType):
         super().__init__(child_ns=NSMAP["sicommon"])
 
 
-class XyzPolyType(skxml.XyzPolyType):
+class XyzPolyType(skxt.XyzPolyType):
     """Transcoder for XYZ_POLY XML parameter types containing triplets of 1D polynomials.
 
     Children are in the SICommon namespace.
@@ -127,7 +131,7 @@ class XyzPolyType(skxml.XyzPolyType):
         super().__init__(child_ns=NSMAP["sicommon"])
 
 
-class FilterCoefficientType(skxml.Type):
+class FilterCoefficientType(skxt.Type):
     """
     Transcoder for FilterCoefficients.
     Attributes may either be (row, col) or (phasing, point)
@@ -209,7 +213,7 @@ class FilterCoefficientType(skxml.Type):
             lxml.etree.SubElement(elem, ns + "Coef", attrib=attribs).text = str(coef)
 
 
-class IntListType(skxml.Type):
+class IntListType(skxt.Type):
     """
     Transcoder for ints in a list XML parameter types.
 
@@ -227,7 +231,7 @@ class IntListType(skxml.Type):
         elem.text = " ".join([str(entry) for entry in val])
 
 
-class ImageCornersType(skxml.ListType):
+class ImageCornersType(skxt.NdArrayType):
     """
     Transcoder for GeoData/ImageCorners XML parameter types.
 
@@ -282,7 +286,7 @@ class ImageCornersType(skxml.ListType):
             self.sub_type.set_elem(icp, coord)
 
 
-class RangeAzimuthType(skxml.ArrayType):
+class RangeAzimuthType(skxt.ArrayType):
     """
     Transcoder for double-precision floating point range and azimuth XML parameter types.
 
@@ -292,12 +296,12 @@ class RangeAzimuthType(skxml.ArrayType):
 
     def __init__(self) -> None:
         super().__init__(
-            subelements={c: skxml.DblType() for c in ("Range", "Azimuth")},
+            subelements={c: skxt.DblType() for c in ("Range", "Azimuth")},
             child_ns=NSMAP["sicommon"],
         )
 
 
-class RowColDblType(skxml.ArrayType):
+class RowColDblType(skxt.ArrayType):
     """
     Transcoder for double-precision floating point row and column XML parameter types.
 
@@ -307,20 +311,20 @@ class RowColDblType(skxml.ArrayType):
 
     def __init__(self) -> None:
         super().__init__(
-            subelements={c: skxml.DblType() for c in ("Row", "Col")},
+            subelements={c: skxt.DblType() for c in ("Row", "Col")},
             child_ns=NSMAP["sicommon"],
         )
 
 
-class SfaPointType(skxml.ArrayType):
+class SfaPointType(skxt.ArrayType):
     """
     Transcoder for double-precision floating point Simple Feature Access 2D or 3D Points.
 
     """
 
     def __init__(self) -> None:
-        self._subelem_superset: dict[str, skxml.Type] = {
-            c: skxml.DblType() for c in ("X", "Y", "Z")
+        self._subelem_superset: dict[str, skxt.Type] = {
+            c: skxt.DblType() for c in ("X", "Y", "Z")
         }
         super().__init__(subelements=self._subelem_superset, child_ns="urn:SFA:1.2.0")
 
@@ -347,380 +351,154 @@ class SfaPointType(skxml.ArrayType):
         super().set_elem(elem, val)
 
 
-def _expand_lookuptable_nodes(prefix: str):
-    return {
-        f"{prefix}/LUTName": TxtType(),
-        f"{prefix}/Predefined/DatabaseName": TxtType(),
-        f"{prefix}/Predefined/RemapFamily": IntType(),
-        f"{prefix}/Predefined/RemapMember": IntType(),
-        f"{prefix}/Custom/LUTInfo/LUTValues": IntListType(),
-    }
+class LUTInfoType(skxt.Type):
+    """
+    Transcoder for LUTInfo nodes under LookupTableType's Custom child.
 
+    """
 
-def _expand_filter_nodes(prefix: str):
-    return {
-        f"{prefix}/FilterName": TxtType(),
-        f"{prefix}/FilterKernel/Predefined/DatabaseName": TxtType(),
-        f"{prefix}/FilterKernel/Predefined/FilterFamily": IntType(),
-        f"{prefix}/FilterKernel/Predefined/FilterMember": IntType(),
-        f"{prefix}/FilterKernel/Custom/FilterCoefficients": FilterCoefficientType(
-            "rowcol"
-        ),
-        f"{prefix}/FilterBank/Predefined/DatabaseName": TxtType(),
-        f"{prefix}/FilterBank/Predefined/FilterFamily": IntType(),
-        f"{prefix}/FilterBank/Predefined/FilterMember": IntType(),
-        f"{prefix}/FilterBank/Custom/FilterCoefficients": FilterCoefficientType(
-            "phasingpoint"
-        ),
-        f"{prefix}/Operation": TxtType(),
-    }
+    def parse_elem(self, elem: lxml.etree.Element) -> npt.NDArray:
+        """Returns an array containing the LUTs encoded in ``elem``."""
+        return np.array(
+            [
+                IntListType().parse_elem(x)
+                for x in sorted(elem, key=lambda x: int(x.get("lut")))
+            ]
+        )
 
+    def set_elem(self, elem: lxml.etree.Element, val: Sequence[Any]) -> None:
+        """Set ``elem`` node using ``val``.
 
-def _decorr_type(xml_path):
-    return {f"{xml_path}/{x}": skxml.DblType() for x in ("CorrCoefZero", "DecorrRate")}
+        Parameters
+        ----------
+        elem : lxml.etree.Element
+            XML element to set
+        val : array_like
+            (numLuts, size)-shaped array of LUTs to set
 
-
-TRANSCODERS: dict[str, skxml.Type] = {
-    "ProductCreation/ProcessorInformation/Application": TxtType(),
-    "ProductCreation/ProcessorInformation/ProcessingDateTime": XdtType(),
-    "ProductCreation/ProcessorInformation/Site": TxtType(),
-    "ProductCreation/ProcessorInformation/Profile": TxtType(),
-    "ProductCreation/Classification/SecurityExtension": ParameterType(),
-    "ProductCreation/ProductName": TxtType(),
-    "ProductCreation/ProductClass": TxtType(),
-    "ProductCreation/ProductType": TxtType(),
-    "ProductCreation/ProductCreationExtension": ParameterType(),
-}
-TRANSCODERS |= {
-    "Display/PixelType": TxtType(),
-    "Display/NumBands": IntType(),
-    "Display/DefaultBandDisplay": IntType(),
-    "Display/NonInteractiveProcessing/ProductGenerationOptions/BandEqualization/Algorithm": TxtType(),
-}
-TRANSCODERS |= _expand_lookuptable_nodes(
-    "Display/NonInteractiveProcessing/ProductGenerationOptions/BandEqualization/BandLUT"
-)
-TRANSCODERS |= _expand_filter_nodes(
-    "Display/NonInteractiveProcessing/ProductGenerationOptions/ModularTransferFunctionRestoration"
-)
-TRANSCODERS |= _expand_lookuptable_nodes(
-    "Display/NonInteractiveProcessing/ProductGenerationOptions/DataRemapping"
-)
-TRANSCODERS |= _expand_filter_nodes(
-    "Display/NonInteractiveProcessing/ProductGenerationOptions/AsymmetricPixelCorrection"
-)
-TRANSCODERS |= {
-    "Display/NonInteractiveProcessing/RRDS/DownsamplingMethod": TxtType(),
-}
-TRANSCODERS |= _expand_filter_nodes("Display/NonInteractiveProcessing/RRDS/AntiAlias")
-TRANSCODERS |= _expand_filter_nodes(
-    "Display/NonInteractiveProcessing/RRDS/Interpolation"
-)
-TRANSCODERS |= _expand_filter_nodes(
-    "Display/InteractiveProcessing/GeometricTransform/Scaling/AntiAlias"
-)
-TRANSCODERS |= _expand_filter_nodes(
-    "Display/InteractiveProcessing/GeometricTransform/Scaling/Interpolation"
-)
-TRANSCODERS |= {
-    "Display/InteractiveProcessing/GeometricTransform/Orientation/ShadowDirection": TxtType(),
-}
-TRANSCODERS |= _expand_filter_nodes(
-    "Display/InteractiveProcessing/SharpnessEnhancement/ModularTransferFunctionCompensation"
-)
-TRANSCODERS |= _expand_filter_nodes(
-    "Display/InteractiveProcessing/SharpnessEnhancement/ModularTransferFunctionEnhancement"
-)
-TRANSCODERS |= {
-    "Display/InteractiveProcessing/ColorSpaceTransform/ColorManagementModule/RenderingIntent": TxtType(),
-    "Display/InteractiveProcessing/ColorSpaceTransform/ColorManagementModule/SourceProfile": TxtType(),
-    "Display/InteractiveProcessing/ColorSpaceTransform/ColorManagementModule/DisplayProfile": TxtType(),
-    "Display/InteractiveProcessing/ColorSpaceTransform/ColorManagementModule/ICCProfileSignature": TxtType(),
-    "Display/InteractiveProcessing/DynamicRangeAdjustment/AlgorithmType": TxtType(),
-    "Display/InteractiveProcessing/DynamicRangeAdjustment/BandStatsSource": IntType(),
-    "Display/InteractiveProcessing/DynamicRangeAdjustment/DRAParameters/Pmin": DblType(),
-    "Display/InteractiveProcessing/DynamicRangeAdjustment/DRAParameters/Pmax": DblType(),
-    "Display/InteractiveProcessing/DynamicRangeAdjustment/DRAParameters/EminModifier": DblType(),
-    "Display/InteractiveProcessing/DynamicRangeAdjustment/DRAParameters/EmaxModifier": DblType(),
-    "Display/InteractiveProcessing/DynamicRangeAdjustment/DRAOverrides/Subtractor": DblType(),
-    "Display/InteractiveProcessing/DynamicRangeAdjustment/DRAOverrides/Multiplier": DblType(),
-}
-TRANSCODERS |= _expand_lookuptable_nodes(
-    "Display/InteractiveProcessing/TonalTransferCurve"
-)
-TRANSCODERS |= {
-    "Display/DisplayExtension": ParameterType(),
-}
-TRANSCODERS |= {
-    "GeoData/EarthModel": TxtType(),
-    "GeoData/ImageCorners": ImageCornersType(),
-    "GeoData/ValidData": skxml.ListType("Vertex", LatLonType()),
-    "GeoData/GeoInfo/Desc": ParameterType(),
-    "GeoData/GeoInfo/Point": LatLonType(),
-    "GeoData/GeoInfo/Line": skxml.ListType("Endpoint", LatLonType()),
-    "GeoData/GeoInfo/Polygon": skxml.ListType("Vertex", LatLonType()),
-}
-TRANSCODERS |= {
-    "Measurement/PlaneProjection/ReferencePoint/ECEF": XyzType(),
-    "Measurement/PlaneProjection/ReferencePoint/Point": RowColDblType(),
-    "Measurement/PlaneProjection/SampleSpacing": RowColDblType(),
-    "Measurement/PlaneProjection/TimeCOAPoly": PolyCoef2dType(),
-    "Measurement/PlaneProjection/ProductPlane/RowUnitVector": XyzType(),
-    "Measurement/PlaneProjection/ProductPlane/ColUnitVector": XyzType(),
-    "Measurement/PolynomialProjection/ReferencePoint/ECEF": XyzType(),
-    "Measurement/PolynomialProjection/ReferencePoint/Point": RowColDblType(),
-    "Measurement/PolynomialProjection/RowColToLat": PolyCoef2dType(),
-    "Measurement/PolynomialProjection/RowColToLon": PolyCoef2dType(),
-    "Measurement/PolynomialProjection/RowColToAlt": PolyCoef2dType(),
-    "Measurement/PolynomialProjection/LatLonToRow": PolyCoef2dType(),
-    "Measurement/PolynomialProjection/LatLonToCol": PolyCoef2dType(),
-    "Measurement/GeographicProjection/ReferencePoint/ECEF": XyzType(),
-    "Measurement/GeographicProjection/ReferencePoint/Point": RowColDblType(),
-    "Measurement/GeographicProjection/SampleSpacing": RowColDblType(),
-    "Measurement/GeographicProjection/TimeCOAPoly": PolyCoef2dType(),
-    "Measurement/CylindricalProjection/ReferencePoint/ECEF": XyzType(),
-    "Measurement/CylindricalProjection/ReferencePoint/Point": RowColDblType(),
-    "Measurement/CylindricalProjection/SampleSpacing": RowColDblType(),
-    "Measurement/CylindricalProjection/TimeCOAPoly": PolyCoef2dType(),
-    "Measurement/CylindricalProjection/StripmapDirection": XyzType(),
-    "Measurement/CylindricalProjection/CurvatureRadius": DblType(),
-    "Measurement/PixelFootprint": RowColIntType(),
-    "Measurement/ARPFlag": TxtType(),
-    "Measurement/ARPPoly": XyzPolyType(),
-    "Measurement/ValidData": skxml.ListType("Vertex", RowColIntType()),
-}
-TRANSCODERS |= {
-    "ExploitationFeatures/Collection/Information/SensorName": TxtType(),
-    "ExploitationFeatures/Collection/Information/RadarMode/ModeType": TxtType(),
-    "ExploitationFeatures/Collection/Information/RadarMode/ModeID": TxtType(),
-    "ExploitationFeatures/Collection/Information/CollectionDateTime": XdtType(),
-    "ExploitationFeatures/Collection/Information/LocalDateTime": XdtType(),
-    "ExploitationFeatures/Collection/Information/CollectionDuration": DblType(),
-    "ExploitationFeatures/Collection/Information/Resolution": RangeAzimuthType(),
-    "ExploitationFeatures/Collection/Information/InputROI/Size": RowColIntType(),
-    "ExploitationFeatures/Collection/Information/InputROI/UpperLeft": RowColIntType(),
-    "ExploitationFeatures/Collection/Information/Polarization/TxPolarization": TxtType(),
-    "ExploitationFeatures/Collection/Information/Polarization/RcvPolarization": TxtType(),
-    "ExploitationFeatures/Collection/Information/Polarization/RcvPolarizationOffset": DblType(),
-    "ExploitationFeatures/Collection/Geometry/Azimuth": DblType(),
-    "ExploitationFeatures/Collection/Geometry/Slope": DblType(),
-    "ExploitationFeatures/Collection/Geometry/Squint": DblType(),
-    "ExploitationFeatures/Collection/Geometry/Graze": DblType(),
-    "ExploitationFeatures/Collection/Geometry/Tilt": DblType(),
-    "ExploitationFeatures/Collection/Geometry/DopplerConeAngle": DblType(),
-    "ExploitationFeatures/Collection/Geometry/Extension": ParameterType(),
-    "ExploitationFeatures/Collection/Phenomenology/Shadow": AngleMagnitudeType(),
-    "ExploitationFeatures/Collection/Phenomenology/Layover": AngleMagnitudeType(),
-    "ExploitationFeatures/Collection/Phenomenology/MultiPath": DblType(),
-    "ExploitationFeatures/Collection/Phenomenology/GroundTrack": DblType(),
-    "ExploitationFeatures/Collection/Phenomenology/Extension": ParameterType(),
-    "ExploitationFeatures/Product/Resolution": RowColDblType(),
-    "ExploitationFeatures/Product/Ellipticity": DblType(),
-    "ExploitationFeatures/Product/Polarization/TxPolarizationProc": TxtType(),
-    "ExploitationFeatures/Product/Polarization/RcvPolarizationProc": TxtType(),
-    "ExploitationFeatures/Product/North": DblType(),
-    "ExploitationFeatures/Product/Extension": ParameterType(),
-}
-TRANSCODERS |= {
-    "DownstreamReprocessing/GeometricChip/ChipSize": RowColIntType(),
-    "DownstreamReprocessing/GeometricChip/OriginalUpperLeftCoordinate": RowColDblType(),
-    "DownstreamReprocessing/GeometricChip/OriginalUpperRightCoordinate": RowColDblType(),
-    "DownstreamReprocessing/GeometricChip/OriginalLowerLeftCoordinate": RowColDblType(),
-    "DownstreamReprocessing/GeometricChip/OriginalLowerRightCoordinate": RowColDblType(),
-    "DownstreamReprocessing/ProcessingEvent/ApplicationName": TxtType(),
-    "DownstreamReprocessing/ProcessingEvent/AppliedDateTime": XdtType(),
-    "DownstreamReprocessing/ProcessingEvent/InterpolationMethod": TxtType(),
-    "DownstreamReprocessing/ProcessingEvent/Descriptor": ParameterType(),
-}
-TRANSCODERS |= {
-    "ErrorStatistics/CompositeSCP/Rg": DblType(),
-    "ErrorStatistics/CompositeSCP/Az": DblType(),
-    "ErrorStatistics/CompositeSCP/RgAz": DblType(),
-    "ErrorStatistics/Components/PosVelErr/Frame": TxtType(),
-    "ErrorStatistics/Components/PosVelErr/P1": DblType(),
-    "ErrorStatistics/Components/PosVelErr/P2": DblType(),
-    "ErrorStatistics/Components/PosVelErr/P3": DblType(),
-    "ErrorStatistics/Components/PosVelErr/V1": DblType(),
-    "ErrorStatistics/Components/PosVelErr/V2": DblType(),
-    "ErrorStatistics/Components/PosVelErr/V3": DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P1P2": DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P1P3": DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P1V1": DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P1V2": DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P1V3": DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P2P3": DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P2V1": DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P2V2": DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P2V3": DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P3V1": DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P3V2": DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P3V3": DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/V1V2": DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/V1V3": DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/V2V3": DblType(),
-    **_decorr_type("ErrorStatistics/Components/PosVelErr/PositionDecorr"),
-    "ErrorStatistics/Components/RadarSensor/RangeBias": DblType(),
-    "ErrorStatistics/Components/RadarSensor/ClockFreqSF": DblType(),
-    "ErrorStatistics/Components/RadarSensor/TransmitFreqSF": DblType(),
-    **_decorr_type("ErrorStatistics/Components/RadarSensor/RangeBiasDecorr"),
-    "ErrorStatistics/Components/TropoError/TropoRangeVertical": DblType(),
-    "ErrorStatistics/Components/TropoError/TropoRangeSlant": DblType(),
-    **_decorr_type("ErrorStatistics/Components/TropoError/TropoRangeDecorr"),
-    "ErrorStatistics/Components/IonoError/IonoRangeVertical": DblType(),
-    "ErrorStatistics/Components/IonoError/IonoRangeRateVertical": DblType(),
-    "ErrorStatistics/Components/IonoError/IonoRgRgRateCC": DblType(),
-    **_decorr_type("ErrorStatistics/Components/IonoError/IonoRangeVertDecorr"),
-    "ErrorStatistics/Unmodeled/Xrow": DblType(),
-    "ErrorStatistics/Unmodeled/Ycol": DblType(),
-    "ErrorStatistics/Unmodeled/XrowYcol": DblType(),
-    **_decorr_type("ErrorStatistics/Unmodeled/UnmodeledDecorr/Xrow"),
-    **_decorr_type("ErrorStatistics/Unmodeled/UnmodeledDecorr/Ycol"),
-    "ErrorStatistics/AdditionalParms/Parameter": TxtType(),
-}
-TRANSCODERS |= {
-    "Radiometric/NoiseLevel/NoiseLevelType": TxtType(),
-    "Radiometric/NoiseLevel/NoisePoly": PolyCoef2dType(),
-    "Radiometric/RCSSFPoly": PolyCoef2dType(),
-    "Radiometric/SigmaZeroSFPoly": PolyCoef2dType(),
-    "Radiometric/BetaZeroSFPoly": PolyCoef2dType(),
-    "Radiometric/SigmaZeroSFIncidenceMap": TxtType(),
-    "Radiometric/GammaZeroSFPoly": PolyCoef2dType(),
-}
-TRANSCODERS |= {
-    "MatchInfo/NumMatchTypes": IntType(),
-    "MatchInfo/MatchType/TypeID": TxtType(),
-    "MatchInfo/MatchType/CurrentIndex": IntType(),
-    "MatchInfo/MatchType/NumMatchCollections": IntType(),
-    "MatchInfo/MatchType/MatchCollection/CoreName": TxtType(),
-    "MatchInfo/MatchType/MatchCollection/MatchIndex": IntType(),
-    "MatchInfo/MatchType/MatchCollection/Parameter": TxtType(),
-}
-TRANSCODERS |= {
-    "Compression/J2K/Original/NumWaveletLevels": IntType(),
-    "Compression/J2K/Original/NumBands": IntType(),
-    "Compression/J2K/Original/LayerInfo/Layer/Bitrate": DblType(),
-    "Compression/J2K/Parsed/NumWaveletLevels": IntType(),
-    "Compression/J2K/Parsed/NumBands": IntType(),
-    "Compression/J2K/Parsed/LayerInfo/Layer/Bitrate": DblType(),
-}
-TRANSCODERS |= {
-    "DigitalElevationData/GeographicCoordinates/LongitudeDensity": DblType(),
-    "DigitalElevationData/GeographicCoordinates/LatitudeDensity": DblType(),
-    "DigitalElevationData/GeographicCoordinates/ReferenceOrigin": LatLonType(),
-    "DigitalElevationData/Geopositioning/CoordinateSystemType": TxtType(),
-    "DigitalElevationData/Geopositioning/GeodeticDatum": TxtType(),
-    "DigitalElevationData/Geopositioning/ReferenceEllipsoid": TxtType(),
-    "DigitalElevationData/Geopositioning/VerticalDatum": TxtType(),
-    "DigitalElevationData/Geopositioning/SoundingDatum": TxtType(),
-    "DigitalElevationData/Geopositioning/FalseOrigin": IntType(),
-    "DigitalElevationData/Geopositioning/UTMGridZoneNumber": IntType(),
-    "DigitalElevationData/PositionalAccuracy/NumRegions": IntType(),
-    "DigitalElevationData/PositionalAccuracy/AbsoluteAccuracy/Horizontal": DblType(),
-    "DigitalElevationData/PositionalAccuracy/AbsoluteAccuracy/Vertical": DblType(),
-    "DigitalElevationData/PositionalAccuracy/PointToPointAccuracy/Horizontal": DblType(),
-    "DigitalElevationData/PositionalAccuracy/PointToPointAccuracy/Vertical": DblType(),
-    "DigitalElevationData/NullValue": IntType(),
-}
-TRANSCODERS |= {
-    "ProductProcessing/ProcessingModule/ModuleName": ParameterType(),
-    "ProductProcessing/ProcessingModule/ModuleParameter": ParameterType(),
-}
-TRANSCODERS |= {
-    "Annotations/Annotation/Identifier": TxtType(),
-    "Annotations/Annotation/SpatialReferenceSystem/ProjectedCoordinateSystem/Csname": TxtType(),
-    "Annotations/Annotation/SpatialReferenceSystem/ProjectedCoordinateSystem/GeographicCoordinateSystem/Csname": TxtType(),
-    "Annotations/Annotation/SpatialReferenceSystem/ProjectedCoordinateSystem/GeographicCoordinateSystem/Datum/Spheroid/SpheriodName": TxtType(),
-    "Annotations/Annotation/SpatialReferenceSystem/ProjectedCoordinateSystem/GeographicCoordinateSystem/Datum/Spheroid/SemiMajorAxis": DblType(),
-    "Annotations/Annotation/SpatialReferenceSystem/ProjectedCoordinateSystem/GeographicCoordinateSystem/Datum/Spheroid/InverseFlattening": DblType(),
-    "Annotations/Annotation/SpatialReferenceSystem/ProjectedCoordinateSystem/GeographicCoordinateSystem/PrimeMeridian/Name": TxtType(),
-    "Annotations/Annotation/SpatialReferenceSystem/ProjectedCoordinateSystem/GeographicCoordinateSystem/PrimeMeridian/Longitude": DblType(),
-    "Annotations/Annotation/SpatialReferenceSystem/ProjectedCoordinateSystem/GeographicCoordinateSystem/AngularUnit": TxtType(),
-    "Annotations/Annotation/SpatialReferenceSystem/ProjectedCoordinateSystem/GeographicCoordinateSystem/LinearUnit": TxtType(),
-    "Annotations/Annotation/SpatialReferenceSystem/ProjectedCoordinateSystem/Projection/ProjectionName": TxtType(),
-    "Annotations/Annotation/SpatialReferenceSystem/ProjectedCoordinateSystem/Parameter/ParameterName": TxtType(),
-    "Annotations/Annotation/SpatialReferenceSystem/ProjectedCoordinateSystem/Parameter/Value": DblType(),
-    "Annotations/Annotation/SpatialReferenceSystem/ProjectedCoordinateSystem/LinearUnit": TxtType(),
-    "Annotations/Annotation/SpatialReferenceSystem/GeographicCoordinateSystem/Csname": TxtType(),
-    "Annotations/Annotation/SpatialReferenceSystem/GeographicCoordinateSystem/Datum/Spheroid/SpheriodName": TxtType(),
-    "Annotations/Annotation/SpatialReferenceSystem/GeographicCoordinateSystem/Datum/Spheroid/SemiMajorAxis": DblType(),
-    "Annotations/Annotation/SpatialReferenceSystem/GeographicCoordinateSystem/Datum/Spheroid/InverseFlattening": DblType(),
-    "Annotations/Annotation/SpatialReferenceSystem/GeographicCoordinateSystem/PrimeMeridian/Name": TxtType(),
-    "Annotations/Annotation/SpatialReferenceSystem/GeographicCoordinateSystem/PrimeMeridian/Longitude": DblType(),
-    "Annotations/Annotation/SpatialReferenceSystem/GeographicCoordinateSystem/AngularUnit": TxtType(),
-    "Annotations/Annotation/SpatialReferenceSystem/GeographicCoordinateSystem/LinearUnit": TxtType(),
-    "Annotations/Annotation/SpatialReferenceSystem/GeocentricCoordinateSystem/Csname": TxtType(),
-    "Annotations/Annotation/SpatialReferenceSystem/GeocentricCoordinateSystem/Datum/Spheroid/SpheriodName": TxtType(),
-    "Annotations/Annotation/SpatialReferenceSystem/GeocentricCoordinateSystem/Datum/Spheroid/SemiMajorAxis": DblType(),
-    "Annotations/Annotation/SpatialReferenceSystem/GeocentricCoordinateSystem/Datum/Spheroid/InverseFlattening": DblType(),
-    "Annotations/Annotation/SpatialReferenceSystem/GeocentricCoordinateSystem/PrimeMeridian/Name": TxtType(),
-    "Annotations/Annotation/SpatialReferenceSystem/GeocentricCoordinateSystem/PrimeMeridian/Longitude": DblType(),
-    "Annotations/Annotation/SpatialReferenceSystem/GeocentricCoordinateSystem/LinearUnit": TxtType(),
-    "Annotations/Annotation/SpatialReferenceSystem/AxisName": TxtType(),
-    "Annotations/Annotation/Object/Point": SfaPointType(),
-    "Annotations/Annotation/Object/Line/Vertex": SfaPointType(),
-    "Annotations/Annotation/Object/LinearRing/Vertex": SfaPointType(),
-    "Annotations/Annotation/Object/Polygon/Ring/Vertex": SfaPointType(),
-    "Annotations/Annotation/Object/PolyhedralSurface/Patch/Ring/Vertex": SfaPointType(),
-    "Annotations/Annotation/Object/MultiPolygon/Element/Ring/Vertex": SfaPointType(),
-    "Annotations/Annotation/Object/MultiLineString/Element/Vertex": SfaPointType(),
-    "Annotations/Annotation/Object/MultiPoint/Vertex": SfaPointType(),
-}
-
-# Polynomial subelements
-TRANSCODERS.update(
-    {
-        f"{p}/{coord}": skxml.PolyType()
-        for p, v in TRANSCODERS.items()
-        if isinstance(v, skxml.XyzPolyType)
-        for coord in "XYZ"
-    }
-)
-TRANSCODERS.update(
-    {
-        f"{p}/Coef": skxml.DblType()
-        for p, v in TRANSCODERS.items()
-        if isinstance(v, skxml.PolyNdType)
-    }
-)
-
-# Filter subelements
-TRANSCODERS.update(
-    {
-        f"{p}/Coef": skxml.DblType()
-        for p, v in TRANSCODERS.items()
-        if isinstance(v, FilterCoefficientType)
-    }
-)
-
-# List subelements
-TRANSCODERS.update(
-    {
-        f"{p}/{v.sub_tag}": v.sub_type
-        for p, v in TRANSCODERS.items()
-        if isinstance(v, skxml.ListType)
-    }
-)
-
-# Sequence subelements
-TRANSCODERS.update(
-    {
-        f"{p}/{sub_name}": sub_type
-        for p, v in TRANSCODERS.items()
-        if isinstance(v, skxml.SequenceType)
-        for sub_name, sub_type in v.subelements.items()
-    }
-)
+        """
+        elem[:] = []
+        elem_ns = lxml.etree.QName(elem).namespace
+        ns = f"{{{elem_ns}}}" if elem_ns else ""
+        luts = np.asarray(val)
+        elem.set("numLuts", str(luts.shape[0]))
+        elem.set("size", str(luts.shape[1]))
+        for index, sub_val in enumerate(luts):
+            subelem = lxml.etree.SubElement(elem, ns + "LUTValues")
+            IntListType().set_elem(subelem, sub_val)
+            subelem.set("lut", str(index + 1))
 
 
 class XmlHelper(skxml.XmlHelper):
     """
-    XmlHelper for Sensor Independent Derived Data (SIDD).
+    :py:class:`~sarkit.xmlhelp.XmlHelper` for SIDD
 
     """
 
-    _transcoders_ = TRANSCODERS
+    def __init__(self, element_tree):
+        root_ns = lxml.etree.QName(element_tree.getroot()).namespace
+        super().__init__(element_tree, XsdHelper(root_ns))
 
-    def _get_simple_path(self, elem):
-        simple_path = re.sub(r"(GeoInfo/)+", "GeoInfo/", super()._get_simple_path(elem))
-        simple_path = re.sub(r"(ProcessingModule/)+", "ProcessingModule/", simple_path)
-        return simple_path
+
+class XsdHelper(skxml.XsdHelper):
+    """
+    :py:class:`~sarkit.xmlhelp.XsdHelper` for SIDD
+
+    """
+
+    def _read_xsdtypes_json(self, root_ns: str) -> str:
+        """Return the text contents of the appropriate xsdtypes JSON"""
+        schema_name = siddconst.VERSION_INFO[root_ns]["schema"].name
+        return importlib.resources.read_text(
+            "sarkit.sidd.xsdtypes",
+            pathlib.PurePath(schema_name).with_suffix(".json").name,
+        )
+
+    def get_transcoder(self, typename, tag=None):
+        """Return the appropriate transcoder given the typename (and optionally tag)."""
+        known_builtins = {
+            "{http://www.w3.org/2001/XMLSchema}string": TxtType(),
+            "{http://www.w3.org/2001/XMLSchema}dateTime": XdtType(),
+            "{http://www.w3.org/2001/XMLSchema}int": IntType(),
+            "{http://www.w3.org/2001/XMLSchema}double": DblType(),
+        }
+        typedef = self.xsdtypes[typename]
+        easy = {
+            "{urn:SFA:1.2.0}PointType": SfaPointType(),
+            "{urn:SICommon:1.0}AngleZeroToExclusive360MagnitudeType": AngleMagnitudeType(),
+            "{urn:SICommon:1.0}LatLonRestrictionType": LatLonType(),
+            "{urn:SICommon:1.0}LatLonType": LatLonType(),
+            "{urn:SICommon:1.0}LatLonVertexType": LatLonType(),
+            "{urn:SICommon:1.0}LineType": skxt.NdArrayType("Endpoint", LatLonType()),
+            "{urn:SICommon:1.0}ParameterType": ParameterType(),
+            "{urn:SICommon:1.0}Poly1DType": PolyCoef1dType(),
+            "{urn:SICommon:1.0}Poly2DType": PolyCoef2dType(),
+            "{urn:SICommon:1.0}PolygonType": skxt.NdArrayType("Vertex", LatLonType()),
+            "{urn:SICommon:1.0}RangeAzimuthType": RangeAzimuthType(),
+            "{urn:SICommon:1.0}RowColDoubleType": RowColDblType(),
+            "{urn:SICommon:1.0}RowColIntType": RowColIntType(),
+            "{urn:SICommon:1.0}RowColVertexType": RowColIntType(),
+            "{urn:SICommon:1.0}XYZPolyType": XyzPolyType(),
+            "{urn:SICommon:1.0}XYZType": XyzType(),
+            "<UNNAMED>-{urn:SICommon:1.0}LineType/{urn:SICommon:1.0}Endpoint": LatLonType(),
+            "<UNNAMED>-{urn:SICommon:1.0}PolygonType/{urn:SICommon:1.0}Vertex": LatLonType(),
+            "{urn:SIDD:3.0.0}FilterBankCoefType": FilterCoefficientType("phasingpoint"),
+            "{urn:SIDD:3.0.0}FilterKernelCoefType": FilterCoefficientType("rowcol"),
+            "{urn:SIDD:3.0.0}ImageCornersType": ImageCornersType(),
+            "{urn:SIDD:3.0.0}LookupTableType": IntListType(),
+            "{urn:SIDD:3.0.0}LUTInfoType": LUTInfoType(),
+            "{urn:SIDD:3.0.0}PolygonType": skxt.NdArrayType("Vertex", LatLonType()),
+            "{urn:SIDD:3.0.0}ValidDataType": skxt.NdArrayType(
+                "Vertex", RowColIntType()
+            ),
+            "<UNNAMED>-{urn:SIDD:3.0.0}ImageCornersType/{urn:SIDD:3.0.0}ICP": LatLonType(),
+        }
+        easy["{urn:SIDD:2.0.0}FilterBankCoefType"] = easy[
+            "{urn:SIDD:3.0.0}FilterBankCoefType"
+        ]
+        easy["{urn:SIDD:2.0.0}FilterKernelCoefType"] = easy[
+            "{urn:SIDD:3.0.0}FilterKernelCoefType"
+        ]
+        easy["{urn:SIDD:2.0.0}ImageCornersType"] = easy[
+            "{urn:SIDD:3.0.0}ImageCornersType"
+        ]
+        easy["{urn:SIDD:2.0.0}LookupTableType"] = easy[
+            "{urn:SIDD:3.0.0}LookupTableType"
+        ]
+        easy["{urn:SIDD:2.0.0}LUTInfoType"] = easy["{urn:SIDD:3.0.0}LUTInfoType"]
+        easy["{urn:SIDD:2.0.0}PolygonType"] = easy["{urn:SIDD:3.0.0}PolygonType"]
+        easy["{urn:SIDD:2.0.0}ValidDataType"] = easy["{urn:SIDD:3.0.0}ValidDataType"]
+        easy["<UNNAMED>-{urn:SIDD:2.0.0}ImageCornersType/{urn:SIDD:2.0.0}ICP"] = easy[
+            "<UNNAMED>-{urn:SIDD:3.0.0}ImageCornersType/{urn:SIDD:3.0.0}ICP"
+        ]
+
+        if typename.startswith("{http://www.w3.org/2001/XMLSchema}"):
+            return known_builtins[typename]
+        if typename in easy:
+            return easy[typename]
+        if not typedef.children:
+            return known_builtins.get(typedef.text_typename, TxtType())
+        return None
+
+
+class ElementWrapper(skxml.ElementWrapper):
+    """:py:class:`~sarkit.xmlhelp.ElementWrapper` for SIDD that can set ``xsdhelper`` automatically.
+
+    Refer to :py:class:`sarkit.xmlhelp.ElementWrapper` for full documentation.
+    """
+
+    def __init__(
+        self,
+        elem,
+        xsdhelper=None,
+        wrapped_parent=None,
+        typename=None,
+        elementpath=None,
+        roottag=None,
+    ):
+        if xsdhelper is None:
+            root_ns = lxml.etree.QName(roottag or elem).namespace
+            xsdhelper = XsdHelper(root_ns)
+        super().__init__(
+            elem, xsdhelper, wrapped_parent, typename, elementpath, roottag
+        )

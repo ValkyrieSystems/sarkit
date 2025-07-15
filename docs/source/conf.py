@@ -48,6 +48,7 @@ html_theme_options = {
 }
 
 autosummary_generate = True
+autosummary_generate_overwrite = False
 autodoc_typehints = "none"
 add_module_names = False
 
@@ -77,4 +78,11 @@ numpydoc_xref_ignore = {"optional", "of", "N"}
 numpydoc_validation_checks = {
     "PR10",  # requires a space before the colon separating the parameter name and type
     "GL07",  # Sections are in the wrong order
+}
+numpydoc_show_inherited_class_members = {
+    "sarkit.cphd.ElementWrapper": False,
+    "sarkit.crsd.ElementWrapper": False,
+    "sarkit.sicd.ElementWrapper": False,
+    "sarkit.sidd.ElementWrapper": False,
+    "sarkit.xmlhelp.ElementWrapper": False,
 }

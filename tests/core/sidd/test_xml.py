@@ -2,8 +2,11 @@ import pathlib
 
 import lxml.etree
 import numpy as np
+import numpy.testing as npt
+import pytest
 
 import sarkit.sidd as sksidd
+from tests.core import testing
 
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
 
@@ -75,7 +78,6 @@ def test_sfapointtype():
 
 
 def test_transcoders():
-    used_transcoders = set()
     no_transcode_leaf = set()
     for xml_file in (DATAPATH / "syntax_only/sidd").glob("*.xml"):
         etree = lxml.etree.parse(xml_file)
@@ -89,12 +91,31 @@ def test_transcoders():
                 xml_helper.set_elem(elem, val)
                 schema.assertValid(xml_helper.element_tree)
                 np.testing.assert_equal(xml_helper.load_elem(elem), val)
-                used_transcoders.add(xml_helper.get_transcoder_name(elem))
             except LookupError:
                 if len(elem) == 0:
                     no_transcode_leaf.add(xml_helper.element_tree.getelementpath(elem))
-    unused_transcoders = sksidd.TRANSCODERS.keys() - used_transcoders
-    assert not unused_transcoders
 
     todos = {xmlpath for xmlpath in no_transcode_leaf if "Classification" in xmlpath}
     assert not (no_transcode_leaf - todos)
+
+
+@pytest.mark.parametrize(
+    "xmlpath",
+    list((DATAPATH / "syntax_only/sidd").glob("*.xml"))
+    + list(DATAPATH.glob("example-sidd*.xml")),
+)
+def test_elementwrapper_tofromdict(xmlpath):
+    siddroot = lxml.etree.parse(xmlpath).getroot()
+    root_ns = lxml.etree.QName(siddroot).namespace
+    xsdhelp = sksidd.XsdHelper(root_ns)
+    wrapped_siddroot = sksidd.ElementWrapper(siddroot)
+
+    dict1 = wrapped_siddroot.to_dict()
+    wrapped_root_fromdict = sksidd.ElementWrapper(
+        lxml.etree.Element(lxml.etree.QName(root_ns, "SIDD")),
+    )
+    wrapped_root_fromdict.from_dict(dict1)
+    dict2 = wrapped_root_fromdict.to_dict()
+
+    npt.assert_equal(dict1, dict2)
+    assert testing.elem_cmp(siddroot, wrapped_root_fromdict.elem, xsdhelp)

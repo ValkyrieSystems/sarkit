@@ -4,6 +4,7 @@ import lxml.builder
 import lxml.etree
 import numpy as np
 import pytest
+import smart_open
 
 import sarkit.crsd as skcrsd
 
@@ -174,3 +175,18 @@ def test_roundtrip_compressed(tmp_path):
         sig_array = reader.read_signal_compressed()
 
     assert sig_array.tobytes().decode() == signal_block_str
+
+
+def test_remote_read():
+    with smart_open.open(
+        "https://www.govsco.com/content/spotlight.crsd", mode="rb"
+    ) as file_object:
+        with skcrsd.Reader(file_object) as r:
+            ch_id = r.metadata.xmltree.findtext(
+                "{*}Channel/{*}Parameters/{*}Identifier"
+            )
+            _, _ = r.read_channel(ch_id)
+            seq_id = r.metadata.xmltree.findtext(
+                "{*}TxSequence/{*}Parameters/{*}Identifier"
+            )
+            _ = r.read_ppps(seq_id)
