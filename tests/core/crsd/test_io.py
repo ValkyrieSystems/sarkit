@@ -1,4 +1,5 @@
 import pathlib
+import uuid
 
 import lxml.builder
 import lxml.etree
@@ -175,6 +176,78 @@ def test_roundtrip_compressed(tmp_path):
         sig_array = reader.read_signal_compressed()
 
     assert sig_array.tobytes().decode() == signal_block_str
+
+
+@pytest.mark.parametrize("is_masked", (True, False))
+@pytest.mark.parametrize("nodata_in_xml", (True, False))
+def test_write_support_array(is_masked, nodata_in_xml, tmp_path):
+    basis_etree = lxml.etree.parse(DATAPATH / "example-crsd-1.0.xml")
+    elem_ns = lxml.etree.QName(basis_etree.getroot()).namespace
+    em = lxml.builder.ElementMaker(namespace=elem_ns, nsmap={None: elem_ns})
+    sa_id = str(uuid.uuid4())
+    sa_elem = em.AddedSupportArray(
+        em.Identifier(sa_id),
+        em.ElementFormat("a=CI4;b=CI4;"),
+        em.X0("0.1"),
+        em.Y0("0.2"),
+        em.XSS("0.3"),
+        em.YSS("0.4"),
+        em.NODATA(),  # placeholder
+        em.XUnits(""),
+        em.YUnits(""),
+        em.ZUnits(""),
+    )
+    data_sa_elem = em.SupportArray(
+        em.SAId(sa_id),
+        em.NumRows("24"),
+        em.NumCols("8"),
+        em.BytesPerElement(
+            str(skcrsd.binary_format_string_to_dtype("a=CI4;b=CI4;").itemsize)
+        ),
+        em.ArrayByteOffset(
+            str(
+                max(
+                    (
+                        int(x.findtext("{*}ArrayByteOffset"))
+                        + int(x.findtext("{*}NumRows"))
+                        * int(x.findtext("{*}NumCols"))
+                        * int(x.findtext("{*}BytesPerElement"))
+                        for x in basis_etree.findall("{*}Data/{*}SupportArray")
+                    ),
+                    default=0,
+                )
+            )
+        ),
+    )
+    basis_etree.find("{*}Data/{*}Support").append(data_sa_elem)
+    basis_etree.find("{*}SupportArray").append(sa_elem)
+    basis_array = _random_support_array(basis_etree, sa_id)
+    basis_array = basis_array.astype(basis_array.dtype.newbyteorder(">"))
+
+    nodata_elem = sa_elem.find("{*}NODATA")
+    nodata_hex_str = basis_array.flat[0].tobytes().hex()
+    nodata_elem.text = nodata_hex_str
+    if not nodata_in_xml:
+        sa_elem.remove(nodata_elem)
+
+    mx = skcrsd.mask_support_array(basis_array, nodata_hex_str)
+    if not is_masked:
+        mx = mx.filled(0)
+
+    meta = skcrsd.Metadata(
+        xmltree=basis_etree,
+    )
+    out_crsd = tmp_path / "out.crsd"
+    with open(out_crsd, "wb") as f, skcrsd.Writer(f, meta) as writer:
+        if is_masked and not nodata_in_xml:
+            with pytest.raises(ValueError, match="nodata.*does not match.*"):
+                writer.write_support_array(sa_id, mx)
+            return
+        writer.write_support_array(sa_id, mx)
+
+    with open(out_crsd, "rb") as f, skcrsd.Reader(f) as reader:
+        read_sa = reader.read_support_array(sa_id)
+        assert np.array_equal(mx, read_sa)
 
 
 def test_remote_read():
