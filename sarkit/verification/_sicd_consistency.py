@@ -24,6 +24,11 @@ import sarkit.verification._consistency as con
 import sarkit.wgs84
 from sarkit import _constants
 
+try:
+    from smart_open import open
+except ImportError:
+    pass
+
 logger = logging.getLogger(__name__)
 
 KAPFAC: float = 0.8859
@@ -1965,9 +1970,7 @@ def _parser():
     parser = argparse.ArgumentParser(
         description="Analyze a SICD and display inconsistencies"
     )
-    parser.add_argument(
-        "file_name", type=pathlib.Path, help="SICD or SICD XML to check"
-    )
+    parser.add_argument("file_name", help="SICD or SICD XML to check")
     parser.add_argument(
         "--schema",
         type=pathlib.Path,
@@ -1979,7 +1982,7 @@ def _parser():
 
 def main(args=None):
     config = _parser().parse_args(args)
-    with config.file_name.open("rb") as f:
+    with open(config.file_name, "rb") as f:
         sicd_con = SicdConsistency.from_file(
             file=f,
             schema=config.schema,

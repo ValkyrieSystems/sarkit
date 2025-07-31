@@ -1286,3 +1286,7 @@ def test_check_signal_block_packing(cphd_con):
     cphd_con.cphdroot.find("{*}Data/{*}Channel/{*}SignalArrayByteOffset").text += "1"
     cphd_con.check("check_signal_block_size_and_packing")
     testing.assert_failures(cphd_con, "SIGNAL array .+ starts at offset")
+
+
+def test_smart_open():
+    assert not main([r"https://www.govsco.com/content/spotlight.cphd", "--thorough"])
