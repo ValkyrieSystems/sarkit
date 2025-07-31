@@ -465,6 +465,13 @@ When there are no inconsistencies, no output is produced.
    $ sicd-consistency good.sicd
    $
 
+Directly accessing URLs is supported if the `smart_open <https://github.com/piskvorky/smart_open>`_ package is installed.
+
+.. code-block:: shell-session
+
+   $ sicd-consistency https://www.example.com/good.sicd
+   $
+
 The same command can be used to run a subset of the checks against the XML.
 
 .. code-block:: shell-session

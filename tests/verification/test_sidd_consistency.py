@@ -343,3 +343,7 @@ def test_check_geodata_image_corners(example_sidd_file):
 def remove_nodes(*nodes):
     for node in nodes:
         node.getparent().remove(node)
+
+
+def test_smart_open():
+    assert not main([r"https://www.govsco.com/content/spotlight.sidd"])

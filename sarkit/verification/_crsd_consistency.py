@@ -19,6 +19,11 @@ import sarkit.crsd as skcrsd
 import sarkit.verification._consistency as con
 import sarkit.wgs84
 
+try:
+    from smart_open import open
+except ImportError:
+    pass
+
 logger = logging.getLogger(__name__)
 
 
@@ -2419,9 +2424,7 @@ def _parser():
     parser = argparse.ArgumentParser(
         description="Analyze a CRSD and display inconsistencies"
     )
-    parser.add_argument(
-        "file_name", type=pathlib.Path, help="CRSD or CRSD XML to check"
-    )
+    parser.add_argument("file_name", help="CRSD or CRSD XML to check")
     parser.add_argument(
         "--schema",
         type=pathlib.Path,
@@ -2441,7 +2444,7 @@ def _parser():
 
 def main(args=None):
     config = _parser().parse_args(args)
-    with config.file_name.open("rb") as f:
+    with open(config.file_name, "rb") as f:
         crsd_con = CrsdConsistency.from_file(
             file=f,
             schema=config.schema,

@@ -844,3 +844,7 @@ def test_check_error_components_posvel_corr(sicd_con, em):
     p1v1.text = "-1.1"
     sicd_con.check("check_error_components_posvel_corr")
     testing.assert_failures(sicd_con, "CorrCoefs P1V1 <= 1.0")
+
+
+def test_smart_open():
+    assert not main([r"https://www.govsco.com/content/spotlight.sicd"])
