@@ -83,6 +83,14 @@ Constants
    * - ``PIXEL_TYPES``
      - `dict` of {PixelType: pixel-type-specific information}
 
+CLI Utililties
+==============
+
+.. _sicd-info-cli:
+
+.. autoprogram:: sarkit.sicd._sicdinfo:_parser()
+   :prog: sicdinfo
+
 References
 ==========
 
