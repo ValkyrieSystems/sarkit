@@ -18,6 +18,11 @@ import sarkit.sidd as sksidd
 import sarkit.verification._consistency as con
 from sarkit import wgs84
 
+try:
+    from smart_open import open
+except ImportError:
+    pass
+
 _PIXEL_INFO = {
     "MONO8I": {
         "IREP": "MONO",
@@ -1234,9 +1239,7 @@ def _parser():
     parser = argparse.ArgumentParser(
         description="Analyze a SIDD and display inconsistencies"
     )
-    parser.add_argument(
-        "file_name", type=pathlib.Path, help="SIDD or SIDD XML to check"
-    )
+    parser.add_argument("file_name", help="SIDD or SIDD XML to check")
     parser.add_argument(
         "--schema", type=pathlib.Path, help="Use a supplied schema file", default=None
     )
@@ -1247,7 +1250,7 @@ def _parser():
 def main(args=None):
     config = _parser().parse_args(args)
 
-    with config.file_name.open("rb") as file:
+    with open(config.file_name, "rb") as file:
         sidd_con = SiddConsistency.from_file(file, config.schema)
     return sidd_con.run_cli(config)
 
