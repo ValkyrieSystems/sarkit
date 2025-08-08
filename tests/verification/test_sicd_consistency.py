@@ -18,22 +18,9 @@ good_sicd_xml_path = DATAPATH / "example-sicd-1.2.1.xml"
 
 
 @pytest.fixture(scope="session")
-def example_sicd_file(tmp_path_factory):
-    sicd_etree = etree.parse(good_sicd_xml_path)
-    tmp_sicd = (
-        tmp_path_factory.mktemp("data") / good_sicd_xml_path.with_suffix(".sicd").name
-    )
-    sec = {"security": {"clas": "U"}}
-    sicd_meta = sksicd.NitfMetadata(
-        xmltree=sicd_etree,
-        file_header_part={"ostaid": "nowhere"} | sec,
-        im_subheader_part={"isorce": "this sensor"} | sec,
-        de_subheader_part=sec,
-    )
-    with open(tmp_sicd, "wb") as f, sksicd.NitfWriter(f, sicd_meta):
-        pass  # don't currently care about the pixels
-    assert not main([str(tmp_sicd)])
-    with tmp_sicd.open("rb") as f:
+def example_sicd_file(example_sicd):
+    assert not main([str(example_sicd)])
+    with example_sicd.open("rb") as f:
         yield f
 
 

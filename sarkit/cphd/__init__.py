@@ -69,6 +69,14 @@ Constants
    * - ``SECTION_TERMINATOR``
      - Two-byte sequence that marks the end of the file header
 
+CLI Utililties
+==============
+
+.. _cphd-info-cli:
+
+.. autoprogram:: sarkit.cphd._cphdinfo:_parser()
+   :prog: cphdinfo
+
 References
 ==========
 

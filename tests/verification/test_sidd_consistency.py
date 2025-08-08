@@ -6,7 +6,6 @@ import lxml.builder
 import pytest
 from lxml import etree
 
-import sarkit.sidd as sksidd
 from sarkit.verification._sidd_consistency import SiddConsistency, main
 
 DATAPATH = pathlib.Path(__file__).parents[2] / "data"
@@ -15,26 +14,9 @@ GOOD_SIDD_XML_PATH = DATAPATH / "example-sidd-3.0.0.xml"
 
 
 @pytest.fixture(scope="session")
-def example_sidd_file(tmp_path_factory):
-    sidd_etree = etree.parse(GOOD_SIDD_XML_PATH)
-    tmp_sidd = (
-        tmp_path_factory.mktemp("data") / GOOD_SIDD_XML_PATH.with_suffix(".sidd").name
-    )
-    sec = {"security": {"clas": "U"}}
-    sidd_meta = sksidd.NitfMetadata(
-        file_header_part={"ostaid": "nowhere"} | sec,
-        images=[
-            sksidd.NitfProductImageMetadata(
-                xmltree=sidd_etree,
-                im_subheader_part=sec,
-                de_subheader_part=sec,
-            )
-        ],
-    )
-    with tmp_sidd.open("wb") as f, sksidd.NitfWriter(f, sidd_meta):
-        pass  # don't currently care about the pixels
-    assert not main([str(tmp_sidd)])
-    with tmp_sidd.open("rb") as f:
+def example_sidd_file(example_sidd):
+    assert not main([str(example_sidd)])
+    with example_sidd.open("rb") as f:
         yield f
 
 
