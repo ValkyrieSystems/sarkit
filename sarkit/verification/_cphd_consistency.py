@@ -24,6 +24,11 @@ import sarkit.verification._consistency as con
 import sarkit.wgs84
 from sarkit import _constants
 
+try:
+    from smart_open import open
+except ImportError:
+    pass
+
 logger = logging.getLogger(__name__)
 
 
@@ -600,56 +605,38 @@ class CphdConsistency(con.ConsistencyChecker):
         """PVP agrees with FXFixed."""
         with self.precondition():
             pvp = self._get_channel_pvps(channel_id)
-            fx1_tol = con.Approx(np.nanmean(pvp["FX1"]))
-            fx2_tol = con.Approx(np.nanmean(pvp["FX2"]))
-            fx1_min_max = np.array([np.nanmin(pvp["FX1"]), np.nanmax(pvp["FX1"])])
-            fx2_min_max = np.array([np.nanmin(pvp["FX2"]), np.nanmax(pvp["FX2"])])
+            fx1_ptp = np.ptp([np.nanmin(pvp["FX1"]), np.nanmax(pvp["FX1"])])
+            fx2_ptp = np.ptp([np.nanmin(pvp["FX2"]), np.nanmax(pvp["FX2"])])
             with self.precondition():
                 assert self.xmlhelp.load_elem(channel_node.find(".{*}FXFixed"))
                 with self.need("FX1 does not change"):
-                    assert fx1_min_max == fx1_tol
+                    assert fx1_ptp == 0
                 with self.need("FX2 does not change"):
-                    assert fx2_min_max == fx2_tol
+                    assert fx2_ptp == 0
 
             with self.precondition():
                 assert not self.xmlhelp.load_elem(channel_node.find("./{*}FXFixed"))
-                with self.need("FX1 and/or FX2 are not exactly constant"):
-                    assert not (
-                        (np.nanmin(pvp["FX1"]) == np.nanmax(pvp["FX1"]))
-                        and (np.nanmin(pvp["FX2"]) == np.nanmax(pvp["FX2"]))
-                    )
-                    with self.want("FX1 and/or FX2 is not almost constant"):
-                        assert not (
-                            (fx1_min_max == fx1_tol) and (fx2_min_max == fx2_tol)
-                        )
+                with self.need("FX1 or FX2 does change"):
+                    assert fx1_ptp != 0 or fx2_ptp != 0
 
     @per_channel
     def check_channel_toafixed(self, channel_id, channel_node):
         """PVP agrees with TOAFixed."""
         with self.precondition():
             pvp = self._get_channel_pvps(channel_id)
-            toa1_tol = con.Approx(np.nanmean(pvp["TOA1"]), atol=1e-11)
-            toa2_tol = con.Approx(np.nanmean(pvp["TOA2"]), atol=1e-11)
-            toa1_min_max = np.array([np.nanmin(pvp["TOA1"]), np.nanmax(pvp["TOA1"])])
-            toa2_min_max = np.array([np.nanmin(pvp["TOA2"]), np.nanmax(pvp["TOA2"])])
+            toa1_ptp = np.ptp([np.nanmin(pvp["TOA1"]), np.nanmax(pvp["TOA1"])])
+            toa2_ptp = np.ptp([np.nanmin(pvp["TOA2"]), np.nanmax(pvp["TOA2"])])
             with self.precondition():
                 assert self.xmlhelp.load_elem(channel_node.find("./{*}TOAFixed"))
                 with self.need("TOA1 does not change"):
-                    assert toa1_min_max == toa1_tol
+                    assert toa1_ptp == 0
                 with self.need("TOA2 does not change"):
-                    assert toa2_min_max == toa2_tol
+                    assert toa2_ptp == 0
 
             with self.precondition():
                 assert not self.xmlhelp.load_elem(channel_node.find("./{*}TOAFixed"))
-                with self.need("TOA1 and/or TOA2 are not exactly constant"):
-                    assert not (
-                        (np.nanmin(pvp["TOA1"]) == np.nanmax(pvp["TOA1"]))
-                        and (np.nanmin(pvp["TOA2"]) == np.nanmax(pvp["TOA2"]))
-                    )
-                    with self.want("TOA1 and/or TOA2 is not almost constant"):
-                        assert not (
-                            (toa1_min_max == toa1_tol) and (toa2_min_max == toa2_tol)
-                        )
+                with self.need("TOA1 or TOA2 does change"):
+                    assert toa1_ptp != 0 or toa2_ptp != 0
 
     @per_channel
     def check_channel_srpfixed(self, channel_id, channel_node):
@@ -659,23 +646,12 @@ class CphdConsistency(con.ConsistencyChecker):
             with self.precondition():
                 assert self.xmlhelp.load_elem(channel_node.find("./{*}SRPFixed"))
                 with self.need("SRPPos is fixed"):
-                    assert (
-                        con.Approx(np.nanmean(pvp["SRPPos"], axis=0), atol=1e-3)
-                        == pvp["SRPPos"]
-                    )
+                    assert np.all(pvp["SRPPos"] == pvp["SRPPos"][0])
 
             with self.precondition():
                 assert not self.xmlhelp.load_elem(channel_node.find("./{*}SRPFixed"))
                 with self.need("SRPPos is not exactly fixed"):
-                    assert not np.array_equal(
-                        np.nanmin(pvp["SRPPos"], axis=0),
-                        np.nanmax(pvp["SRPPos"], axis=0),
-                    )
-                    with self.want("SRPPos is not approximately fixed"):
-                        assert not (
-                            con.Approx(np.nanmean(pvp["SRPPos"], axis=0), atol=1e-3)
-                            == pvp["SRPPos"]
-                        )
+                    assert np.any(pvp["SRPPos"] != pvp["SRPPos"][0])
 
     def check_file_fxfixed(self):
         """The FXFixedCPHD element matches the rest of the file."""
@@ -718,28 +694,19 @@ class CphdConsistency(con.ConsistencyChecker):
         with self.precondition():
             assert self.pvps is not None
             pvp = np.concatenate(list(self.pvps.values()))
-            fx1_tol = con.Approx(np.nanmean(pvp["FX1"]))
-            fx2_tol = con.Approx(np.nanmean(pvp["FX2"]))
-            fx1_min_max = np.array([np.nanmin(pvp["FX1"]), np.nanmax(pvp["FX1"])])
-            fx2_min_max = np.array([np.nanmin(pvp["FX2"]), np.nanmax(pvp["FX2"])])
+            fx1_ptp = np.ptp([np.nanmin(pvp["FX1"]), np.nanmax(pvp["FX1"])])
+            fx2_ptp = np.ptp([np.nanmin(pvp["FX2"]), np.nanmax(pvp["FX2"])])
             with self.precondition():
                 assert self.xmlhelp.load("./{*}Channel/{*}FXFixedCPHD")
                 with self.need("FX1 does not change"):
-                    assert fx1_min_max == fx1_tol
+                    assert fx1_ptp == 0
                 with self.need("FX2 does not change"):
-                    assert fx2_min_max == fx2_tol
+                    assert fx2_ptp == 0
 
             with self.precondition():
                 assert not self.xmlhelp.load("./{*}Channel/{*}FXFixedCPHD")
-                with self.need("FX1 and/or FX2 are not exactly constant"):
-                    assert not (
-                        (pvp["FX1"].min() == pvp["FX1"].max())
-                        and (pvp["FX2"].min() == pvp["FX2"].max())
-                    )
-                    with self.want("FX1 and/or FX2 is not almost constant"):
-                        assert not (
-                            (fx1_min_max == fx1_tol) and (fx2_min_max == fx2_tol)
-                        )
+                with self.need("FX1 or FX2 does change"):
+                    assert fx1_ptp != 0 or fx2_ptp != 0
 
     def check_file_toafixed(self):
         """The TOAFixedCPHD element matches the rest of the file."""
@@ -771,28 +738,19 @@ class CphdConsistency(con.ConsistencyChecker):
         with self.precondition():
             assert self.pvps is not None
             pvp = np.concatenate(list(self.pvps.values()))
-            toa1_tol = con.Approx(np.nanmean(pvp["TOA1"]), atol=1e-11)
-            toa2_tol = con.Approx(np.nanmean(pvp["TOA2"]), atol=1e-11)
-            toa1_min_max = np.array([np.nanmin(pvp["TOA1"]), np.nanmax(pvp["TOA1"])])
-            toa2_min_max = np.array([np.nanmin(pvp["TOA2"]), np.nanmax(pvp["TOA2"])])
+            toa1_ptp = np.ptp([np.nanmin(pvp["TOA1"]), np.nanmax(pvp["TOA1"])])
+            toa2_ptp = np.ptp([np.nanmin(pvp["TOA2"]), np.nanmax(pvp["TOA2"])])
             with self.precondition():
                 assert self.xmlhelp.load("./{*}Channel/{*}TOAFixedCPHD")
                 with self.need("TOA1 does not change"):
-                    assert toa1_min_max == toa1_tol
+                    assert toa1_ptp == 0
                 with self.need("TOA2 does not change"):
-                    assert toa2_min_max == toa2_tol
+                    assert toa2_ptp == 0
 
             with self.precondition():
                 assert not self.xmlhelp.load("./{*}Channel/{*}TOAFixedCPHD")
-                with self.need("TOA1 and/or TOA2 is not exactly constant"):
-                    assert not (
-                        (pvp["TOA1"].min() == pvp["TOA1"].max())
-                        and (pvp["TOA2"].min() == pvp["TOA2"].max())
-                    )
-                    with self.want("TOA1 and/or TOA2 is not almost constant"):
-                        assert not (
-                            (toa1_min_max == toa1_tol) and (toa2_min_max == toa2_tol)
-                        )
+                with self.need("TOA1 or TOA2 does change"):
+                    assert toa1_ptp != 0 or toa2_ptp != 0
 
     def check_file_srpfixed(self):
         """The SRPFixedCPHD element matches the rest of the file."""
@@ -812,23 +770,12 @@ class CphdConsistency(con.ConsistencyChecker):
             with self.precondition():
                 assert self.xmlhelp.load("./{*}Channel/{*}SRPFixedCPHD")
                 with self.need("SRPPos is fixed"):
-                    assert (
-                        con.Approx(np.nanmean(pvp["SRPPos"], axis=0), atol=1e-3)
-                        == pvp["SRPPos"]
-                    )
+                    assert np.all(pvp["SRPPos"] == pvp["SRPPos"][0])
 
             with self.precondition():
                 assert not self.xmlhelp.load("./{*}Channel/{*}SRPFixedCPHD")
                 with self.need("SRPPos is not exactly fixed"):
-                    assert not np.array_equal(
-                        np.nanmin(pvp["SRPPos"], axis=0),
-                        np.nanmax(pvp["SRPPos"], axis=0),
-                    )
-                    with self.want("SRPPos is not approximately fixed"):
-                        assert not (
-                            con.Approx(np.nanmean(pvp["SRPPos"], axis=0), atol=1e-3)
-                            == pvp["SRPPos"]
-                        )
+                    assert np.any(pvp["SRPPos"] != pvp["SRPPos"][0])
 
     @per_channel
     def check_channel_signalnormal(self, channel_id, channel_node):
@@ -2041,9 +1988,7 @@ def _parser():
     parser = argparse.ArgumentParser(
         description="Analyze a CPHD and display inconsistencies"
     )
-    parser.add_argument(
-        "file_name", type=pathlib.Path, help="CPHD or CPHD XML to check"
-    )
+    parser.add_argument("file_name", help="CPHD or CPHD XML to check")
     parser.add_argument(
         "--schema",
         type=pathlib.Path,
@@ -2063,7 +2008,7 @@ def _parser():
 
 def main(args=None):
     config = _parser().parse_args(args)
-    with config.file_name.open("rb") as f:
+    with open(config.file_name, "rb") as f:
         cphd_con = CphdConsistency.from_file(
             file=f,
             schema=config.schema,

@@ -2167,3 +2167,7 @@ def test_check_compressed_signal_block_size(example_crsdrcvcompressed_file):
     crsd_con.xmlhelp.set_elem(css, crsd_con.xmlhelp.load_elem(css) + 1)
     crsd_con.check("check_compressed_signal_block")
     assert_failures(crsd_con, "SIGNAL_BLOCK_SIZE is set equal to CompressedSignalSize")
+
+
+def test_smart_open():
+    assert not main([r"https://www.govsco.com/content/spotlight.crsd", "--thorough"])
