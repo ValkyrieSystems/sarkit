@@ -9,7 +9,6 @@ import shapely.geometry as shg
 from lxml import etree
 
 import sarkit.cphd as skcphd
-from sarkit import _constants
 from sarkit.verification._cphd_consistency import CphdConsistency, main
 
 from . import testing
@@ -20,73 +19,9 @@ good_cphd_xml_path = DATAPATH / "example-cphd-1.0.1.xml"
 
 
 @pytest.fixture(scope="session")
-def example_cphd_file(tmp_path_factory):
-    cphd_etree = etree.parse(good_cphd_xml_path)
-    xmlhelp = skcphd.XmlHelper(cphd_etree)
-
-    cphd_plan = skcphd.Metadata(
-        xmltree=cphd_etree,
-    )
-    pvp_dtype = skcphd.get_pvp_dtype(cphd_etree)
-
-    assert int(cphd_etree.findtext("{*}Data/{*}NumCPHDChannels")) == 1
-    assert cphd_etree.findtext("./{*}Data/{*}SignalArrayFormat") == "CF8"
-    rng = np.random.default_rng(123456)
-    num_vectors = xmlhelp.load(".//{*}Data/{*}Channel/{*}NumVectors")
-    num_samples = xmlhelp.load(".//{*}Data/{*}Channel/{*}NumSamples")
-    signal = (
-        rng.random((num_vectors, num_samples, 2), dtype=np.float32)
-        .view(np.complex64)
-        .squeeze()
-    )
-
-    pvps = np.zeros((num_vectors), dtype=pvp_dtype)
-    pvps["TxTime"] = np.linspace(
-        xmlhelp.load(".//{*}TxTime1"),
-        xmlhelp.load(".//{*}TxTime2"),
-        num_vectors,
-        endpoint=True,
-    )
-    arppos = xmlhelp.load(".//{*}ARPPos")
-    arpvel = xmlhelp.load(".//{*}ARPVel")
-    t_ref = xmlhelp.load(".//{*}ReferenceTime")
-
-    arppoly = np.stack([(arppos - t_ref * arpvel), arpvel])
-
-    fx1 = xmlhelp.load(".//{*}FxMin")
-    fx2 = xmlhelp.load(".//{*}FxMax")
-    pvps["FX1"][:] = fx1
-    pvps["FX2"][:] = fx2
-    pvps["SC0"] = fx1
-    pvps["SCSS"] = (fx2 - fx1) / (num_samples - 1)
-    pvps["TOA1"][:] = xmlhelp.load(".//{*}TOAMin")
-    pvps["TOA2"][:] = xmlhelp.load(".//{*}TOAMax")
-
-    pvps["TxPos"] = np.polynomial.polynomial.polyval(pvps["TxTime"], arppoly).T
-    pvps["TxVel"] = np.polynomial.polynomial.polyval(
-        pvps["TxTime"], np.polynomial.polynomial.polyder(arppoly)
-    ).T
-
-    pvps["RcvTime"] = (
-        pvps["TxTime"]
-        + 2.0 * xmlhelp.load(".//{*}SlantRange") / _constants.speed_of_light
-    )
-    pvps["RcvPos"] = np.polynomial.polynomial.polyval(pvps["RcvTime"], arppoly).T
-    pvps["RcvVel"] = np.polynomial.polynomial.polyval(
-        pvps["RcvTime"], np.polynomial.polynomial.polyder(arppoly)
-    ).T
-
-    srp = xmlhelp.load(".//{*}SRP/{*}ECF")
-    pvps["SRPPos"] = srp
-
-    tmp_cphd = (
-        tmp_path_factory.mktemp("data") / good_cphd_xml_path.with_suffix(".cphd").name
-    )
-    with open(tmp_cphd, "wb") as f, skcphd.Writer(f, cphd_plan) as cw:
-        cw.write_pvp("1", pvps)
-        cw.write_signal("1", signal)
-    assert not main([str(tmp_cphd), "--thorough"])
-    with tmp_cphd.open("rb") as f:
+def example_cphd_file(example_cphd):
+    assert not main([str(example_cphd), "--thorough"])
+    with example_cphd.open("rb") as f:
         yield f
 
 
