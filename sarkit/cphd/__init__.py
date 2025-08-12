@@ -57,6 +57,14 @@ XML Metadata
    ImageAreaCornerPointsType
    ParameterType
 
+Reference Geometry Computations
+===============================
+
+.. autosummary::
+   :toctree: generated/
+
+   compute_reference_geometry
+
 Constants
 =========
 
@@ -119,6 +127,9 @@ from ._io import (
     mask_support_array,
     read_file_header,
 )
+from ._refgeom import (
+    compute_reference_geometry,
+)
 from ._xml import (
     AddedPvpType,
     BoolType,
@@ -175,6 +186,7 @@ __all__ = [
     "XyzPolyType",
     "XyzType",
     "binary_format_string_to_dtype",
+    "compute_reference_geometry",
     "dtype_to_binary_format_string",
     "get_pvp_dtype",
     "mask_support_array",
