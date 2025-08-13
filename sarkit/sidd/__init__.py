@@ -102,7 +102,7 @@ Constants
 CLI Utililties
 ==============
 
-.. _sidd-info-cli:
+.. _siddinfo-cli:
 
 .. autoprogram:: sarkit.sidd._siddinfo:_parser()
    :prog: siddinfo

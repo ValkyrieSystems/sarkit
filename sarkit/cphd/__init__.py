@@ -72,7 +72,7 @@ Constants
 CLI Utililties
 ==============
 
-.. _cphd-info-cli:
+.. _cphdinfo-cli:
 
 .. autoprogram:: sarkit.cphd._cphdinfo:_parser()
    :prog: cphdinfo

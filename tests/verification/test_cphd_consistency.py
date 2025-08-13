@@ -9,7 +9,8 @@ import shapely.geometry as shg
 from lxml import etree
 
 import sarkit.cphd as skcphd
-from sarkit.verification._cphd_consistency import CphdConsistency, main
+from sarkit.verification._cphd_consistency import CphdConsistency
+from sarkit.verification._cphdcheck import main
 
 from . import testing
 

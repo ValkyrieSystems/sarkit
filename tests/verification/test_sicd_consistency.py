@@ -8,7 +8,8 @@ import pytest
 from lxml import etree
 
 import sarkit.sicd as sksicd
-from sarkit.verification._sicd_consistency import SicdConsistency, main
+from sarkit.verification._sicd_consistency import SicdConsistency
+from sarkit.verification._sicdcheck import main
 
 from . import testing
 

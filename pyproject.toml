@@ -64,10 +64,10 @@ xsdtypes-generation = [
 ]
 
 [project.scripts]
-cphd-consistency = "sarkit.verification._cphd_consistency:main"
-crsd-consistency = "sarkit.verification._crsd_consistency:main"
-sicd-consistency = "sarkit.verification._sicd_consistency:main"
-sidd-consistency = "sarkit.verification._sidd_consistency:main"
+cphdcheck = "sarkit.verification._cphdcheck:main"
+crsdcheck = "sarkit.verification._crsdcheck:main"
+sicdcheck = "sarkit.verification._sicdcheck:main"
+siddcheck = "sarkit.verification._siddcheck:main"
 cphdinfo = "sarkit.cphd._cphdinfo:main"
 crsdinfo = "sarkit.crsd._crsdinfo:main"
 sicdinfo = "sarkit.sicd._sicdinfo:main"

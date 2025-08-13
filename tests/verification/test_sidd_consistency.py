@@ -6,7 +6,8 @@ import lxml.builder
 import pytest
 from lxml import etree
 
-from sarkit.verification._sidd_consistency import SiddConsistency, main
+from sarkit.verification._sidd_consistency import SiddConsistency
+from sarkit.verification._siddcheck import main
 
 DATAPATH = pathlib.Path(__file__).parents[2] / "data"
 

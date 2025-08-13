@@ -86,7 +86,7 @@ Constants
 CLI Utililties
 ==============
 
-.. _sicd-info-cli:
+.. _sicdinfo-cli:
 
 .. autoprogram:: sarkit.sicd._sicdinfo:_parser()
    :prog: sicdinfo

@@ -94,7 +94,7 @@ Constants
 CLI Utililties
 ==============
 
-.. _crsd-info-cli:
+.. _crsdinfo-cli:
 
 .. autoprogram:: sarkit.crsd._crsdinfo:_parser()
    :prog: crsdinfo
