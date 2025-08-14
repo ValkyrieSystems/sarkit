@@ -8,6 +8,7 @@ import pytest
 import smart_open
 
 import sarkit.sicd as sksicd
+import tests.utils
 
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
 
@@ -378,9 +379,10 @@ def test_image_sizing():
     assert expected_imhdrs == imhdrs
 
 
-def test_remote_read():
-    with smart_open.open(
-        "https://www.govsco.com/content/spotlight.sicd", mode="rb"
-    ) as file_object:
-        with sksicd.NitfReader(file_object) as r:
-            _ = r.read_image()
+def test_remote_read(example_sicd):
+    with tests.utils.static_http_server(example_sicd.parent) as server_url:
+        with smart_open.open(
+            f"{server_url}/{example_sicd.name}", mode="rb"
+        ) as file_object:
+            with sksicd.NitfReader(file_object) as r:
+                _ = r.read_image()

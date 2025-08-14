@@ -1,5 +1,6 @@
 import copy
 import pathlib
+import unittest.mock
 
 import jbpy
 import lxml.builder
@@ -8,6 +9,8 @@ import pytest
 from lxml import etree
 
 import sarkit.sicd as sksicd
+import sarkit.verification._sicd_consistency
+import tests.utils
 from sarkit.verification._sicd_consistency import SicdConsistency, main
 
 from . import testing
@@ -833,5 +836,13 @@ def test_check_error_components_posvel_corr(sicd_con, em):
     testing.assert_failures(sicd_con, "CorrCoefs P1V1 <= 1.0")
 
 
-def test_smart_open():
-    assert not main([r"https://www.govsco.com/content/spotlight.sicd"])
+def test_smart_open_http(example_sicd):
+    with tests.utils.static_http_server(example_sicd.parent) as server_url:
+        assert not main([f"{server_url}/{example_sicd.name}"])
+
+
+def test_smart_open_contract(example_sicd, monkeypatch):
+    mock_open = unittest.mock.MagicMock(side_effect=tests.utils.simple_open_read)
+    monkeypatch.setattr(sarkit.verification._sicd_consistency, "open", mock_open)
+    assert not main([str(example_sicd)])
+    mock_open.assert_called_once_with(str(example_sicd), "rb")
