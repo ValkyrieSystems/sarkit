@@ -123,21 +123,39 @@ class XdtType(Type):
     """
     Transcoder for XML dateTime (XDT) XML parameter types.
 
+    Parameters
+    ----------
+    force_utc : bool, optional
+        If ``True``, naive datetimes are treated as UTC times and
+        non-UTC times are adjusted to UTC prior to transcoding.
+
     """
+
+    def __init__(self, force_utc: bool = True) -> None:
+        self.force_utc = force_utc
 
     def parse_elem(self, elem: lxml.etree.Element) -> datetime.datetime:
         """Returns a `datetime` constructed from the string ``elem.text``."""
-        return datetime.datetime.fromisoformat(elem.text)
+        val = datetime.datetime.fromisoformat(elem.text)
+        if self.force_utc:
+            is_aware = val.tzinfo is not None and val.tzinfo.utcoffset(None) is not None
+            val = (
+                val.astimezone(datetime.UTC)
+                if is_aware
+                else val.replace(tzinfo=datetime.UTC)
+            )
+        return val
 
     def set_elem(self, elem: lxml.etree.Element, val: datetime.datetime) -> None:
-        """Set ``elem.text`` to a string representation of the date and time from ``val``.
-
-        If ``val`` is naive, the timezone is assumed to be UTC.
-
-        """
+        """Set ``elem.text`` to a string representation of the date and time from ``val``."""
         is_aware = val.tzinfo is not None and val.tzinfo.utcoffset(None) is not None
-        dt = val.astimezone(datetime.timezone.utc) if is_aware else val
-        elem.text = dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+        format_str = "%Y-%m-%dT%H:%M:%S.%f"
+        if self.force_utc or (is_aware and not val.utcoffset()):
+            format_str += "Z"
+        if self.force_utc and is_aware:
+            val = val.astimezone(datetime.UTC)
+        elem.text = val.strftime(format_str)
 
 
 class PolyNdType(Type):
