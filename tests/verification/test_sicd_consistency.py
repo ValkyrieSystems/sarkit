@@ -360,8 +360,15 @@ def _misaligned_image_corners(xml):
     _change_node(last_corner, "./{*}Lat", -1.0 * latitude)
 
 
+def _subimage_image_corners(xml):
+    xml.find("./{*}ImageData/{*}FirstRow").text = str(
+        int(xml.find("./{*}ImageData/{*}NumRows").text) // 2
+    )
+
+
 @pytest.mark.parametrize(
-    "invalidate_func", [_invalid_num_icps, _misaligned_image_corners]
+    "invalidate_func",
+    [_invalid_num_icps, _misaligned_image_corners, _subimage_image_corners],
 )
 def test_image_corners(sicd_con, invalidate_func):
     invalidate_func(sicd_con.sicdroot)
