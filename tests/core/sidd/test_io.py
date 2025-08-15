@@ -10,6 +10,7 @@ import smart_open
 
 import sarkit.sidd as sksidd
 import sarkit.sidd._constants
+import tests.utils
 
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
 
@@ -647,9 +648,10 @@ def test_version_info():
         assert lxml.etree.parse(info["schema"]).getroot().get("targetNamespace") == urn
 
 
-def test_remote_read():
-    with smart_open.open(
-        "https://www.govsco.com/content/spotlight.sidd", mode="rb"
-    ) as file_object:
-        with sksidd.NitfReader(file_object) as r:
-            _ = r.read_image(0)
+def test_remote_read(example_sidd):
+    with tests.utils.static_http_server(example_sidd.parent) as server_url:
+        with smart_open.open(
+            f"{server_url}/{example_sidd.name}", mode="rb"
+        ) as file_object:
+            with sksidd.NitfReader(file_object) as r:
+                _ = r.read_image(0)

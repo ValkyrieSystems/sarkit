@@ -3,6 +3,7 @@ import subprocess
 import lxml.etree
 
 import sarkit.sidd as sksidd
+import tests.utils
 
 
 def test_noarg(example_sidd):
@@ -51,3 +52,15 @@ def test_raw_image(example_sidd):
         data = reader.read_image(0)
 
     assert data.tobytes() == raw_img
+
+
+def test_smart_open(example_sidd):
+    with tests.utils.static_http_server(example_sidd.parent) as server_url:
+        proc = subprocess.run(
+            ["siddinfo", "-x", f"{server_url}/{example_sidd.name}"],
+            stdout=subprocess.PIPE,
+            check=True,
+        )
+
+        tree = lxml.etree.fromstring(proc.stdout)
+        assert tree is not None

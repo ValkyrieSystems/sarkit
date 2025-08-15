@@ -41,6 +41,7 @@ dev-lint = [
     "mypy>=1.8.0",
 ]
 dev-test = [
+    "aiohttp>=3.11",
     "pytest>=7.4.4",
     "smart_open[http]>=7.1.0",
 ]
@@ -51,7 +52,6 @@ dev = [
 [dependency-groups]
 test = [
     "nox>=2024.3.2",
-    "smart_open[http]>=7.1.0",
 ]
 doc = [
     "sphinx>=7.2.6",
