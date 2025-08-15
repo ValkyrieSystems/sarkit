@@ -10,6 +10,7 @@ import smart_open
 import sarkit.sicd as sksicd
 import sarkit.sicd._constants
 import sarkit.verification
+import tests.utils
 
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
 
@@ -380,14 +381,6 @@ def test_image_sizing():
     assert expected_imhdrs == imhdrs
 
 
-def test_remote_read():
-    with smart_open.open(
-        "https://www.govsco.com/content/spotlight.sicd", mode="rb"
-    ) as file_object:
-        with sksicd.NitfReader(file_object) as r:
-            _ = r.read_image()
-
-
 @pytest.mark.parametrize("disable_memmap", [False, True])
 def test_read_sub_image(tmp_path, disable_memmap, monkeypatch):
     if disable_memmap:
@@ -503,3 +496,12 @@ def test_read_sub_image(tmp_path, disable_memmap, monkeypatch):
         _check_sub_image(rows_per_segment + 20, 1000, (2 * rows_per_segment) - 20, 1010)
         # multiple segments
         _check_sub_image(20, 1000, (3 * rows_per_segment) - 20, 1010)
+
+
+def test_remote_read(example_sicd):
+    with tests.utils.static_http_server(example_sicd.parent) as server_url:
+        with smart_open.open(
+            f"{server_url}/{example_sicd.name}", mode="rb"
+        ) as file_object:
+            with sksicd.NitfReader(file_object) as r:
+                _ = r.read_image()

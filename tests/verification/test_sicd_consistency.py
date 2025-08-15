@@ -1,5 +1,6 @@
 import copy
 import pathlib
+import unittest.mock
 
 import jbpy
 import lxml.builder
@@ -8,6 +9,8 @@ import pytest
 from lxml import etree
 
 import sarkit.sicd as sksicd
+import sarkit.verification._sicd_consistency
+import tests.utils
 from sarkit.verification._sicd_consistency import SicdConsistency, main
 
 from . import testing
@@ -18,22 +21,9 @@ good_sicd_xml_path = DATAPATH / "example-sicd-1.2.1.xml"
 
 
 @pytest.fixture(scope="session")
-def example_sicd_file(tmp_path_factory):
-    sicd_etree = etree.parse(good_sicd_xml_path)
-    tmp_sicd = (
-        tmp_path_factory.mktemp("data") / good_sicd_xml_path.with_suffix(".sicd").name
-    )
-    sec = {"security": {"clas": "U"}}
-    sicd_meta = sksicd.NitfMetadata(
-        xmltree=sicd_etree,
-        file_header_part={"ostaid": "nowhere"} | sec,
-        im_subheader_part={"isorce": "this sensor"} | sec,
-        de_subheader_part=sec,
-    )
-    with open(tmp_sicd, "wb") as f, sksicd.NitfWriter(f, sicd_meta):
-        pass  # don't currently care about the pixels
-    assert not main([str(tmp_sicd)])
-    with tmp_sicd.open("rb") as f:
+def example_sicd_file(example_sicd):
+    assert not main([str(example_sicd)])
+    with example_sicd.open("rb") as f:
         yield f
 
 
@@ -853,5 +843,13 @@ def test_check_error_components_posvel_corr(sicd_con, em):
     testing.assert_failures(sicd_con, "CorrCoefs P1V1 <= 1.0")
 
 
-def test_smart_open():
-    assert not main([r"https://www.govsco.com/content/spotlight.sicd"])
+def test_smart_open_http(example_sicd):
+    with tests.utils.static_http_server(example_sicd.parent) as server_url:
+        assert not main([f"{server_url}/{example_sicd.name}"])
+
+
+def test_smart_open_contract(example_sicd, monkeypatch):
+    mock_open = unittest.mock.MagicMock(side_effect=tests.utils.simple_open_read)
+    monkeypatch.setattr(sarkit.verification._sicd_consistency, "open", mock_open)
+    assert not main([str(example_sicd)])
+    mock_open.assert_called_once_with(str(example_sicd), "rb")

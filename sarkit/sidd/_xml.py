@@ -472,6 +472,8 @@ class XsdHelper(skxml.XsdHelper):
             "<UNNAMED>-{urn:SIDD:3.0.0}ImageCornersType/{urn:SIDD:3.0.0}ICP"
         ]
 
+        if tag in ("{urn:SIDD:2.0.0}LocalDateTime", "{urn:SIDD:3.0.0}LocalDateTime"):
+            return skxt.XdtType(force_utc=False)
         if typename.startswith("{http://www.w3.org/2001/XMLSchema}"):
             return known_builtins[typename]
         if typename in easy:

@@ -507,3 +507,21 @@ For example:
       [Pass] Need: XML passes schema
       [Pass] Need: Schema available for checking xml whose root tag = {urn:SICD:1.2.1}SICD
    ...
+
+Info Utilities
+==============
+
+SARkit provides command line utilities for inspecting SAR standards files.
+
+.. list-table::
+
+   * - Format
+     - Command
+   * - CRSD
+     - :ref:`crsd-info-cli`
+   * - CPHD
+     - :ref:`cphd-info-cli`
+   * - SICD
+     - :ref:`sicd-info-cli`
+   * - SIDD
+     - :ref:`sidd-info-cli`

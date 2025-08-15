@@ -255,6 +255,8 @@ class XsdHelper(skxml.XsdHelper):
             "{urn:SICD:1.4.0}Matrix6x6Type": MtxType((6, 6)),
         }
         easy = sicd_110 | sicd_121 | sicd_130 | sicd_140
+        if tag is not None and lxml.etree.QName(tag).localname == "CalibrationDate":
+            return skxt.XdtType(force_utc=False)
         if typename.startswith("{http://www.w3.org/2001/XMLSchema}"):
             return known_builtins[typename]
         if typename in easy:

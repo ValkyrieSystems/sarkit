@@ -8,6 +8,7 @@ import pytest
 import smart_open
 
 import sarkit.crsd as skcrsd
+import tests.utils
 
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
 
@@ -250,16 +251,17 @@ def test_write_support_array(is_masked, nodata_in_xml, tmp_path):
         assert np.array_equal(mx, read_sa)
 
 
-def test_remote_read():
-    with smart_open.open(
-        "https://www.govsco.com/content/spotlight.crsd", mode="rb"
-    ) as file_object:
-        with skcrsd.Reader(file_object) as r:
-            ch_id = r.metadata.xmltree.findtext(
-                "{*}Channel/{*}Parameters/{*}Identifier"
-            )
-            _, _ = r.read_channel(ch_id)
-            seq_id = r.metadata.xmltree.findtext(
-                "{*}TxSequence/{*}Parameters/{*}Identifier"
-            )
-            _ = r.read_ppps(seq_id)
+def test_remote_read(example_crsdsar):
+    with tests.utils.static_http_server(example_crsdsar.parent) as server_url:
+        with smart_open.open(
+            f"{server_url}/{example_crsdsar.name}", mode="rb"
+        ) as file_object:
+            with skcrsd.Reader(file_object) as r:
+                ch_id = r.metadata.xmltree.findtext(
+                    "{*}Channel/{*}Parameters/{*}Identifier"
+                )
+                _, _ = r.read_channel(ch_id)
+                seq_id = r.metadata.xmltree.findtext(
+                    "{*}TxSequence/{*}Parameters/{*}Identifier"
+                )
+                _ = r.read_ppps(seq_id)
