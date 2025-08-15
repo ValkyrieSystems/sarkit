@@ -23,6 +23,8 @@ from sarkit import _iohelp
 
 from . import _constants as sicdconst
 
+_NOMINAL_CHUNK_SIZE = 128 * 1024 * 1024
+
 
 @dataclasses.dataclass(kw_only=True)
 class NitfSecurityFields:
@@ -389,12 +391,57 @@ class NitfReader:
         ndarray
             SICD image array
         """
-        self._file_object.seek(0, os.SEEK_SET)
-        nrows = int(self.metadata.xmltree.findtext("{*}ImageData/{*}NumRows"))
-        ncols = int(self.metadata.xmltree.findtext("{*}ImageData/{*}NumCols"))
+        return self.read_sub_image()[0]
+
+    def read_sub_image(
+        self,
+        start_row: int | None = None,
+        start_col: int | None = None,
+        stop_row: int | None = None,
+        stop_col: int | None = None,
+    ) -> tuple[npt.NDArray, lxml.etree.ElementTree]:
+        """Read a 2D slice / sub-image from the file
+
+        Parameters
+        ----------
+        start_row : int or None
+            Lowest row index to retrieve (inclusive). If None, defaults to first row.
+        start_col : int or None
+            Lowest column index to retrieve (inclusive). If None, defaults to first column.
+        stop_row : int or None
+            Highest row index to retrieve (exclusive). If None, defaults to one after last row.
+        stop_col : int or None
+            Highest col index to retrieve (exclusive). If None, defaults to one after last column.
+
+        Returns
+        -------
+        ndarray
+            SICD sub-image array
+        lxml.etree.ElementTree
+            SICD XML updated to describe sub-image
+        """
+
+        file_nrows = int(self.metadata.xmltree.findtext("{*}ImageData/{*}NumRows"))
+        file_ncols = int(self.metadata.xmltree.findtext("{*}ImageData/{*}NumCols"))
         pixel_type = self.metadata.xmltree.findtext("{*}ImageData/{*}PixelType")
         dtype = sicdconst.PIXEL_TYPES[pixel_type]["dtype"].newbyteorder(">")
-        sicd_pixels = np.empty((nrows, ncols), dtype)
+
+        # Convert None and negative values to absolute indices
+        start_row, stop_row, _ = slice(start_row, stop_row).indices(file_nrows)
+        start_col, stop_col, _ = slice(start_col, stop_col).indices(file_ncols)
+
+        out_nrows = stop_row - start_row
+        out_ncols = stop_col - start_col
+
+        out_shape = (out_nrows, out_ncols)
+        if np.any(np.less(out_shape, 1)):
+            raise ValueError(f"Invalid shape requested: ({out_shape})")
+
+        out = np.empty(out_shape, dtype)
+
+        out_xmltree = _update_sicd_subimage_xml(
+            self.metadata.xmltree, start_row, start_col, out_nrows, out_ncols
+        )
 
         imsegs = sorted(
             [
@@ -413,41 +460,56 @@ class NitfReader:
                 )
 
         imseg_sizes = np.asarray([imseg["Data"].size for imseg in imsegs])
+        imseg_shapes = [
+            (imseg["subheader"]["NROWS"].value, imseg["subheader"]["NCOLS"].value)
+            for imseg in imsegs
+        ]
         imseg_offsets = np.asarray([imseg["Data"].get_offset() for imseg in imsegs])
-        splits = np.cumsum(imseg_sizes // (ncols * dtype.itemsize))[:-1]
-        for split, offset in zip(
-            np.array_split(sicd_pixels, splits, axis=0), imseg_offsets
+        segment_row_boundaries = [0] + np.cumsum(
+            imseg_sizes // (file_ncols * dtype.itemsize)
+        ).tolist()
+
+        for seg_idx, (seg_start_row, seg_stop_row) in enumerate(
+            itertools.pairwise(segment_row_boundaries)
         ):
-            self._file_object.seek(offset)
-            split[...] = _iohelp.fromfile(
-                self._file_object, dtype, np.prod(split.shape)
-            ).reshape(split.shape)
-        return sicd_pixels
+            if stop_row <= seg_start_row or seg_stop_row <= start_row:  # no overlap
+                continue
 
-    def read_sub_image(
-        self,
-        start_row: int = 0,
-        start_col: int = 0,
-        end_row: int = -1,
-        end_col: int = -1,
-    ) -> tuple[npt.NDArray, lxml.etree.ElementTree]:
-        """Read a sub-image from the file
+            input_start_row = max(start_row, seg_start_row) - seg_start_row
+            out_start_row = max(start_row, seg_start_row) - start_row
 
-        Parameters
-        ----------
-        start_row : int
-        start_col : int
-        end_row : int
-        end_col : int
+            input_stop_row = min(stop_row, seg_stop_row) - seg_start_row
+            out_stop_row = min(stop_row, seg_stop_row) - start_row
 
-        Returns
-        -------
-        ndarray
-            SICD sub-image array
-        lxml.etree.ElementTree
-            SICD sub-image XML ElementTree
-        """
-        raise NotImplementedError()
+            out_segment = out[out_start_row:out_stop_row]
+            try:
+                mmap = np.memmap(
+                    self._file_object,
+                    dtype=dtype,
+                    mode="r",
+                    offset=imseg_offsets[seg_idx],  # np.memmap seeks to 0 first
+                    shape=imseg_shapes[seg_idx],
+                )
+                out_segment[...] = mmap[
+                    input_start_row:input_stop_row, start_col:stop_col
+                ]
+            except Exception:  # mmap can raise many different exceptions
+                offset_within_segment = input_start_row * file_ncols * dtype.itemsize
+                self._file_object.seek(
+                    imseg_offsets[seg_idx] + offset_within_segment, os.SEEK_SET
+                )
+                # Read contiguous rows to cut down on seek/read overhead
+                num_chunks = (
+                    out_segment.shape[0] * file_ncols * dtype.itemsize
+                ) // _NOMINAL_CHUNK_SIZE
+                num_chunks = np.clip(num_chunks, 1, out_segment.shape[0])
+
+                for split in np.array_split(out_segment, num_chunks, axis=0):
+                    split[...] = _iohelp.fromfile(
+                        self._file_object, dtype, split.shape[0] * file_ncols
+                    ).reshape(split.shape[0], -1)[:, start_col:stop_col]
+
+        return out, out_xmltree
 
     def done(self):
         "Indicates to the reader that the user is done with it"
@@ -530,13 +592,11 @@ def image_segment_sizing_calculations(
 
     bytes_per_pixel = {"RE32F_IM32F": 8, "RE16I_IM16I": 4, "AMP8I_PHS8I": 2}[pixel_type]
 
-    is_size_max = 9_999_999_998
-    iloc_max = 99_999
     bytes_per_row = bytes_per_pixel * num_cols
     product_size = bytes_per_pixel * num_rows * num_cols
-    limit1 = int(np.floor(is_size_max / bytes_per_row))
-    num_rows_limit = min(limit1, iloc_max)
-    if product_size <= is_size_max:
+    limit1 = int(np.floor(sicdconst.IS_SIZE_MAX / bytes_per_row))
+    num_rows_limit = min(limit1, sicdconst.ILOC_MAX)
+    if product_size <= sicdconst.IS_SIZE_MAX:
         num_is = 1
         num_rows_is = [num_rows]
         first_row_is = [0]
@@ -887,3 +947,108 @@ class NitfWriter:
 
     def __exit__(self, *args, **kwargs):
         self.close()
+
+
+def _update_sicd_subimage_xml(
+    sicd_xmltree: lxml.etree.ElementTree,
+    first_row: int,
+    first_col: int,
+    num_rows: int,
+    num_cols: int,
+) -> lxml.etree.ElementTree:
+    """Update SICD XML to describe a sub-image
+
+    Updates the ImageData fields as expected and the GeoData/ImageCorners
+    using a straight-line projection approximation to a plane.
+
+    Parameters
+    ----------
+    sicd_xmltree : lxml.etree.ElementTree
+        SICD XML ElementTree
+    first_row : int
+        first row of sub-image, relative to ImageData/FirstRow
+    first_col : int
+        first column of sub-image, relative to ImageData/FirstCol
+    num_rows : int
+        number of rows in sub-image
+    num_cols : int
+        number of columns in sub-image
+
+    Returns
+    -------
+    sicd_xmltree_out : lxml.etree.ElementTree
+        Updated SICD XML ElementTree
+    """
+    if not first_row >= 0:
+        raise ValueError("first_row must be >= 0, not {first_row}")
+    if not first_col >= 0:
+        raise ValueError("first_col must be >= 0, not {first_col}")
+    if not num_rows > 0:
+        raise ValueError("num_rows must be > 0, not {num_rows}")
+    if not num_cols > 0:
+        raise ValueError("num_cols must be > 0, not {num_cols}")
+
+    sicd_xmltree_out = copy.deepcopy(sicd_xmltree)
+    xml_helper = sicd_xml.XmlHelper(sicd_xmltree_out)
+
+    end_row = first_row + num_rows
+    end_col = first_col + num_cols
+    if end_row > xml_helper.load("./{*}ImageData/{*}NumRows"):
+        raise RuntimeError("Requested sub-image goes beyond edge of input SICD")
+    if end_col > xml_helper.load("./{*}ImageData/{*}NumCols"):
+        raise RuntimeError("Requested sub-image goes beyond edge of input SICD")
+
+    first_row_abs = first_row + xml_helper.load("./{*}ImageData/{*}FirstRow")
+    first_col_abs = first_col + xml_helper.load("./{*}ImageData/{*}FirstCol")
+
+    xml_helper.set("./{*}ImageData/{*}FirstRow", first_row_abs)
+    xml_helper.set("./{*}ImageData/{*}FirstCol", first_col_abs)
+    xml_helper.set("./{*}ImageData/{*}NumRows", num_rows)
+    xml_helper.set("./{*}ImageData/{*}NumCols", num_cols)
+
+    scp = xml_helper.load("./{*}GeoData/{*}SCP/{*}ECF")
+    scp_llh = xml_helper.load("./{*}GeoData/{*}SCP/{*}LLH")
+    urow = xml_helper.load("./{*}Grid/{*}Row/{*}UVectECF")
+    ucol = xml_helper.load("./{*}Grid/{*}Col/{*}UVectECF")
+    row_ss = xml_helper.load("./{*}Grid/{*}Row/{*}SS")
+    col_ss = xml_helper.load("./{*}Grid/{*}Col/{*}SS")
+    scp_row = xml_helper.load("./{*}ImageData/{*}SCPPixel/{*}Row")
+    scp_col = xml_helper.load("./{*}ImageData/{*}SCPPixel/{*}Col")
+    arp_scp_coa = xml_helper.load("./{*}SCPCOA/{*}ARPPos")
+    varp_scp_coa = xml_helper.load("./{*}SCPCOA/{*}ARPVel")
+    look = {"L": 1, "R": -1}[xml_helper.load("./{*}SCPCOA/{*}SideOfTrack")]
+
+    ugpn = sarkit.wgs84.up(scp_llh)
+
+    spn = look * np.cross(varp_scp_coa, scp - arp_scp_coa)
+    uspn = spn / np.linalg.norm(spn)
+
+    sf_proj = np.dot(uspn, ugpn)
+
+    sicp_row = np.array(
+        [
+            first_row_abs,
+            first_row_abs,
+            first_row_abs + num_rows - 1,
+            first_row_abs + num_rows - 1,
+        ]
+    )
+
+    sicp_col = np.array(
+        [
+            first_col_abs,
+            first_col_abs + num_cols - 1,
+            first_col_abs + num_cols - 1,
+            first_col_abs,
+        ]
+    )
+
+    # The SICD Sub-Image Extraction document dated 2009-06-15 dictates a straight-line projection
+    row_coord = (sicp_row - scp_row) * row_ss
+    col_coord = (sicp_col - scp_col) * col_ss
+    delta_ipp = row_coord[..., np.newaxis] * urow + col_coord[..., np.newaxis] * ucol
+    dist_proj = 1 / sf_proj * np.inner(delta_ipp, ugpn)
+    gpp = scp + delta_ipp - dist_proj[..., np.newaxis] * uspn
+    gpp_llh = sarkit.wgs84.cartesian_to_geodetic(gpp)
+    xml_helper.set("./{*}GeoData/{*}ImageCorners", gpp_llh[:, :-1])
+    return sicd_xmltree_out
