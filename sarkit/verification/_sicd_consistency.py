@@ -14,7 +14,6 @@ from typing import Any, Optional
 import numpy as np
 import numpy.linalg as npl
 import numpy.polynomial.polynomial as npp
-import shapely.geometry as shg
 from jbpy import Jbp
 from lxml import etree
 
@@ -30,6 +29,12 @@ except ImportError:
     pass
 
 logger = logging.getLogger(__name__)
+
+try:
+    import shapely.geometry as shg
+except ImportError as ie:
+    logger.warning("'shapely' package not found. Some features may not work correctly.")
+    shg = con._ExceptionOnUse(ie)
 
 KAPFAC: float = 0.8859
 
@@ -899,8 +904,12 @@ class SicdConsistency(con.ConsistencyChecker):
 
         nrows = self.xmlhelp.load("./{*}ImageData/{*}NumRows")
         ncols = self.xmlhelp.load("./{*}ImageData/{*}NumCols")
-        row = [0, 0, nrows - 1, nrows - 1]
-        col = [0, ncols - 1, ncols - 1, 0]
+        row = self.xmlhelp.load("./{*}ImageData/{*}FirstRow") + np.asarray(
+            [0, 0, nrows - 1, nrows - 1]
+        )
+        col = self.xmlhelp.load("./{*}ImageData/{*}FirstCol") + np.asarray(
+            [0, ncols - 1, ncols - 1, 0]
+        )
         icp_coords = _grid_index_to_coord(self.xmlhelp, np.stack([row, col], axis=-1))
         urow_gnd, ucol_gnd = _uvecs_in_ground(self.xmlhelp)
 

@@ -62,3 +62,7 @@ PIXEL_TYPES: Final[dict[str, dict[str, Any]]] = {
         "dtype": np.dtype([("amp", np.uint8), ("phase", np.uint8)]),
     },
 }
+
+# Segmentation Algorithm Constants
+IS_SIZE_MAX: Final[int] = 9_999_999_998
+ILOC_MAX: Final[int] = 99_999

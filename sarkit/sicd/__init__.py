@@ -82,6 +82,10 @@ Constants
      - `dict` of {xml namespace: version-specific information}
    * - ``PIXEL_TYPES``
      - `dict` of {PixelType: pixel-type-specific information}
+   * - ``IS_SIZE_MAX``
+     - maximum NITF image segment length in bytes (:math:`10^{10}-2`)
+   * - ``ILOC_MAX``
+     - maximum number of rows contained in a segmented SICD NITF image segment (99,999)
 
 CLI Utililties
 ==============
@@ -180,6 +184,8 @@ SICD 1.4.0
 """
 
 from ._constants import (
+    ILOC_MAX,
+    IS_SIZE_MAX,
     PIXEL_TYPES,
     VERSION_INFO,
 )
@@ -226,6 +232,8 @@ from .projection._derived import (
 )
 
 __all__ = [
+    "ILOC_MAX",
+    "IS_SIZE_MAX",
     "PIXEL_TYPES",
     "VERSION_INFO",
     "BoolType",
