@@ -7,18 +7,30 @@ import pytest
 import sarkit.xmlhelp._transcoders as skxt
 
 
-def test_xdt_naive():
+@pytest.mark.parametrize("force_utc", (True, False))
+def test_xdt_naive(force_utc):
+    xdt_t = skxt.XdtType(force_utc=force_utc)
     dt = datetime.datetime.now()
-    elem = skxt.XdtType().make_elem("Xdt", dt)
-    assert skxt.XdtType().parse_elem(elem) == dt.replace(tzinfo=datetime.timezone.utc)
+    elem = xdt_t.make_elem("Xdt", dt)
+    if force_utc:
+        assert elem.text.endswith("Z")
+        assert xdt_t.parse_elem(elem) == dt.replace(tzinfo=datetime.timezone.utc)
+    else:
+        assert xdt_t.parse_elem(elem) == dt
 
 
-def test_xdt_aware():
+@pytest.mark.parametrize("force_utc", (True, False))
+def test_xdt_aware(force_utc):
+    xdt_t = skxt.XdtType(force_utc=force_utc)
     dt = datetime.datetime.now(
         tz=datetime.timezone(offset=datetime.timedelta(hours=5.5))
     )
-    elem = skxt.XdtType().make_elem("Xdt", dt)
-    assert skxt.XdtType().parse_elem(elem) == dt
+    elem = xdt_t.make_elem("Xdt", dt)
+    if force_utc:
+        assert elem.text.endswith("Z")
+        assert xdt_t.parse_elem(elem) == dt
+    else:
+        assert xdt_t.parse_elem(elem) == dt.replace(tzinfo=None)
 
 
 @pytest.mark.parametrize("ndim", (1, 2))

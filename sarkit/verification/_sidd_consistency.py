@@ -2,6 +2,7 @@ import argparse
 import datetime
 import functools
 import itertools
+import logging
 import os
 import pathlib
 import pprint
@@ -12,7 +13,6 @@ import jbpy
 import lxml.etree
 import numpy as np
 import numpy.polynomial.polynomial as npp
-import shapely.geometry as shg
 
 import sarkit.sidd as sksidd
 import sarkit.verification._consistency as con
@@ -22,6 +22,14 @@ try:
     from smart_open import open
 except ImportError:
     pass
+
+logger = logging.getLogger(__name__)
+
+try:
+    import shapely.geometry as shg
+except ImportError as ie:
+    logger.warning("'shapely' package not found. Some features may not work correctly.")
+    shg = con._ExceptionOnUse(ie)
 
 _PIXEL_INFO = {
     "MONO8I": {
