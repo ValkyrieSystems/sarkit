@@ -3,6 +3,8 @@ import subprocess
 import jbpy
 import lxml.etree
 
+import tests.utils
+
 
 def test_noarg(example_sicd):
     subprocess.run(["sicdinfo", example_sicd], check=True)
@@ -49,12 +51,13 @@ def test_raw(example_sicd):
     )
 
 
-def test_smart_open():
-    proc = subprocess.run(
-        ["sicdinfo", "-x", r"https://www.govsco.com/content/spotlight.sicd"],
-        stdout=subprocess.PIPE,
-        check=True,
-    )
+def test_smart_open(example_sicd):
+    with tests.utils.static_http_server(example_sicd.parent) as server_url:
+        proc = subprocess.run(
+            ["sicdinfo", "-x", f"{server_url}/{example_sicd.name}"],
+            stdout=subprocess.PIPE,
+            check=True,
+        )
 
-    tree = lxml.etree.fromstring(proc.stdout)
-    assert tree is not None
+        tree = lxml.etree.fromstring(proc.stdout)
+        assert tree is not None

@@ -10,7 +10,6 @@ from typing import Any, Optional
 
 import numpy as np
 import numpy.polynomial.polynomial as npp
-import shapely.geometry as shg
 from lxml import etree
 
 import sarkit.crsd as skcrsd
@@ -19,6 +18,11 @@ import sarkit.wgs84
 
 logger = logging.getLogger(__name__)
 
+try:
+    import shapely.geometry as shg
+except ImportError as ie:
+    logger.warning("'shapely' package not found. Some features may not work correctly.")
+    shg = con._ExceptionOnUse(ie)
 
 INVALID_CHAR_REGEX = re.compile(r"\W")
 

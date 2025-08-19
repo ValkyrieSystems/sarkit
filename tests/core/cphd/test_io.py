@@ -8,6 +8,7 @@ import pytest
 import smart_open
 
 import sarkit.cphd as skcphd
+import tests.utils
 
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
 
@@ -267,10 +268,11 @@ def test_write_support_array(is_masked, nodata_in_xml, tmp_path):
         assert np.array_equal(mx, read_sa)
 
 
-def test_remote_read():
-    with smart_open.open(
-        "https://www.govsco.com/content/spotlight.cphd", mode="rb"
-    ) as file_object:
-        with skcphd.Reader(file_object) as r:
-            ch_id = r.metadata.xmltree.findtext("{*}Data/{*}Channel/{*}Identifier")
-            _, _ = r.read_channel(ch_id)
+def test_remote_read(example_cphd):
+    with tests.utils.static_http_server(example_cphd.parent) as server_url:
+        with smart_open.open(
+            f"{server_url}/{example_cphd.name}", mode="rb"
+        ) as file_object:
+            with skcphd.Reader(file_object) as r:
+                ch_id = r.metadata.xmltree.findtext("{*}Data/{*}Channel/{*}Identifier")
+                _, _ = r.read_channel(ch_id)

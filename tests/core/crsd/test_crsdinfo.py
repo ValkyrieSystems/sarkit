@@ -2,6 +2,8 @@ import subprocess
 
 import lxml.etree
 
+import tests.utils
+
 
 def test_noarg(example_crsdsar):
     subprocess.run(["crsdinfo", example_crsdsar], check=True)
@@ -41,12 +43,13 @@ def test_raw(example_crsdsar):
     ) == lxml.etree.tostring(lxml.etree.fromstring(pretty_xml), pretty_print=True)
 
 
-def test_smart_open():
-    proc = subprocess.run(
-        ["crsdinfo", "-x", r"https://www.govsco.com/content/spotlight.crsd"],
-        stdout=subprocess.PIPE,
-        check=True,
-    )
+def test_smart_open(example_crsdsar):
+    with tests.utils.static_http_server(example_crsdsar.parent) as server_url:
+        proc = subprocess.run(
+            ["crsdinfo", "-x", f"{server_url}/{example_crsdsar.name}"],
+            stdout=subprocess.PIPE,
+            check=True,
+        )
 
-    tree = lxml.etree.fromstring(proc.stdout)
-    assert tree is not None
+        tree = lxml.etree.fromstring(proc.stdout)
+        assert tree is not None
