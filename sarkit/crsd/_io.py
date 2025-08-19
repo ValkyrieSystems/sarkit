@@ -52,6 +52,24 @@ def _describe_signal(
     return shape, dtype
 
 
+def describe_support_array(
+    xmltree: lxml.etree.ElementTree,
+    sa_id: str,
+) -> tuple[tuple[int, int], np.dtype, lxml.etree.Element]:
+    """Return metadata describing the support array identified by ``sa_id``"""
+    data_sa_elem = xmltree.find(
+        f"{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}SAId='{sa_id}']"
+    )
+    expected_shape = (
+        int(data_sa_elem.findtext("{*}NumRows")),
+        int(data_sa_elem.findtext("{*}NumCols")),
+    )
+    sa_elem = xmltree.find(f"{{*}}SupportArray/*[{{*}}Identifier='{sa_id}']")
+    element_format = sa_elem.findtext("{*}ElementFormat")
+    expected_dtype = binary_format_string_to_dtype(element_format)
+    return expected_shape, expected_dtype, sa_elem
+
+
 @dataclasses.dataclass(kw_only=True)
 class FileHeaderPart:
     """CRSD header fields which are set per program specific Product Design Document
@@ -423,18 +441,11 @@ class Reader:
         return _iohelp.fromfile(self._file_object, ppp_dtype, num_pulse)
 
     def _read_support_array(self, sa_identifier):
-        elem_format = self.metadata.xmltree.find(
-            f"{{*}}SupportArray/*[{{*}}Identifier='{sa_identifier}']/{{*}}ElementFormat"
-        )
-        dtype = binary_format_string_to_dtype(elem_format.text).newbyteorder("B")
-
+        shape, dtype, _ = describe_support_array(self.metadata.xmltree, sa_identifier)
+        dtype = dtype.newbyteorder("B")
         sa_info = self.metadata.xmltree.find(
             f"{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}SAId='{sa_identifier}']"
         )
-        num_rows = int(sa_info.find("./{*}NumRows").text)
-        num_cols = int(sa_info.find("./{*}NumCols").text)
-        shape = (num_rows, num_cols)
-
         sa_offset = int(sa_info.find("./{*}ArrayByteOffset").text)
         self._file_object.seek(sa_offset + self._support_block_byte_offset)
         assert dtype.itemsize == int(sa_info.find("./{*}BytesPerElement").text)
@@ -847,18 +858,9 @@ class Writer:
             Array of support data
 
         """
-        data_sa_elem = self._metadata.xmltree.find(
-            f"{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}SAId='{support_array_identifier}']"
+        expected_shape, expected_dtype, sa_elem = describe_support_array(
+            self._metadata.xmltree, support_array_identifier
         )
-        expected_shape = (
-            int(data_sa_elem.findtext("{*}NumRows")),
-            int(data_sa_elem.findtext("{*}NumCols")),
-        )
-        sa_elem = self._metadata.xmltree.find(
-            f"{{*}}SupportArray/*[{{*}}Identifier='{support_array_identifier}']"
-        )
-        element_format = sa_elem.findtext("{*}ElementFormat")
-        expected_dtype = binary_format_string_to_dtype(element_format)
         expected_nodata = sa_elem.findtext("{*}NODATA")
 
         if expected_dtype != support_array.dtype.newbyteorder("="):

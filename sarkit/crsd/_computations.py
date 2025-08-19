@@ -2,10 +2,17 @@
 Select calculations from the CRSD D&I
 """
 
+import functools
+
+import lxml.etree
 import numpy as np
+import numpy.polynomial.polynomial as npp
 import numpy.typing as npt
 
 import sarkit.wgs84
+
+from . import _io as skcrsd_io
+from . import _xml as skcrsd_xml
 
 
 def compute_ref_point_parameters(rpt: npt.ArrayLike):
@@ -268,3 +275,217 @@ def compute_h_v_pol_parameters(apc, uacx, uacy, gpt, xr, ampx, ampy, phasex, pha
     amph = ah / (ah**2 + av**2) ** 0.5
     ampv = av / (ah**2 + av**2) ** 0.5
     return amph, ampv, phaseh, phasev
+
+
+def interpolate_support_array(
+    x: npt.ArrayLike,
+    y: npt.ArrayLike,
+    x_0: float,
+    y_0: float,
+    x_ss: float,
+    y_ss: float,
+    sa: npt.ArrayLike,
+    dv_sa: npt.ArrayLike | None = None,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Method for computing values from a support array as in 9.3.2
+
+    The method in 9.3.2 is specified for a support array containing two parameters.
+    This function only handles a single parameter.
+
+    Due to its reuse in 7.5.3, some variables have been renamed/generalized:
+
+    * dcx, dcx -> x, y
+    * {Gsa, PhiSA} -> sa
+    * {NumRows, NumCols} -> sa.shape
+    * {G, Phi} -> values
+
+    Parameters
+    ----------
+    x, y : array_like
+        Row and column values in support array coordinates at which to interpolate.
+        Must have the same shape.
+    x_0, y_0 : float
+        Row and column 0 coordinate
+    x_ss, y_ss : float
+        Row and column coordinate sample spacing
+    sa : array_like
+        2-D support array to interpolate
+    dv_sa : array_like or None, optional
+        Data valid array of the same shape as the support array.
+        If ``None``, the entire support array is treated as valid.
+
+    Returns
+    -------
+    values : ndarray
+        Computed array values at (``x``, ``y``)
+    dv : ndarray
+        Data valid array, where `True` indicates that ``values`` contains a valid value
+    """
+    sa = np.asarray(sa)
+    x = np.atleast_1d(x)
+    y = np.atleast_1d(y)
+    num_rows, num_cols = sa.shape
+    dv = np.ones_like(x, dtype=bool)
+
+    # (1)
+    m_x = (x - x_0) / x_ss
+    m0 = np.floor(m_x).astype(int)
+    m1 = m0 + 1
+
+    dv[(m0 < 0) | (m1 > (num_rows - 1))] = False
+    # clip for convenience
+    m0 = np.clip(m0, 0, num_rows - 1)
+    m1 = np.clip(m1, 0, num_rows - 1)
+
+    # (2)
+    n_y = (y - y_0) / y_ss
+    n0 = np.floor(n_y).astype(int)
+    n1 = n0 + 1
+
+    dv[(n0 < 0) | (n1 > (num_cols - 1))] = False
+    # clip for convenience
+    n0 = np.clip(n0, 0, num_cols - 1)
+    n1 = np.clip(n1, 0, num_cols - 1)
+
+    # (3)
+    # a: do bilinear interpolation
+    neighbors = np.stack(
+        [sa[m0, n0], sa[m0, n1], sa[m1, n0], sa[m1, n1]], axis=-1
+    ).reshape(x.shape + (2, 2))
+
+    m_frac = m_x - m0
+    n_frac = n_y - n0
+    values = np.zeros(shape=neighbors.shape[:-2], dtype=float)
+    values = (
+        np.stack([1 - m_frac, m_frac], axis=-1).reshape(x.shape + (1, 2))
+        @ neighbors
+        @ np.stack([1 - n_frac, n_frac], axis=-1).reshape(x.shape + (2, 1))
+    )
+    # b: DV is false if one or more surrounding elements are invalid
+    if dv_sa is not None:
+        dv_sa = np.asarray(dv_sa)
+        neighbors_dv = np.stack(
+            [dv_sa[m0, n0], dv_sa[m0, n1], dv_sa[m1, n0], dv_sa[m1, n1]], axis=-1
+        )
+        valid_neighbors = neighbors_dv.all(axis=-1)
+        dv[~valid_neighbors] = False
+    values[~dv] = np.nan
+    return values.squeeze(axis=(-2, -1)), dv
+
+
+def compute_dwelltimes_using_poly(
+    ch_id: str,
+    iax: npt.ArrayLike,
+    iay: npt.ArrayLike,
+    crsd_xmltree: lxml.etree.ElementTree,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Compute center of dwell times and dwell times for scene points using polynomials.
+
+    Parameters
+    ----------
+    ch_id : str
+        Channel unique identifier
+    iax, iay : array_like
+        Image area coordinates (in meters) of the scene points for which to compute the dwell times
+    crsd_xmltree : lxml.etree.ElementTree
+        CRSD XML
+
+    Returns
+    -------
+    t_cod : ndarray
+        Center of dwell times (sec) for the scene points relative to the Collection Reference Time
+    t_dwell : ndarray
+       Dwell times (sec) for which the channel signal array contains the echo signals from the scene points
+    """
+    iax, iay = np.broadcast_arrays(iax, iay)
+
+    crsdroot = skcrsd_xml.ElementWrapper(crsd_xmltree.getroot())
+    chan_params = {x["Identifier"]: x for x in crsdroot["Channel"]["Parameters"]}[ch_id]
+    if "Polynomials" not in chan_params["SARImage"]["DwellTimes"]:
+        raise ValueError(
+            f"Channel {ch_id=} does not use Polynomials. Consider using compute_dwelltimes_using_dta"
+        )
+    cod_id = chan_params["SARImage"]["DwellTimes"]["Polynomials"]["CODId"]
+    dwell_id = chan_params["SARImage"]["DwellTimes"]["Polynomials"]["DwellId"]
+    cod_poly = {
+        x["Identifier"]: x["CODTimePoly"]
+        for x in crsdroot["DwellPolynomials"]["CODTime"]
+    }[cod_id]
+    dwell_poly = {
+        x["Identifier"]: x["DwellTimePoly"]
+        for x in crsdroot["DwellPolynomials"]["DwellTime"]
+    }[dwell_id]
+    t_cod = npp.polyval2d(iax, iay, cod_poly)
+    t_dwell = npp.polyval2d(iax, iay, dwell_poly)
+    return t_cod, t_dwell
+
+
+def compute_dwelltimes_using_dta(
+    ch_id: str,
+    iax: npt.ArrayLike,
+    iay: npt.ArrayLike,
+    crsd_xmltree: lxml.etree.ElementTree,
+    dta: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Compute center of dwell times and dwell times for scene points using a dwell time array.
+
+    Parameters
+    ----------
+    ch_id : str
+        Channel unique identifier
+    iax, iay : array_like
+        Image area coordinates (in meters) of the scene points for which to compute the dwell times
+    crsd_xmltree : lxml.etree.ElementTree
+        CRSD XML
+    dta : ndarray
+        Dwell time array to use
+
+    Returns
+    -------
+    t_cod : ndarray
+        Center of dwell times (sec) for the scene points relative to the Collection Reference Time
+    t_dwell : ndarray
+       Dwell times (sec) for which the channel signal array contains the echo signals from the scene points
+    """
+    iax, iay = np.broadcast_arrays(iax, iay)
+
+    crsdroot = skcrsd_xml.ElementWrapper(crsd_xmltree.getroot())
+    chan_params = {x["Identifier"]: x for x in crsdroot["Channel"]["Parameters"]}[ch_id]
+    if "Array" not in chan_params["SARImage"]["DwellTimes"]:
+        raise ValueError(
+            f"Channel {ch_id=} does not use a DTA. Consider using compute_dwelltimes_using_poly"
+        )
+    dta_id = chan_params["SARImage"]["DwellTimes"]["Array"]["DTAId"]
+    expected_shape, expected_dtype, sa_elem = skcrsd_io.describe_support_array(
+        crsd_xmltree, dta_id
+    )
+    assert lxml.etree.QName(sa_elem).localname == "DwellTimeArray"
+    wrapped_dta = skcrsd_xml.ElementWrapper(sa_elem)
+    if dta.shape != expected_shape:
+        raise ValueError(f"{dta.shape=} does not match {expected_shape=}")
+    if dta.dtype.newbyteorder("=") != expected_dtype:
+        raise ValueError(f"{dta.dtype=} is not compatible with {expected_dtype=}")
+
+    interp_dta = functools.partial(
+        interpolate_support_array,
+        x_0=wrapped_dta["X0"],
+        y_0=wrapped_dta["Y0"],
+        x_ss=wrapped_dta["XSS"],
+        y_ss=wrapped_dta["YSS"],
+    )
+    cod_ma = skcrsd_io.mask_support_array(dta["COD"], wrapped_dta["NODATA"] or None)
+    t_cod = interp_dta(
+        x=iax,
+        y=iay,
+        sa=cod_ma,
+        dv_sa=~cod_ma.mask if np.ma.is_masked(cod_ma) else None,
+    )[0]
+
+    dt_ma = skcrsd_io.mask_support_array(dta["DT"], wrapped_dta["NODATA"] or None)
+    t_dwell = interp_dta(
+        x=iax,
+        y=iay,
+        sa=dt_ma,
+        dv_sa=~dt_ma.mask if np.ma.is_masked(dt_ma) else None,
+    )[0]
+    return t_cod, t_dwell

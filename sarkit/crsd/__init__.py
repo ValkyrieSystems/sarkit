@@ -59,7 +59,16 @@ XML Metadata
    ImageAreaCornerPointsType
    ParameterType
 
-Reference Geometry Computations
+Receive Channel Parameters
+==========================
+
+.. autosummary::
+   :toctree: generated/
+
+   compute_dwelltimes_using_poly
+   compute_dwelltimes_using_dta
+
+Reference Geometry Parameters
 ===============================
 
 .. autosummary::
@@ -70,12 +79,13 @@ Reference Geometry Computations
    compute_apc_to_pt_geometry_parameters_xmlnames
    arp_to_rpt_geometry_xmlnames
 
-Polarization Parameter Computations
-===================================
+Antenna Parameters
+==================
 
 .. autosummary::
    :toctree: generated/
 
+   interpolate_support_array
    compute_h_v_los_unit_vectors
    compute_h_v_pol_parameters
 
@@ -118,9 +128,12 @@ from ._computations import (
     arp_to_rpt_geometry_xmlnames,
     compute_apc_to_pt_geometry_parameters,
     compute_apc_to_pt_geometry_parameters_xmlnames,
+    compute_dwelltimes_using_dta,
+    compute_dwelltimes_using_poly,
     compute_h_v_los_unit_vectors,
     compute_h_v_pol_parameters,
     compute_ref_point_parameters,
+    interpolate_support_array,
 )
 from ._constants import (
     DEFINED_HEADER_KEYS,
@@ -202,12 +215,15 @@ __all__ = [
     "binary_format_string_to_dtype",
     "compute_apc_to_pt_geometry_parameters",
     "compute_apc_to_pt_geometry_parameters_xmlnames",
+    "compute_dwelltimes_using_dta",
+    "compute_dwelltimes_using_poly",
     "compute_h_v_los_unit_vectors",
     "compute_h_v_pol_parameters",
     "compute_ref_point_parameters",
     "dtype_to_binary_format_string",
     "get_ppp_dtype",
     "get_pvp_dtype",
+    "interpolate_support_array",
     "mask_support_array",
     "read_file_header",
 ]

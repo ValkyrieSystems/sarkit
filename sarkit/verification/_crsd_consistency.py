@@ -11,7 +11,6 @@ import re
 from typing import Any, Optional
 
 import numpy as np
-import numpy.polynomial.polynomial as npp
 import shapely.geometry as shg
 from lxml import etree
 
@@ -2262,25 +2261,17 @@ class CrsdConsistency(con.ConsistencyChecker):
                 chan_param_node.find("{*}SARImage/{*}DwellTimes/{*}Polynomials")
                 is not None
             ):
-                cod_id = chan_param_node.findtext(
-                    "{*}SARImage/{*}DwellTimes/{*}Polynomials/{*}CODId"
+                t_cod_rpt, t_dwell_rpt = skcrsd.compute_dwelltimes_using_poly(
+                    ref_chan,
+                    ref_pt_iac[0],
+                    ref_pt_iac[1],
+                    self.crsdroot.getroottree(),
                 )
-                dwell_id = chan_param_node.findtext(
-                    "{*}SARImage/{*}DwellTimes/{*}Polynomials/{*}DwellId"
-                )
-                cod_poly = self.xmlhelp.load(
-                    f"{{*}}DwellPolynomials/{{*}}CODTime[{{*}}Identifier='{cod_id}']/{{*}}CODTimePoly"
-                )
-                dwell_poly = self.xmlhelp.load(
-                    f"{{*}}DwellPolynomials/{{*}}DwellTime[{{*}}Identifier='{dwell_id}']/{{*}}DwellTimePoly"
-                )
-                t_cod_rpt = npp.polyval2d(*ref_pt_iac, cod_poly)
-                t_dwell_rpt = npp.polyval2d(*ref_pt_iac, dwell_poly)
-                with self.need(f"CODTime matches polynomial {cod_id}"):
+                with self.need("CODTime matches polynomial"):
                     assert float(xml_node.findtext("{*}CODTime")) == con.Approx(
                         t_cod_rpt, atol=1e-4
                     )
-                with self.need(f"DwellTime matches polynomial {dwell_id}"):
+                with self.need("DwellTime matches polynomial"):
                     assert float(xml_node.findtext("{*}DwellTime")) == con.Approx(
                         t_dwell_rpt, atol=1e-4
                     )
@@ -2290,28 +2281,13 @@ class CrsdConsistency(con.ConsistencyChecker):
                 )
                 with self.precondition():
                     dta = self._read_support_array(dta_id)
-                    dta_node = self.crsdroot.find(
-                        f"{{*}}SupportArray/{{*}}DwellTimeArray[{{*}}Identifier='{dta_id}']"
+                    t_cod_rpt, t_dwell_rpt = skcrsd.compute_dwelltimes_using_dta(
+                        ref_chan,
+                        ref_pt_iac[0],
+                        ref_pt_iac[1],
+                        self.crsdroot.getroottree(),
+                        dta,
                     )
-                    nodata = dta_node.findtext("{*}NODATA")
-                    if nodata is not None:
-                        # Fill NODATA values with COD=nan DT=nan for convenience
-                        nodata_arr = np.void(bytes.fromhex(nodata))
-                        dta[dta.view(nodata_arr.dtype) == nodata_arr] = np.nan, np.nan
-                    x0 = float(dta_node.findtext("{*}X0"))
-                    y0 = float(dta_node.findtext("{*}Y0"))
-                    xss = float(dta_node.findtext("{*}XSS"))
-                    yss = float(dta_node.findtext("{*}YSS"))
-                    row = (ref_pt_iac[0] - x0) / xss
-                    col = (ref_pt_iac[1] - y0) / yss
-                    r0 = int(np.floor(row))
-                    rw = row - r0
-                    c0 = int(np.floor(col))
-                    cw = col - c0
-                    cint = np.array([[1 - cw], [cw]])
-                    rint = np.array([[1 - rw, rw]])
-                    t_cod_rpt = rint @ dta[r0 : r0 + 2, c0 : c0 + 2]["COD"] @ cint
-                    t_dwell_rpt = rint @ dta[r0 : r0 + 2, c0 : c0 + 2]["DT"] @ cint
                     with self.need(f"CODTime matches array {dta_id}"):
                         assert float(xml_node.findtext("{*}CODTime")) == con.Approx(
                             t_cod_rpt, atol=1e-4
