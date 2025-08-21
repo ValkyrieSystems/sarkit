@@ -1068,8 +1068,8 @@ def test_refgeom_bad_root(cphd_con_from_file):
     bad_node = cphd_con.cphdroot.find("./{*}ReferenceGeometry/{*}SRPCODTime")
     bad_node.text = "24" + bad_node.text
 
-    cphd_con.check("check_refgeom_root")
-    assert cphd_con.failures()
+    cphd_con.check("check_refgeom")
+    testing.assert_failures(cphd_con, "SRPCODTime matches*")
 
 
 def test_refgeom_bad_monostatic(cphd_con_from_file):
@@ -1079,8 +1079,8 @@ def test_refgeom_bad_monostatic(cphd_con_from_file):
     )
     bad_node.text = str((float(bad_node.text) + 3) % 360)
 
-    cphd_con.check("check_refgeom_monostatic")
-    assert cphd_con.failures()
+    cphd_con.check("check_refgeom")
+    testing.assert_failures(cphd_con, "AzimuthAngle matches*")
 
 
 def test_image_grid_exists(cphd_con):
