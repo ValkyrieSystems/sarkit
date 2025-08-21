@@ -87,8 +87,8 @@ Constants
    * - ``ILOC_MAX``
      - maximum number of rows contained in a segmented SICD NITF image segment (99,999)
 
-CLI Utililties
-==============
+CLI Utilities
+=============
 
 .. _sicdinfo-cli:
 

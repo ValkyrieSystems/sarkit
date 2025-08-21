@@ -77,8 +77,8 @@ Constants
    * - ``SECTION_TERMINATOR``
      - Two-byte sequence that marks the end of the file header
 
-CLI Utililties
-==============
+CLI Utilities
+=============
 
 .. _cphdinfo-cli:
 
