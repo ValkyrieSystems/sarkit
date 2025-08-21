@@ -1,5 +1,6 @@
 import copy
 import pathlib
+import unittest.mock
 
 import lxml.builder
 import numpy as np
@@ -9,7 +10,10 @@ import shapely.geometry as shg
 from lxml import etree
 
 import sarkit.cphd as skcphd
-from sarkit.verification._cphd_consistency import CphdConsistency, main
+import sarkit.verification._cphdcheck
+import tests.utils
+from sarkit.verification._cphd_consistency import CphdConsistency
+from sarkit.verification._cphdcheck import main
 
 from . import testing
 
@@ -1065,8 +1069,8 @@ def test_refgeom_bad_root(cphd_con_from_file):
     bad_node = cphd_con.cphdroot.find("./{*}ReferenceGeometry/{*}SRPCODTime")
     bad_node.text = "24" + bad_node.text
 
-    cphd_con.check("check_refgeom_root")
-    assert cphd_con.failures()
+    cphd_con.check("check_refgeom")
+    testing.assert_failures(cphd_con, "SRPCODTime matches*")
 
 
 def test_refgeom_bad_monostatic(cphd_con_from_file):
@@ -1076,8 +1080,8 @@ def test_refgeom_bad_monostatic(cphd_con_from_file):
     )
     bad_node.text = str((float(bad_node.text) + 3) % 360)
 
-    cphd_con.check("check_refgeom_monostatic")
-    assert cphd_con.failures()
+    cphd_con.check("check_refgeom")
+    testing.assert_failures(cphd_con, "AzimuthAngle matches*")
 
 
 def test_image_grid_exists(cphd_con):
@@ -1223,5 +1227,13 @@ def test_check_signal_block_packing(cphd_con):
     testing.assert_failures(cphd_con, "SIGNAL array .+ starts at offset")
 
 
-def test_smart_open():
-    assert not main([r"https://www.govsco.com/content/spotlight.cphd", "--thorough"])
+def test_smart_open_http(example_cphd):
+    with tests.utils.static_http_server(example_cphd.parent) as server_url:
+        assert not main([f"{server_url}/{example_cphd.name}", "--thorough"])
+
+
+def test_smart_open_contract(example_cphd, monkeypatch):
+    mock_open = unittest.mock.MagicMock(side_effect=tests.utils.simple_open_read)
+    monkeypatch.setattr(sarkit.verification._cphdcheck, "open", mock_open)
+    assert not main([str(example_cphd), "--thorough"])
+    mock_open.assert_called_once_with(str(example_cphd), "rb")

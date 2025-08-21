@@ -51,32 +51,32 @@ Each of the consistency checkers has a corresponding entry point:
 
 .. code-block:: shell-session
 
-   $ cphd-consistency /path/to/file
-   $ crsd-consistency /path/to/file
-   $ sicd-consistency /path/to/file
-   $ sidd-consistency /path/to/file
+   $ cphdcheck /path/to/file
+   $ crsdcheck /path/to/file
+   $ sicdcheck /path/to/file
+   $ siddcheck /path/to/file
 
 The command line flags for each are given below:
 
-.. _cphd-consistency-cli:
+.. _cphdcheck-cli:
 
-.. autoprogram:: sarkit.verification._cphd_consistency:_parser()
-   :prog: cphd-consistency
+.. autoprogram:: sarkit.verification._cphdcheck:_parser()
+   :prog: cphdcheck
 
-.. _crsd-consistency-cli:
+.. _crsdcheck-cli:
 
-.. autoprogram:: sarkit.verification._crsd_consistency:_parser()
-   :prog: crsd-consistency
+.. autoprogram:: sarkit.verification._crsdcheck:_parser()
+   :prog: crsdcheck
 
-.. _sicd-consistency-cli:
+.. _sicdcheck-cli:
 
-.. autoprogram:: sarkit.verification._sicd_consistency:_parser()
-   :prog: sicd-consistency
+.. autoprogram:: sarkit.verification._sicdcheck:_parser()
+   :prog: sicdcheck
 
-.. _sidd-consistency-cli:
+.. _siddcheck-cli:
 
-.. autoprogram:: sarkit.verification._sidd_consistency:_parser()
-   :prog: sidd-consistency
+.. autoprogram:: sarkit.verification._siddcheck:_parser()
+   :prog: siddcheck
 """
 
 from ._cphd_consistency import (

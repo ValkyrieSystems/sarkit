@@ -1,9 +1,8 @@
-import argparse
 import datetime
 import functools
 import itertools
+import logging
 import os
-import pathlib
 import pprint
 import re
 from typing import Any, Optional
@@ -12,16 +11,18 @@ import jbpy
 import lxml.etree
 import numpy as np
 import numpy.polynomial.polynomial as npp
-import shapely.geometry as shg
 
 import sarkit.sidd as sksidd
 import sarkit.verification._consistency as con
 from sarkit import wgs84
 
+logger = logging.getLogger(__name__)
+
 try:
-    from smart_open import open
-except ImportError:
-    pass
+    import shapely.geometry as shg
+except ImportError as ie:
+    logger.warning("'shapely' package not found. Some features may not work correctly.")
+    shg = con._ExceptionOnUse(ie)
 
 _PIXEL_INFO = {
     "MONO8I": {
@@ -1233,29 +1234,3 @@ def calc_geodata_imagecorners(sidd_xml):
     r_corner = np.array([-0.5, -0.5, n_rows - 0.5, n_rows - 0.5])
     c_corner = np.array([-0.5, n_cols - 0.5, n_cols - 0.5, -0.5])
     return sensor_coord_to_ecef(*rc_to_sensor_coord(r_corner, c_corner))
-
-
-def _parser():
-    parser = argparse.ArgumentParser(
-        description="Analyze a SIDD and display inconsistencies"
-    )
-    parser.add_argument("file_name", help="SIDD or SIDD XML to check")
-    parser.add_argument(
-        "--schema", type=pathlib.Path, help="Use a supplied schema file", default=None
-    )
-    SiddConsistency.add_cli_args(parser)
-    return parser
-
-
-def main(args=None):
-    config = _parser().parse_args(args)
-
-    with open(config.file_name, "rb") as file:
-        sidd_con = SiddConsistency.from_file(file, config.schema)
-    return sidd_con.run_cli(config)
-
-
-if __name__ == "__main__":  # pragma: no cover
-    import sys
-
-    sys.exit(int(main()))

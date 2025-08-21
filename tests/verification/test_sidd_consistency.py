@@ -1,12 +1,16 @@
 import copy
 import datetime
 import pathlib
+import unittest.mock
 
 import lxml.builder
 import pytest
 from lxml import etree
 
-from sarkit.verification._sidd_consistency import SiddConsistency, main
+import sarkit.verification._siddcheck
+import tests.utils
+from sarkit.verification._sidd_consistency import SiddConsistency
+from sarkit.verification._siddcheck import main
 
 DATAPATH = pathlib.Path(__file__).parents[2] / "data"
 
@@ -327,5 +331,13 @@ def remove_nodes(*nodes):
         node.getparent().remove(node)
 
 
-def test_smart_open():
-    assert not main([r"https://www.govsco.com/content/spotlight.sidd"])
+def test_smart_open_http(example_sidd):
+    with tests.utils.static_http_server(example_sidd.parent) as server_url:
+        assert not main([f"{server_url}/{example_sidd.name}"])
+
+
+def test_smart_open_contract(example_sidd, monkeypatch):
+    mock_open = unittest.mock.MagicMock(side_effect=tests.utils.simple_open_read)
+    monkeypatch.setattr(sarkit.verification._siddcheck, "open", mock_open)
+    assert not main([str(example_sidd)])
+    mock_open.assert_called_once_with(str(example_sidd), "rb")

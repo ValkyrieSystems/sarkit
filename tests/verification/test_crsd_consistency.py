@@ -4,6 +4,7 @@ import os
 import pathlib
 import re
 import types
+import unittest.mock
 
 import lxml.builder
 import numpy as np
@@ -11,8 +12,11 @@ import pytest
 from lxml import etree
 
 import sarkit.crsd as skcrsd
+import sarkit.verification._crsdcheck
 import sarkit.wgs84
-from sarkit.verification._crsd_consistency import CrsdConsistency, main
+import tests.utils
+from sarkit.verification._crsd_consistency import CrsdConsistency
+from sarkit.verification._crsdcheck import main
 
 from . import testing
 
@@ -2169,5 +2173,13 @@ def test_check_compressed_signal_block_size(example_crsdrcvcompressed_file):
     assert_failures(crsd_con, "SIGNAL_BLOCK_SIZE is set equal to CompressedSignalSize")
 
 
-def test_smart_open():
-    assert not main([r"https://www.govsco.com/content/spotlight.crsd", "--thorough"])
+def test_smart_open_http(example_crsdsar):
+    with tests.utils.static_http_server(example_crsdsar.parent) as server_url:
+        assert not main([f"{server_url}/{example_crsdsar.name}", "--thorough"])
+
+
+def test_smart_open_contract(example_crsdsar, monkeypatch):
+    mock_open = unittest.mock.MagicMock(side_effect=tests.utils.simple_open_read)
+    monkeypatch.setattr(sarkit.verification._crsdcheck, "open", mock_open)
+    assert not main([str(example_crsdsar), "--thorough"])
+    mock_open.assert_called_once_with(str(example_crsdsar), "rb")

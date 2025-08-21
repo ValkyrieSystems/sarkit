@@ -2,19 +2,16 @@
 Functionality for verifying SICD files for internal consistency.
 """
 
-import argparse
 import copy
 import datetime
 import functools
 import logging
 import os
-import pathlib
 from typing import Any, Optional
 
 import numpy as np
 import numpy.linalg as npl
 import numpy.polynomial.polynomial as npp
-import shapely.geometry as shg
 from jbpy import Jbp
 from lxml import etree
 
@@ -24,12 +21,13 @@ import sarkit.verification._consistency as con
 import sarkit.wgs84
 from sarkit import _constants
 
-try:
-    from smart_open import open
-except ImportError:
-    pass
-
 logger = logging.getLogger(__name__)
+
+try:
+    import shapely.geometry as shg
+except ImportError as ie:
+    logger.warning("'shapely' package not found. Some features may not work correctly.")
+    shg = con._ExceptionOnUse(ie)
 
 KAPFAC: float = 0.8859
 
@@ -899,8 +897,12 @@ class SicdConsistency(con.ConsistencyChecker):
 
         nrows = self.xmlhelp.load("./{*}ImageData/{*}NumRows")
         ncols = self.xmlhelp.load("./{*}ImageData/{*}NumCols")
-        row = [0, 0, nrows - 1, nrows - 1]
-        col = [0, ncols - 1, ncols - 1, 0]
+        row = self.xmlhelp.load("./{*}ImageData/{*}FirstRow") + np.asarray(
+            [0, 0, nrows - 1, nrows - 1]
+        )
+        col = self.xmlhelp.load("./{*}ImageData/{*}FirstCol") + np.asarray(
+            [0, ncols - 1, ncols - 1, 0]
+        )
         icp_coords = _grid_index_to_coord(self.xmlhelp, np.stack([row, col], axis=-1))
         urow_gnd, ucol_gnd = _uvecs_in_ground(self.xmlhelp)
 
@@ -1964,34 +1966,3 @@ class SicdConsistency(con.ConsistencyChecker):
             with self.precondition():
                 assert poly_node is not None
                 self._assert_poly_2d(poly_node, poly)
-
-
-def _parser():
-    parser = argparse.ArgumentParser(
-        description="Analyze a SICD and display inconsistencies"
-    )
-    parser.add_argument("file_name", help="SICD or SICD XML to check")
-    parser.add_argument(
-        "--schema",
-        type=pathlib.Path,
-        help="Use a supplied schema file (attempts version-specific schema if omitted)",
-    )
-    SicdConsistency.add_cli_args(parser)
-    return parser
-
-
-def main(args=None):
-    config = _parser().parse_args(args)
-    with open(config.file_name, "rb") as f:
-        sicd_con = SicdConsistency.from_file(
-            file=f,
-            schema=config.schema,
-        )
-    # file doesn't need to stay open once object is instantiated
-    return sicd_con.run_cli(config)
-
-
-if __name__ == "__main__":  # pragma: no cover
-    import sys
-
-    sys.exit(int(main()))

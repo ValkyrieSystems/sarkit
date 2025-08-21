@@ -446,44 +446,44 @@ SARkit provides checkers that can be used to identify inconsistencies in SAR sta
      - Command
    * - CRSD
      - :py:class:`sarkit.verification.CrsdConsistency`
-     - :ref:`crsd-consistency-cli`
+     - :ref:`crsdcheck-cli`
    * - CPHD
      - :py:class:`sarkit.verification.CphdConsistency`
-     - :ref:`cphd-consistency-cli`
+     - :ref:`cphdcheck-cli`
    * - SICD
      - :py:class:`sarkit.verification.SicdConsistency`
-     - :ref:`sicd-consistency-cli`
+     - :ref:`sicdcheck-cli`
    * - SIDD
      - :py:class:`sarkit.verification.SiddConsistency`
-     - :ref:`sidd-consistency-cli`
+     - :ref:`siddcheck-cli`
 
 Each consistency checker provides a command line interface for checking SAR data/metadata files.
 When there are no inconsistencies, no output is produced.
 
 .. code-block:: shell-session
 
-   $ sicd-consistency good.sicd
+   $ sicdcheck good.sicd
    $
 
 Directly accessing URLs is supported if the `smart_open <https://github.com/piskvorky/smart_open>`_ package is installed.
 
 .. code-block:: shell-session
 
-   $ sicd-consistency https://www.example.com/good.sicd
+   $ sicdcheck https://www.example.com/good.sicd
    $
 
 The same command can be used to run a subset of the checks against the XML.
 
 .. code-block:: shell-session
 
-   $ sicd-consistency good.sicd.xml
+   $ sicdcheck good.sicd.xml
    $
 
 When a file is inconsistent, failed checks are printed.
 
 .. code-block:: shell-session
 
-   $ sicd-consistency bad.sicd
+   $ sicdcheck bad.sicd
    check_image_formation_timeline: Checks that the slow time span for data processed to form
    the image is within collect.
       [Error] Need: 0 <= TStartProc < TEndProc <= CollectDuration
@@ -502,7 +502,7 @@ For example:
 
 .. code-block:: shell-session
 
-   $ sicd-consistency good.sicd -vvv
+   $ sicdcheck good.sicd -vvv
    check_against_schema: Checks against schema.
       [Pass] Need: XML passes schema
       [Pass] Need: Schema available for checking xml whose root tag = {urn:SICD:1.2.1}SICD
@@ -518,10 +518,10 @@ SARkit provides command line utilities for inspecting SAR standards files.
    * - Format
      - Command
    * - CRSD
-     - :ref:`crsd-info-cli`
+     - :ref:`crsdinfo-cli`
    * - CPHD
-     - :ref:`cphd-info-cli`
+     - :ref:`cphdinfo-cli`
    * - SICD
-     - :ref:`sicd-info-cli`
+     - :ref:`sicdinfo-cli`
    * - SIDD
-     - :ref:`sidd-info-cli`
+     - :ref:`siddinfo-cli`
