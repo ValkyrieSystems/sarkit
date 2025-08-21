@@ -10,9 +10,10 @@ import shapely.geometry as shg
 from lxml import etree
 
 import sarkit.cphd as skcphd
-import sarkit.verification._cphd_consistency
+import sarkit.verification._cphdcheck
 import tests.utils
-from sarkit.verification._cphd_consistency import CphdConsistency, main
+from sarkit.verification._cphd_consistency import CphdConsistency
+from sarkit.verification._cphdcheck import main
 
 from . import testing
 
@@ -1233,6 +1234,6 @@ def test_smart_open_http(example_cphd):
 
 def test_smart_open_contract(example_cphd, monkeypatch):
     mock_open = unittest.mock.MagicMock(side_effect=tests.utils.simple_open_read)
-    monkeypatch.setattr(sarkit.verification._cphd_consistency, "open", mock_open)
+    monkeypatch.setattr(sarkit.verification._cphdcheck, "open", mock_open)
     assert not main([str(example_cphd), "--thorough"])
     mock_open.assert_called_once_with(str(example_cphd), "rb")

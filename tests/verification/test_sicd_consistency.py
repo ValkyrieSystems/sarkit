@@ -9,9 +9,10 @@ import pytest
 from lxml import etree
 
 import sarkit.sicd as sksicd
-import sarkit.verification._sicd_consistency
+import sarkit.verification._sicdcheck
 import tests.utils
-from sarkit.verification._sicd_consistency import SicdConsistency, main
+from sarkit.verification._sicd_consistency import SicdConsistency
+from sarkit.verification._sicdcheck import main
 
 from . import testing
 
@@ -850,6 +851,6 @@ def test_smart_open_http(example_sicd):
 
 def test_smart_open_contract(example_sicd, monkeypatch):
     mock_open = unittest.mock.MagicMock(side_effect=tests.utils.simple_open_read)
-    monkeypatch.setattr(sarkit.verification._sicd_consistency, "open", mock_open)
+    monkeypatch.setattr(sarkit.verification._sicdcheck, "open", mock_open)
     assert not main([str(example_sicd)])
     mock_open.assert_called_once_with(str(example_sicd), "rb")

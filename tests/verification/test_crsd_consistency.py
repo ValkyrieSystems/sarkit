@@ -12,10 +12,11 @@ import pytest
 from lxml import etree
 
 import sarkit.crsd as skcrsd
-import sarkit.verification._crsd_consistency
+import sarkit.verification._crsdcheck
 import sarkit.wgs84
 import tests.utils
-from sarkit.verification._crsd_consistency import CrsdConsistency, main
+from sarkit.verification._crsd_consistency import CrsdConsistency
+from sarkit.verification._crsdcheck import main
 
 from . import testing
 
@@ -2179,6 +2180,6 @@ def test_smart_open_http(example_crsdsar):
 
 def test_smart_open_contract(example_crsdsar, monkeypatch):
     mock_open = unittest.mock.MagicMock(side_effect=tests.utils.simple_open_read)
-    monkeypatch.setattr(sarkit.verification._crsd_consistency, "open", mock_open)
+    monkeypatch.setattr(sarkit.verification._crsdcheck, "open", mock_open)
     assert not main([str(example_crsdsar), "--thorough"])
     mock_open.assert_called_once_with(str(example_crsdsar), "rb")
