@@ -4,7 +4,7 @@ import lxml.etree
 import numpy as np
 import pytest
 
-import sarkit.processing as skproc
+import sarkit._processing as skproc
 import sarkit.sicd as sksicd
 
 sicd_xml_path = (

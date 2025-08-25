@@ -1,0 +1,131 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Removed
+- Several incomplete / NotImplemented APIs
+
+
+## [0.12.0] - 2025-08-18
+
+### Added
+- Support for reading a sub-image from a SICD NITF
+
+### Fixed
+- Handling of non-UTC datetime fields in SICD and SIDD
+
+
+## [0.11.0] - 2025-08-11
+
+### Added
+- Support for writing masked arrays in CRSD
+- CLI utilities now use `smart_open` if it is installed
+- Added `crsdinfo` CLI utility
+- Added `cphdinfo` CLI utility
+- Added `sicdinfo` CLI utility
+- Added `siddinfo` CLI utility
+
+### Changed
+- Simplified some CRSD consistency checks
+
+
+## [0.10.0] - 2025-07-16
+
+## Added
+- ElementWrapper classes for interacting with SAR XML
+- Improved handling of Compressed CRSD
+- Support for using `smart_open` to open remote files
+
+# Fixed
+- SICD consistency checker's SegmentList checks
+
+
+## [0.9.0] - 2025-07-01
+
+## Changed
+- Replaced built in NITF parsing with `jbpy`
+
+
+## [0.8.0] - 2025-06-18
+
+### Added
+- CRSD v1.0 Reading and Writing
+- SICD RIC frame handling
+
+### Removed
+- Support for CRSD v1.0 DRAFT
+
+
+## [0.7.0] - 2025-05-26
+
+### Added
+- SIDD geometry calculations
+- SIDD consistency checker
+
+
+## [0.6.1] - 2025-05-07
+
+### Added
+- Support for python 3.13
+- SICD segmentation check to consistency checker
+
+## Fixed
+- Writing CPHDs without support arrays
+- SICD projection to a DEM surface not iterating enough
+
+
+## [0.6.0] - 2025-04-16
+
+### Added
+- Support for `numpy` >= 1.25
+- SICD projeciton to a DEM surface
+- SICD sensitivity matricies calculations
+
+### Changed
+- Improved consistency checker APIs
+
+
+## [0.5.0] - 2025-04-02
+
+### Changed
+- Improved SICD projection API
+
+
+## [0.4.0] - 2025-03-25
+
+### Added
+- Support for SIDD MONO8LU and RGB8LU pixel types
+- Partial support for compressed CRSD
+
+### Changed
+- Even flatter API structure
+
+
+## [0.3.0] - 2025-03-13
+
+### Changed
+- Further API refinements
+
+
+## [0.2.0] - 2025-02-20
+
+### Added
+- Support for APOs in SICD projections
+- Better handling of SIDD MONO16I and RGB24I pixel types
+
+### Changed
+- Reworked API to have flatter structure
+
+
+## [0.1.0] - 2025-01-22
+
+### Added
+- Limited CRSD DRAFT Reading and Writing
+- Limited CPHD Reading and Writing
+- Limited SICD Reading and Writing
+- Limited SIDD NITF Reading and Writing
