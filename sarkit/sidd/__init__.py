@@ -99,10 +99,10 @@ Constants
    * - ``ILOC_MAX``
      - maximum number of rows contained in a NITF image segment (99,999)
 
-CLI Utililties
-==============
+CLI Utilities
+=============
 
-.. _sidd-info-cli:
+.. _siddinfo-cli:
 
 .. autoprogram:: sarkit.sidd._siddinfo:_parser()
    :prog: siddinfo

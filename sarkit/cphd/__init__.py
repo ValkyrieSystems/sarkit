@@ -57,6 +57,14 @@ XML Metadata
    ImageAreaCornerPointsType
    ParameterType
 
+Reference Geometry Computations
+===============================
+
+.. autosummary::
+   :toctree: generated/
+
+   compute_reference_geometry
+
 Constants
 =========
 
@@ -69,10 +77,10 @@ Constants
    * - ``SECTION_TERMINATOR``
      - Two-byte sequence that marks the end of the file header
 
-CLI Utililties
-==============
+CLI Utilities
+=============
 
-.. _cphd-info-cli:
+.. _cphdinfo-cli:
 
 .. autoprogram:: sarkit.cphd._cphdinfo:_parser()
    :prog: cphdinfo
@@ -118,6 +126,9 @@ from ._io import (
     get_pvp_dtype,
     mask_support_array,
     read_file_header,
+)
+from ._refgeom import (
+    compute_reference_geometry,
 )
 from ._xml import (
     AddedPvpType,
@@ -175,6 +186,7 @@ __all__ = [
     "XyzPolyType",
     "XyzType",
     "binary_format_string_to_dtype",
+    "compute_reference_geometry",
     "dtype_to_binary_format_string",
     "get_pvp_dtype",
     "mask_support_array",

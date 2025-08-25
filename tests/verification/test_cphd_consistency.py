@@ -10,9 +10,10 @@ import shapely.geometry as shg
 from lxml import etree
 
 import sarkit.cphd as skcphd
-import sarkit.verification._cphd_consistency
+import sarkit.verification._cphdcheck
 import tests.utils
-from sarkit.verification._cphd_consistency import CphdConsistency, main
+from sarkit.verification._cphd_consistency import CphdConsistency
+from sarkit.verification._cphdcheck import main
 
 from . import testing
 
@@ -1068,8 +1069,8 @@ def test_refgeom_bad_root(cphd_con_from_file):
     bad_node = cphd_con.cphdroot.find("./{*}ReferenceGeometry/{*}SRPCODTime")
     bad_node.text = "24" + bad_node.text
 
-    cphd_con.check("check_refgeom_root")
-    assert cphd_con.failures()
+    cphd_con.check("check_refgeom")
+    testing.assert_failures(cphd_con, "SRPCODTime matches*")
 
 
 def test_refgeom_bad_monostatic(cphd_con_from_file):
@@ -1079,8 +1080,8 @@ def test_refgeom_bad_monostatic(cphd_con_from_file):
     )
     bad_node.text = str((float(bad_node.text) + 3) % 360)
 
-    cphd_con.check("check_refgeom_monostatic")
-    assert cphd_con.failures()
+    cphd_con.check("check_refgeom")
+    testing.assert_failures(cphd_con, "AzimuthAngle matches*")
 
 
 def test_image_grid_exists(cphd_con):
@@ -1233,6 +1234,6 @@ def test_smart_open_http(example_cphd):
 
 def test_smart_open_contract(example_cphd, monkeypatch):
     mock_open = unittest.mock.MagicMock(side_effect=tests.utils.simple_open_read)
-    monkeypatch.setattr(sarkit.verification._cphd_consistency, "open", mock_open)
+    monkeypatch.setattr(sarkit.verification._cphdcheck, "open", mock_open)
     assert not main([str(example_cphd), "--thorough"])
     mock_open.assert_called_once_with(str(example_cphd), "rb")
