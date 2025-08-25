@@ -859,16 +859,13 @@ class NitfWriter:
         assert desdata.size == len(sicd_xml_bytes)
         file.write(sicd_xml_bytes)
 
-    def write_image(self, array: npt.NDArray, start: None | tuple[int, int] = None):
+    def write_image(self, array: npt.NDArray):
         """Write pixel data to a NITF file
 
         Parameters
         ----------
         array : ndarray
             2D array of complex pixels
-        start : tuple of (int, int), optional
-            The start index (first_row, first_col) of `array` in the SICD image.
-            If not given, `array` must be the full SICD image.
 
         """
         pixel_type = self._metadata.xmltree.findtext("./{*}ImageData/{*}PixelType")
@@ -883,28 +880,10 @@ class NitfWriter:
         cols = xml_helper.load("./{*}ImageData/{*}NumCols")
         sicd_shape = np.asarray((rows, cols))
 
-        if start is None:
-            # require array to be full image
-            if np.any(array.shape != sicd_shape):
-                raise ValueError(
-                    f"Array shape {array.shape} does not match sicd shape {sicd_shape}."
-                    "If writing only a portion of the image, use the 'start' argument"
-                )
-            start = (0, 0)
-        else:
-            raise NotImplementedError("start argument not yet supported")
-        startarr = np.asarray(start)
-
-        if not np.issubdtype(startarr.dtype, np.integer):
-            raise ValueError(f"Start index must be integers {startarr=}")
-
-        if np.any(startarr < 0):
-            raise ValueError(f"Start index must be non-negative {startarr=}")
-
-        stop = startarr + array.shape
-        if np.any(stop > sicd_shape):
+        # require array to be full image
+        if np.any(array.shape != sicd_shape):
             raise ValueError(
-                f"array goes beyond end of sicd. start + array.shape = {stop} sicd shape={sicd_shape}"
+                f"Array shape {array.shape} does not match sicd shape {sicd_shape}."
             )
 
         if pixel_type == "RE32F_IM32F":

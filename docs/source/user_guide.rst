@@ -20,7 +20,6 @@ Some features require additional dependencies which can be installed using packa
 .. code-block:: shell-session
 
    $ python -m pip install sarkit  # Install core dependencies
-   $ python -m pip install sarkit[processing]  # Install processing dependencies
    $ python -m pip install sarkit[verification]  # Install verification dependencies
    $ python -m pip install sarkit[all]  # Install all dependencies
 

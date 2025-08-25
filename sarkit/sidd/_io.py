@@ -838,7 +838,6 @@ class NitfWriter:
         self,
         image_number: int,
         array: npt.NDArray,
-        start: None | tuple[int, int] = None,
     ):
         """Write product pixel data to a NITF file
 
@@ -848,35 +847,13 @@ class NitfWriter:
             index of SIDD Product image to write
         array : ndarray
             2D array of pixels
-        start : tuple of (int, int), optional
-            The start index (first_row, first_col) of `array` in the SIDD image.
-            If not given, `array` must be the full SIDD image.
         """
         shape, pixel_type, imsegs = self._product_image_info(image_number)
 
-        if start is None:
-            # require array to be full image
-            if np.any(array.shape != shape):
-                raise ValueError(
-                    f"Array shape {array.shape} does not match SIDD shape {shape}."
-                    "If writing only a portion of the image, use the 'start' argument"
-                )
-            start = (0, 0)
-        else:
-            raise NotImplementedError("start argument not yet supported")
-
-        startarr = np.asarray(start)
-
-        if not np.issubdtype(startarr.dtype, np.integer):
-            raise ValueError(f"Start index must be integers {startarr=}")
-
-        if np.any(startarr < 0):
-            raise ValueError(f"Start index must be non-negative {startarr=}")
-
-        stop = startarr + array.shape
-        if np.any(stop > shape):
+        # require array to be full image
+        if np.any(array.shape != shape):
             raise ValueError(
-                f"array goes beyond end of image. start + array.shape = {stop} image shape={shape}"
+                f"Array shape {array.shape} does not match SIDD shape {shape}."
             )
 
         first_rows = np.cumsum(
@@ -902,28 +879,6 @@ class NitfWriter:
             raw_array.tofile(self._file)
 
         self._images_written.add(image_number)
-
-    def write_legend(self, legend_number, array):
-        """Write legend pixel data to a NITF file
-
-        Parameters
-        ----------
-        legend_number : int
-            index of legend to write
-        array : ndarray
-            2D array of pixels
-        """
-        raise NotImplementedError()
-
-    def write_ded(self, array):
-        """Write DED data to a NITF file
-
-        Parameters
-        ----------
-        array : ndarray
-            2D array of pixels
-        """
-        raise NotImplementedError()
 
     def __enter__(self):
         return self
