@@ -74,7 +74,6 @@ def test_processing(session):
     session.run_install(
         "pdm",
         "sync",
-        "--prod",
         "-G",
         "dev-test",
         "-G",
