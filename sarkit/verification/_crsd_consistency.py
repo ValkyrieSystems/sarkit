@@ -2,8 +2,11 @@
 Functionality for verifying CRSD files for internal consistency.
 """
 
+import collections.abc
+import copy
 import functools
 import logging
+import numbers
 import os
 import re
 from typing import Any, Optional
@@ -86,6 +89,8 @@ class CrsdConsistency(con.ConsistencyChecker):
         Per-Pulse-Parameters keyed by transmit sequence identifier
     pvps : dict of {str : ndarray}, optional
         Per-Vector-Parameters keyed by channel identifier
+    support_arrays : dict of {str : ndarray}, optional
+        Support arrays keyed by Support Array ID
     schema_override : `path-like object`, optional
         Path to XML Schema. If None, tries to find a version-specific schema
     file : `file object`, optional
@@ -100,6 +105,7 @@ class CrsdConsistency(con.ConsistencyChecker):
         kvp_list=None,
         ppps=None,
         pvps=None,
+        support_arrays=None,
         schema_override=None,
         file=None,
     ):
@@ -115,6 +121,7 @@ class CrsdConsistency(con.ConsistencyChecker):
         self.kvp_list = kvp_list
         self.ppps = ppps
         self.pvps = pvps
+        self.support_arrays = support_arrays
         self.crsd_type = etree.QName(self.crsdroot).localname
         ns = etree.QName(self.crsdroot).namespace
         self.schema = schema_override or skcrsd.VERSION_INFO.get(ns, {}).get("schema")
@@ -236,6 +243,7 @@ class CrsdConsistency(con.ConsistencyChecker):
             kvp_list = None
             pvps = None
             ppps = None
+            support_arrays = None
         except etree.XMLSyntaxError:
             file.seek(0, os.SEEK_SET)
             reader = skcrsd.Reader(file)
@@ -252,12 +260,23 @@ class CrsdConsistency(con.ConsistencyChecker):
             ):
                 sequence_id = sequence_node.findtext("./{*}TxId")
                 ppps[sequence_id] = reader.read_ppps(sequence_id)
+
+            support_arrays = {
+                sa_id.text: reader.read_support_array(sa_id.text)
+                for sa_id in crsd_xmltree.findall(
+                    "{*}SupportArray/{*}GainPhaseArray/{*}Identifier"
+                )
+                + crsd_xmltree.findall(
+                    "{*}SupportArray/{*}DwellTimeArray/{*}Identifier"
+                )
+            }
             kwargs.update(
                 {
                     "file_type_header": file_type_header,
                     "kvp_list": kvp_list,
                     "ppps": ppps,
                     "pvps": pvps,
+                    "support_arrays": support_arrays,
                 }
             )
             if thorough:
@@ -275,6 +294,7 @@ class CrsdConsistency(con.ConsistencyChecker):
         kvp_list: Optional[dict[str, str]] = None,
         ppps: Optional[dict[str, np.ndarray]] = None,
         pvps: Optional[dict[str, np.ndarray]] = None,
+        support_arrays: Optional[dict[str, np.ndarray]] = None,
         schema: Optional[str] = None,
     ) -> "CrsdConsistency":
         """Create a CrsdConsistency object from assorted parts
@@ -291,6 +311,8 @@ class CrsdConsistency(con.ConsistencyChecker):
             Per-Pulse-Parameters keyed by transmit sequence identifier
         pvps : dict of {str : ndarray], optional
             Per-Vector-Parameters keyed by channel identifier
+        support_arrays : dict of {str : ndarray}, optional
+            Support arrays keyed by Support Array ID
         schema : str, optional
             Path to XML Schema. If None, tries to find a version-specific schema
 
@@ -334,17 +356,17 @@ class CrsdConsistency(con.ConsistencyChecker):
             kvp_list=kvp_list,
             ppps=ppps,
             pvps=pvps,
+            support_arrays=support_arrays,
             schema_override=schema,
         )
 
-    def _read_support_array(self, sa_id):
+    def _get_support_array(self, sa_id):
         """
-        Reads a support array
+        Returns the support array keyed by `sa_id` or raises an AssertionError.
         """
-        assert self.file is not None
-        self.file.seek(0)
-        with skcrsd.Reader(self.file) as reader:
-            return reader.read_support_array(sa_id)
+        assert self.support_arrays is not None
+        assert sa_id in self.support_arrays
+        return self.support_arrays[sa_id]
 
     def _get_channel_pvps(self, channel_id):
         """
@@ -1797,7 +1819,7 @@ class CrsdConsistency(con.ConsistencyChecker):
                 with self.precondition(f"GPArray {identifier} has a sample at (0, 0)"):
                     assert round(xind_00) == con.Approx(xind_00)
                     assert round(yind_00) == con.Approx(yind_00)
-                    support_array = self._read_support_array(identifier)
+                    support_array = self._get_support_array(identifier)
                     data = support_array[int(round(xind_00)), int(round(yind_00))]
                     with self.want(
                         f"GPArray {identifier} is has data in sample at (0, 0)"
@@ -1847,7 +1869,7 @@ class CrsdConsistency(con.ConsistencyChecker):
         for gp_array in self.crsdroot.findall("{*}SupportArray/{*}GainPhaseArray"):
             identifier = gp_array.findtext("{*}Identifier")
             with self.precondition():
-                support_array = self._read_support_array(identifier)
+                support_array = self._get_support_array(identifier)
                 with self.need(
                     f"GPArray {identifier} contains no NaN outside of NODATA values"
                 ):
@@ -2171,181 +2193,55 @@ class CrsdConsistency(con.ConsistencyChecker):
             with self.need("XML passes schema"):
                 assert schema.validate(self.crsdroot), schema.error_log
 
-    def check_refgeom_point(self):
-        """ReferenceGeometry/RefPoint matches RefPoint of reference sequence/channel"""
-        if self.crsd_type == "CRSDtx":
-            seq_id = self.crsdroot.findtext("{*}TxSequence/{*}RefTxId")
-            seq_param_node = self.crsdroot.find(
-                f"{{*}}TxSequence/{{*}}Parameters[{{*}}Identifier='{seq_id}']"
-            )
-            ref_point_ecf = self.xmlhelp.load_elem(
-                seq_param_node.find("{*}TxRefPoint/{*}ECF")
-            )
-            ref_point_iac = self.xmlhelp.load_elem(
-                seq_param_node.find("{*}TxRefPoint/{*}IAC")
-            )
-            with self.need("ReferenceGeometry RefPoint matches reference sequence"):
-                assert np.all(
-                    ref_point_ecf
-                    == self.xmlhelp.load("{*}ReferenceGeometry/{*}RefPoint/{*}ECF")
-                )
-                assert np.all(
-                    ref_point_iac
-                    == self.xmlhelp.load("{*}ReferenceGeometry/{*}RefPoint/{*}IAC")
-                )
-        else:
-            ref_chan = self.crsdroot.findtext("{*}Channel/{*}RefChId")
-            chan_param_node = self.crsdroot.find(
-                f"{{*}}Channel/{{*}}Parameters[{{*}}Identifier='{ref_chan}']"
-            )
-            ref_point_ecf = self.xmlhelp.load_elem(
-                chan_param_node.find("{*}RcvRefPoint/{*}ECF")
-            )
-            ref_point_iac = self.xmlhelp.load_elem(
-                chan_param_node.find("{*}RcvRefPoint/{*}IAC")
-            )
-            with self.need("ReferenceGeometry RefPoint matches reference channel"):
-                assert np.all(
-                    ref_point_ecf
-                    == self.xmlhelp.load("{*}ReferenceGeometry/{*}RefPoint/{*}ECF")
-                )
-                assert np.all(
-                    ref_point_iac
-                    == self.xmlhelp.load("{*}ReferenceGeometry/{*}RefPoint/{*}IAC")
-                )
-
-    def check_sarimage_refgeom(self):
-        """The SARImage ReferenceGeometry branch is correct"""
+    def check_refgeom(self):
+        """The ReferenceGeometry parameters are consistent with the other metadata"""
         with self.precondition():
-            assert self.crsd_type == "CRSDsar"
-            xml_node = self.crsdroot.find("{*}ReferenceGeometry/{*}SARImage")
-            ref_chan = self.crsdroot.findtext("{*}Channel/{*}RefChId")
-            chan_param_node = self.crsdroot.find(
-                f"{{*}}Channel/{{*}}Parameters[{{*}}Identifier='{ref_chan}']"
-            )
-            ref_vec_index = int(chan_param_node.findtext("{*}RefVectorIndex"))
-            ref_pt = self.xmlhelp.load("{*}ReferenceGeometry/{*}RefPoint/{*}ECF")
-            seq_id = chan_param_node.findtext("{*}SARImage/{*}TxId")
-            ref_vec_pulse_index = int(
-                chan_param_node.findtext("{*}SARImage/{*}RefVectorPulseIndex")
-            )
-            pvp = self._get_channel_pvps(ref_chan)[ref_vec_index]
-            ppp = self._get_sequence_ppps(seq_id)[ref_vec_pulse_index]
-            _, (ueast, unor, uup) = skcrsd.compute_ref_point_parameters(ref_pt)
-            arp_geom = skcrsd.arp_to_rpt_geometry_xmlnames(
-                ppp["TxPos"],
-                ppp["TxVel"],
-                pvp["RcvPos"],
-                pvp["RcvVel"],
-                ref_pt,
-                ueast,
-                unor,
-                uup,
-            )
-            self.verify_refgeom(xml_node, arp_geom)
-            r_xmt_rpt = np.linalg.norm(ppp["TxPos"] - ref_pt)
-            r_rcv_rpt = np.linalg.norm(pvp["RcvPos"] - ref_pt)
-            tx_time = ppp["TxTime"]["Int"] + ppp["TxTime"]["Frac"]
-            rcv_time = pvp["RcvStart"]["Int"] + pvp["RcvStart"]["Frac"]
-            with self.need("ReferenceTime is correct"):
-                assert float(xml_node.findtext("{*}ReferenceTime")) == con.Approx(
-                    tx_time
-                    + r_xmt_rpt / (r_xmt_rpt + r_rcv_rpt) * (rcv_time - tx_time),
-                    atol=1e-6,
+            newroot = skcrsd.ElementWrapper(copy.deepcopy(self.crsdroot))
+            ref_tx_id = self.crsdroot.findtext("{*}TxSequence/{*}RefTxId")
+            ppps = None if ref_tx_id is None else self._get_sequence_ppps(ref_tx_id)
+            ref_ch_id = self.crsdroot.findtext("{*}Channel/{*}RefChId")
+            pvps = None if ref_ch_id is None else self._get_channel_pvps(ref_ch_id)
+            dta = None
+            if ref_ch_id is not None:
+                dta_id = self.crsdroot.findtext(
+                    f"{{*}}Channel/{{*}}Parameters[{{*}}Identifier='{ref_ch_id}']"
+                    "/{*}SARImage/{*}DwellTimes/{*}Array/{*}DTAId"
                 )
-            ref_pt_iac = self.xmlhelp.load("{*}ReferenceGeometry/{*}RefPoint/{*}IAC")
-            if (
-                chan_param_node.find("{*}SARImage/{*}DwellTimes/{*}Polynomials")
-                is not None
-            ):
-                t_cod_rpt, t_dwell_rpt = skcrsd.compute_dwelltimes_using_poly(
-                    ref_chan,
-                    ref_pt_iac[0],
-                    ref_pt_iac[1],
-                    self.crsdroot.getroottree(),
-                )
-                with self.need("CODTime matches polynomial"):
-                    assert float(xml_node.findtext("{*}CODTime")) == con.Approx(
-                        t_cod_rpt, atol=1e-4
-                    )
-                with self.need("DwellTime matches polynomial"):
-                    assert float(xml_node.findtext("{*}DwellTime")) == con.Approx(
-                        t_dwell_rpt, atol=1e-4
-                    )
-            else:
-                dta_id = chan_param_node.findtext(
-                    "{*}SARImage/{*}DwellTimes/{*}Array/{*}DTAId"
-                )
-                with self.precondition():
-                    dta = self._read_support_array(dta_id)
-                    t_cod_rpt, t_dwell_rpt = skcrsd.compute_dwelltimes_using_dta(
-                        ref_chan,
-                        ref_pt_iac[0],
-                        ref_pt_iac[1],
-                        self.crsdroot.getroottree(),
-                        dta,
-                    )
-                    with self.need(f"CODTime matches array {dta_id}"):
-                        assert float(xml_node.findtext("{*}CODTime")) == con.Approx(
-                            t_cod_rpt, atol=1e-4
-                        )
-                    with self.need(f"DwellTime matches array {dta_id}"):
-                        assert float(xml_node.findtext("{*}DwellTime")) == con.Approx(
-                            t_dwell_rpt, atol=1e-4
-                        )
+                dta = None if dta_id is None else self._get_support_array(dta_id)
 
-    def check_tx_refgeom(self):
-        """The TxParameters ReferenceGeometry branch is correct"""
-        with self.precondition():
-            assert self.crsd_type != "CRSDrcv"
-            xml_node = self.crsdroot.find("{*}ReferenceGeometry/{*}TxParameters")
-            seq_id = self.crsdroot.findtext("{*}TxSequence/{*}RefTxId")
-            if self.crsd_type == "CRSDsar":
-                ref_chan = self.crsdroot.findtext("{*}Channel/{*}RefChId")
-                chan_param_node = self.crsdroot.find(
-                    f"{{*}}Channel/{{*}}Parameters[{{*}}Identifier='{ref_chan}']"
-                )
-                ref_pulse_index = int(
-                    chan_param_node.findtext("{*}SARImage/{*}RefVectorPulseIndex")
-                )
-            else:
-                seq_param_node = self.crsdroot.find(
-                    f"{{*}}TxSequence/{{*}}Parameters[{{*}}Identifier='{seq_id}']"
-                )
-                ref_pulse_index = int(seq_param_node.findtext("{*}RefPulseIndex"))
-            ppp = self._get_sequence_ppps(seq_id)[ref_pulse_index]
-            with self.need("Time is correct"):
-                assert ppp["TxTime"]["Int"] + ppp["TxTime"]["Frac"] == con.Approx(
-                    float(xml_node.findtext("{*}Time"))
-                )
-            ref_pt = self.xmlhelp.load("{*}ReferenceGeometry/{*}RefPoint/{*}ECF")
-            _, (ueast, unor, uup) = skcrsd.compute_ref_point_parameters(ref_pt)
-            tx_geom = skcrsd.compute_apc_to_pt_geometry_parameters_xmlnames(
-                ppp["TxPos"], ppp["TxVel"], ref_pt, ueast, unor, uup
+            newroot["ReferenceGeometry"] = skcrsd.compute_reference_geometry(
+                newroot.elem.getroottree(),
+                pvps=pvps,
+                ppps=ppps,
+                dta=dta,
             )
-            self.verify_refgeom(xml_node, tx_geom)
 
-    def check_rcv_refgeom(self):
-        """The RcvParameters ReferenceGeometry branch is correct"""
-        with self.precondition():
-            assert self.crsd_type != "CRSDtx"
-            xml_node = self.crsdroot.find("{*}ReferenceGeometry/{*}RcvParameters")
-            ref_chan = self.crsdroot.findtext("{*}Channel/{*}RefChId")
-            chan_param_node = self.crsdroot.find(
-                f"{{*}}Channel/{{*}}Parameters[{{*}}Identifier='{ref_chan}']"
+            def _compare_children(actual_parent, expected_parent, parent_key):
+                with self.need(f"{parent_key} contains only expected elements"):
+                    actual_names = list(actual_parent)
+                    expected_names = list(expected_parent)
+                    assert actual_names == expected_names
+                    for key in actual_names:
+                        actual_val = actual_parent[key]
+                        expected_val = expected_parent[key]
+                        if isinstance(expected_val, collections.abc.Mapping):
+                            _compare_children(actual_val, expected_val, key)
+                            continue
+
+                        if issubclass(
+                            np.asarray(expected_val).dtype.type, numbers.Number
+                        ):
+                            actual_val = con.Approx(actual_val, atol=1e-6, rtol=0)
+                        with self.need(
+                            f"{parent_key}/{key} matches defined calculation"
+                        ):
+                            assert np.all(expected_val == actual_val)
+
+            _compare_children(
+                skcrsd.ElementWrapper(self.crsdroot)["ReferenceGeometry"],
+                newroot["ReferenceGeometry"],
+                "ReferenceGeometry",
             )
-            ref_vec_index = int(chan_param_node.findtext("{*}RefVectorIndex"))
-            pvp = self._get_channel_pvps(ref_chan)[ref_vec_index]
-            with self.need("Time is correct"):
-                assert pvp["RcvStart"]["Int"] + pvp["RcvStart"]["Frac"] == con.Approx(
-                    float(xml_node.findtext("{*}Time"))
-                )
-            ref_pt = self.xmlhelp.load("{*}ReferenceGeometry/{*}RefPoint/{*}ECF")
-            _, (ueast, unor, uup) = skcrsd.compute_ref_point_parameters(ref_pt)
-            rcv_geom = skcrsd.compute_apc_to_pt_geometry_parameters_xmlnames(
-                pvp["RcvPos"], pvp["RcvVel"], ref_pt, ueast, unor, uup
-            )
-            self.verify_refgeom(xml_node, rcv_geom)
 
     def assert_iac_matches_ecf(self, iac_coord, ecf_coord, tol=1.0):
         """Asserts that the IAC and ECF coordinates are a matched set"""
@@ -2376,18 +2272,3 @@ class CrsdConsistency(con.ConsistencyChecker):
             llh_coord = iarp_llh.copy()
             llh_coord[:2] += uiax_ll * iac_coord[0] + uiay_ll * iac_coord[1]
             return sarkit.wgs84.geodetic_to_cartesian(llh_coord)
-
-    def verify_refgeom(self, xml_node, geom):
-        """Verifies that the XML node matches the calculated values in geom"""
-        for key in geom:
-            if key == "SideOfTrack":
-                with self.need(f"{key} is correct"):
-                    assert geom[key] == xml_node.findtext("{*}SideOfTrack")
-            else:
-                xml_val_node = xml_node.find("{*}" + key)
-                if xml_val_node is None:
-                    continue
-                with self.need(f"{key} is correct"):
-                    assert self.xmlhelp.load_elem(xml_val_node) == con.Approx(
-                        geom[key], atol=1e-6, rtol=0
-                    )

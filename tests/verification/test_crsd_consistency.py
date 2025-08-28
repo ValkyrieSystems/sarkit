@@ -1,4 +1,3 @@
-import copy
 import itertools
 import os
 import pathlib
@@ -72,131 +71,17 @@ def example_crsdsar_file(example_crsdsar):
         yield f
 
 
-def _replace_error(crsd_etree, sensor_type):
-    sar_error = crsd_etree.find("{*}ErrorParameters/{*}SARImage")
-    elem_ns = etree.QName(sar_error).namespace
-    retval = copy.deepcopy(sar_error.find("{*}Monostatic"))
-    retval.tag = f"{{{elem_ns}}}{sensor_type}Sensor"
-    sar_error.addnext(retval)
-    helper = skcrsd.XmlHelper(crsd_etree)
-    ndx = {"Tx": 0, "Rcv": 1}[sensor_type]
-    helper.set_elem(
-        retval.find(".//{*}TimeFreqCov"),
-        skcrsd.MtxType((3, 3)).parse_elem(retval.find(".//{*}TimeFreqCov"))[
-            [ndx, 2], :
-        ][:, [ndx, 2]],
-    )
-    time_decorr = copy.deepcopy(retval.find(f".//{{*}}{{{sensor_type}}}TimeDecorr"))
-    if time_decorr is not None:
-        time_decorr.tag = f"{{{elem_ns}}}TimeDecorr"
-        _remove(retval, "{*}TxTimeDecorr")
-        _remove(retval, "{*}RcvTimeDecorr")
-        retval.find(".//{*}ClockFreqDecorr").addprevious(time_decorr)
-    sar_error.getparent().remove(sar_error)
-
-
 @pytest.fixture(scope="session")
-def example_crsdtx_file(tmp_path_factory, example_crsdsar_file):
-    example_crsdsar_file.seek(0)
-    with skcrsd.Reader(example_crsdsar_file) as cr:
-        crsd_etree = cr.metadata.xmltree
-        sequence_id = crsd_etree.findtext("{*}TxSequence/{*}Parameters/{*}Identifier")
-        ppps = cr.read_ppps(sequence_id)
-    crsd_etree.find(".//{*}RefPulseIndex").text = crsd_etree.find(
-        ".//{*}RefVectorPulseIndex"
-    ).text
-    ns = etree.QName(crsd_etree.getroot()).namespace
-    crsd_etree.getroot().tag = f"{{{ns}}}CRSDtx"
-    _remove(crsd_etree, "{*}SARInfo")
-    _remove(crsd_etree, "{*}ReceiveInfo")
-    _remove(crsd_etree, "{*}Global/{*}Receive")
-    _remove(crsd_etree, "{*}SceneCoordinates/{*}ExtendedArea")
-    _remove(crsd_etree, "{*}SceneCoordinates/{*}ImageGrid")
-    _remove(crsd_etree, "{*}Data/{*}Receive")
-    _remove(crsd_etree, "{*}Channel")
-    _remove(crsd_etree, "{*}ReferenceGeometry/{*}SARImage")
-    _remove(crsd_etree, "{*}ReferenceGeometry/{*}RcvParameters")
-    _remove(crsd_etree, "{*}DwellPolynomials")
-    _remove(crsd_etree, "{*}PVP")
-    _replace_error(crsd_etree, "Tx")
-    tmp_crsd = (
-        tmp_path_factory.mktemp("data") / good_crsd_xml_path.with_suffix(".crsd").name
-    )
-
-    new_meta = skcrsd.Metadata(
-        xmltree=crsd_etree,
-    )
-    with open(tmp_crsd, "wb") as f, skcrsd.Writer(f, new_meta) as cw:
-        cw.write_ppp(sequence_id, ppps)
-    assert not main([str(tmp_crsd), "-vvv"])
-    with tmp_crsd.open("rb") as f:
+def example_crsdtx_file(example_crsdtx):
+    assert not main([str(example_crsdtx), "-vvv"])
+    with example_crsdtx.open("rb") as f:
         yield f
 
 
 @pytest.fixture(scope="session")
-def example_crsdrcv_file(tmp_path_factory, example_crsdsar_file):
-    example_crsdsar_file.seek(0)
-    with skcrsd.Reader(example_crsdsar_file) as cr:
-        crsd_etree = cr.metadata.xmltree
-        channel_id = crsd_etree.findtext("{*}Channel/{*}Parameters/{*}Identifier")
-        pvps = cr.read_pvps(channel_id)
-        signal = cr.read_signal(channel_id)
-    ns = etree.QName(crsd_etree.getroot()).namespace
-    crsd_etree.getroot().tag = f"{{{ns}}}CRSDrcv"
-    _remove(crsd_etree, "{*}SARInfo")
-    _remove(crsd_etree, "{*}TransmitInfo")
-    _remove(crsd_etree, "{*}Global/{*}Transmit")
-    _remove(crsd_etree, "{*}SceneCoordinates/{*}ExtendedArea")
-    _remove(crsd_etree, "{*}SceneCoordinates/{*}ImageGrid")
-    _remove(crsd_etree, "{*}Data/{*}Transmit")
-    _remove(crsd_etree, "{*}TxSequence")
-    _remove(crsd_etree, "{*}Channel/{*}Parameters/{*}SARImage")
-    _remove(crsd_etree, "{*}ReferenceGeometry/{*}SARImage")
-    _remove(crsd_etree, "{*}ReferenceGeometry/{*}TxParameters")
-    _remove(crsd_etree, "{*}DwellPolynomials")
-    fx_ids = [
-        x.text
-        for x in crsd_etree.findall("{*}SupportArray/{*}FxResponseArray/{*}Identifier")
-    ]
-    xm_ids = [
-        x.text for x in crsd_etree.findall("{*}SupportArray/{*}XMArray/{*}Identifier")
-    ]
-    _remove(crsd_etree, "{*}SupportArray/{*}FxResponseArray")
-    _remove(crsd_etree, "{*}SupportArray/{*}XMArray")
-    for x in fx_ids + xm_ids:
-        _remove(
-            crsd_etree,
-            f"{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}SAId='{x}']",
-        )
-    nsa = crsd_etree.find("{*}Data/{*}Support/{*}NumSupportArrays")
-    nsa.text = str(int(nsa.text) - len(fx_ids + xm_ids))
-    _repack_support_arrays(crsd_etree)
-    _remove(crsd_etree, "{*}PPP")
-    tx_pulse_index_offset = int(crsd_etree.findtext("{*}PVP/{*}TxPulseIndex/{*}Offset"))
-    _remove(crsd_etree, "{*}PVP/{*}TxPulseIndex")
-    for pvp_offset in crsd_etree.findall("{*}PVP/*/{*}Offset"):
-        if int(pvp_offset.text) > tx_pulse_index_offset:
-            pvp_offset.text = str(int(pvp_offset.text) - 8)
-    crsd_etree.find("{*}Data/{*}Receive/{*}NumBytesPVP").text = str(
-        int(crsd_etree.findtext("{*}Data/{*}Receive/{*}NumBytesPVP")) - 8
-    )
-    _replace_error(crsd_etree, "Rcv")
-    new_pvp_dtype = skcrsd.get_pvp_dtype(crsd_etree)
-    new_pvps = np.zeros(pvps.shape, new_pvp_dtype)
-    for field in new_pvp_dtype.fields:
-        new_pvps[field] = pvps[field]
-    tmp_crsd = (
-        tmp_path_factory.mktemp("data") / good_crsd_xml_path.with_suffix(".crsd").name
-    )
-
-    new_meta = skcrsd.Metadata(
-        xmltree=crsd_etree,
-    )
-    with open(tmp_crsd, "wb") as f, skcrsd.Writer(f, new_meta) as cw:
-        cw.write_pvp(channel_id, new_pvps)
-        cw.write_signal(channel_id, signal)
-    assert not main([str(tmp_crsd), "-vvv"])
-    with tmp_crsd.open("rb") as f:
+def example_crsdrcv_file(example_crsdrcv):
+    assert not main([str(example_crsdrcv), "-vvv"])
+    with example_crsdrcv.open("rb") as f:
         yield f
 
 
@@ -828,7 +713,7 @@ def ant_patched_crsd_con(crsd_con, monkeypatch):
         gp_dtype = np.dtype([("Gain", np.float32), ("Phase", np.float32)])
         data = np.array(data, dtype=gp_dtype)
 
-        def dummy(self, identifier):
+        def dummy(identifier):
             data_node = crsd_con.crsdroot.find(
                 f"{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}SAId='{identifier}']"
             )
@@ -849,7 +734,7 @@ def ant_patched_crsd_con(crsd_con, monkeypatch):
                 ),
             )
 
-        monkeypatch.setattr(skcrsd.Reader, "read_support_array", dummy)
+        monkeypatch.setattr(crsd_con, "_get_support_array", dummy)
         return crsd_con, data
 
     return func
@@ -1287,11 +1172,11 @@ def dwell_array_patched_crsd_con(example_crsdsar_file, monkeypatch):
     # monkeypatch in a dwell
     cod = crsd_con.xmlhelp.load("{*}ReferenceGeometry/{*}SARImage/{*}CODTime")
     dt = crsd_con.xmlhelp.load("{*}ReferenceGeometry/{*}SARImage/{*}DwellTime")
-    old_read_support_array = crsd_con._read_support_array
+    old_get_support_array = crsd_con._get_support_array
 
     def dummy(identifier):
         if identifier != "dwell array":
-            return old_read_support_array(identifier)
+            return old_get_support_array(identifier)
         data_node = crsd_con.crsdroot.find(
             f"{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}SAId='{identifier}']"
         )
@@ -1311,7 +1196,7 @@ def dwell_array_patched_crsd_con(example_crsdsar_file, monkeypatch):
         )
         return retval
 
-    monkeypatch.setattr(crsd_con, "_read_support_array", dummy)
+    monkeypatch.setattr(crsd_con, "_get_support_array", dummy)
 
     # make sure it looks fairly reasonable, the support block size is now wrong, but we can just
     # ignore that check
@@ -1436,8 +1321,8 @@ def test_check_refgeom_point_ecf(crsd_con):
         crsd_con.crsdroot.find(
             "{*}Channel/{*}Parameters/{*}RcvRefPoint/{*}ECF/{*}X"
         ).text = "123.0"
-    crsd_con.check("check_refgeom_point")
-    assert_failures(crsd_con, "RefPoint matches")
+    crsd_con.check("check_refgeom")
+    assert_failures(crsd_con, "RefPoint/ECF matches")
 
 
 @pytest.mark.parametrize("name", ["AmpH", "AmpV", "PhaseH", "PhaseV"])
@@ -1482,7 +1367,7 @@ def test_check_sartxpolarization(example_crsdsar_file, name):
 def test_check_sarimage_refgeom(example_crsdsar_file):
     crsd_con = CrsdConsistency.from_file(example_crsdsar_file)
     crsd_con.crsdroot.find("{*}Channel/{*}Parameters/{*}RefVectorIndex").text = "3"
-    crsd_con.check("check_sarimage_refgeom")
+    crsd_con.check("check_refgeom")
     # Almost all the fields should be wrong if we use the wrong vector
     assert_failures(crsd_con, "ReferenceTime")
     assert_failures(crsd_con, "ARPPos")
@@ -1495,7 +1380,7 @@ def test_check_sarimage_refgeom(example_crsdsar_file):
 def test_check_sarimage_refgeom_dwell_poly(example_crsdsar_file, name):
     crsd_con = CrsdConsistency.from_file(example_crsdsar_file)
     crsd_con.crsdroot.find("{*}ReferenceGeometry/{*}SARImage/{*}" + name).text = "0"
-    crsd_con.check("check_sarimage_refgeom")
+    crsd_con.check("check_refgeom")
     assert_failures(crsd_con, name)
 
 
@@ -1504,7 +1389,7 @@ def test_check_sarimage_refgeom_dwell_poly(example_crsdsar_file, name):
 def test_check_sarimage_refgeom_dwell_array(dwell_array_patched_crsd_con, name):
     crsd_con = dwell_array_patched_crsd_con
     crsd_con.crsdroot.find("{*}ReferenceGeometry/{*}SARImage/{*}" + name).text = "0"
-    crsd_con.check("check_sarimage_refgeom")
+    crsd_con.check("check_refgeom")
     assert_failures(crsd_con, name)
 
 
@@ -1513,7 +1398,7 @@ def test_check_tx_refgeom_sarpass(example_crsdsar_file):
     crsd_con = CrsdConsistency.from_file(example_crsdsar_file)
     # the reference geometry does not depend of RefPulseIndex for CRSDsar
     crsd_con.crsdroot.find("{*}TxSequence/{*}Parameters/{*}RefPulseIndex").text = "3"
-    crsd_con.check("check_tx_refgeom")
+    crsd_con.check("check_refgeom")
     assert crsd_con.passes() and not crsd_con.failures()
 
 
@@ -1528,7 +1413,7 @@ def test_check_tx_refgeom(request, example_file_fixture, key):
     example_file = request.getfixturevalue(example_file_fixture)
     crsd_con = CrsdConsistency.from_file(example_file)
     crsd_con.crsdroot.find(".//{*}" + key).text = "3"
-    crsd_con.check("check_tx_refgeom")
+    crsd_con.check("check_refgeom")
     assert_failures(crsd_con, "Time")
     assert_failures(crsd_con, "APCPos")
     assert_failures(crsd_con, "Incidence")
@@ -1538,7 +1423,7 @@ def test_check_rcv_refgeom(crsd_con):
     if crsd_con.crsd_type == "CRSDtx":
         pytest.skip("test not applicable with CRSDtx")
     crsd_con.crsdroot.find(".//{*}RefVectorIndex").text = "3"
-    crsd_con.check("check_rcv_refgeom")
+    crsd_con.check("check_refgeom")
     assert_failures(crsd_con, "Time")
     assert_failures(crsd_con, "APCPos")
     assert_failures(crsd_con, "Incidence")

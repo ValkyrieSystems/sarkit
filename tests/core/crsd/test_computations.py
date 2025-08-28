@@ -121,3 +121,41 @@ def test_interpolate_support_array(use_mask):
     v_scipy = scipy_int((dcx_i, dcy_i))
     assert np.allclose(v, v_scipy, equal_nan=True)
     assert np.array_equal(dv, ~np.isnan(v_scipy))
+
+
+def test_compute_reference_geometry_sar(example_crsdsar):
+    with open(example_crsdsar, "rb") as f, skcrsd.Reader(f) as r:
+        crsdxml = r.metadata.xmltree
+        pvps = r.read_pvps(crsdxml.findtext(".//{*}RefChId"))
+        ppps = r.read_ppps(crsdxml.findtext(".//{*}RefTxId"))
+    assert crsdxml.find(".//{*}DwellTimes/{*}Array") is None
+    crsdxml.find("{*}ReferenceGeometry").clear()
+    refgeom = skcrsd.compute_reference_geometry(crsdxml, pvps=pvps, ppps=ppps)
+    crsdxml.getroot().replace(crsdxml.find("{*}ReferenceGeometry"), refgeom)
+    basis_version = lxml.etree.QName(crsdxml.getroot()).namespace
+    schema = lxml.etree.XMLSchema(file=skcrsd.VERSION_INFO[basis_version]["schema"])
+    schema.assertValid(crsdxml)
+
+
+def test_compute_reference_geometry_rcv(example_crsdrcv):
+    with open(example_crsdrcv, "rb") as f, skcrsd.Reader(f) as r:
+        crsdxml = r.metadata.xmltree
+        pvps = r.read_pvps(crsdxml.findtext(".//{*}RefChId"))
+    crsdxml.find("{*}ReferenceGeometry").clear()
+    refgeom = skcrsd.compute_reference_geometry(crsdxml, pvps=pvps)
+    crsdxml.getroot().replace(crsdxml.find("{*}ReferenceGeometry"), refgeom)
+    basis_version = lxml.etree.QName(crsdxml.getroot()).namespace
+    schema = lxml.etree.XMLSchema(file=skcrsd.VERSION_INFO[basis_version]["schema"])
+    schema.assertValid(crsdxml)
+
+
+def test_compute_reference_geometry_tx(example_crsdtx):
+    with open(example_crsdtx, "rb") as f, skcrsd.Reader(f) as r:
+        crsdxml = r.metadata.xmltree
+        ppps = r.read_ppps(crsdxml.findtext(".//{*}RefTxId"))
+    crsdxml.find("{*}ReferenceGeometry").clear()
+    refgeom = skcrsd.compute_reference_geometry(crsdxml, ppps=ppps)
+    crsdxml.getroot().replace(crsdxml.find("{*}ReferenceGeometry"), refgeom)
+    basis_version = lxml.etree.QName(crsdxml.getroot()).namespace
+    schema = lxml.etree.XMLSchema(file=skcrsd.VERSION_INFO[basis_version]["schema"])
+    schema.assertValid(crsdxml)

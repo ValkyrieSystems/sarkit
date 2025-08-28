@@ -2,6 +2,7 @@
 Select calculations from the CRSD D&I
 """
 
+import copy
 import functools
 
 import lxml.etree
@@ -120,7 +121,7 @@ def compute_apc_to_pt_geometry_parameters(
         "R_APC_PT": r_apc_pt,
         "Rdot_APC_PT": rdot_apc_pt,
         "Rg_PT": rg_pt,
-        "SideOfTrack": side_of_track,
+        "SideOfTrack": side_of_track.tolist(),
         "uAPC": uapc,
         "uAPCDot": uapcdot,
         "DCA": dca,
@@ -131,32 +132,8 @@ def compute_apc_to_pt_geometry_parameters(
     }
 
 
-def compute_apc_to_pt_geometry_parameters_xmlnames(
-    apc: npt.ArrayLike,
-    vapc: npt.ArrayLike,
-    pt: npt.ArrayLike,
-    ueast: npt.ArrayLike,
-    unor: npt.ArrayLike,
-    uup: npt.ArrayLike,
-):
-    """Computes APC geometry parameters as in CRSD D&I 8.3 but with the XML names"""
-    geom = compute_apc_to_pt_geometry_parameters(apc, vapc, pt, ueast, unor, uup)
-    return {
-        "APCPos": apc,
-        "APCVel": vapc,
-        "SideOfTrack": geom["SideOfTrack"],
-        "SlantRange": geom["R_APC_PT"],
-        "GroundRange": geom["Rg_PT"],
-        "DopplerConeAngle": geom["DCA"],
-        "SquintAngle": geom["SQNT"],
-        "AzimuthAngle": geom["AZIM"],
-        "GrazeAngle": geom["GRAZ"],
-        "IncidenceAngle": geom["INCD"],
-    }
-
-
-def arp_to_rpt_geometry_xmlnames(xmt, vxmt, rcv, vrcv, pt, ueast, unor, uup):
-    """Computes ARP geometry as in CRSD D&I 8.4.2 with the XML names"""
+def compute_arp_to_rpt_geometry(xmt, vxmt, rcv, vrcv, pt, ueast, unor, uup):
+    """Computes ARP geometry as in CRSD D&I 8.4.2"""
     xmt_geom = compute_apc_to_pt_geometry_parameters(xmt, vxmt, pt, ueast, unor, uup)
     rcv_geom = compute_apc_to_pt_geometry_parameters(rcv, vrcv, pt, ueast, unor, uup)
     bp = (xmt_geom["uAPC"] + rcv_geom["uAPC"]) / 2
@@ -181,9 +158,7 @@ def arp_to_rpt_geometry_xmlnames(xmt, vxmt, rcv, vrcv, pt, ueast, unor, uup):
 
     # The next section of calulations (5) - (10) and (13) - (15) are the same as the ones in compute_apc_to_pt_geometry_parameters
     # we call that function instead
-    arp_geom = compute_apc_to_pt_geometry_parameters_xmlnames(
-        arp, varp, pt, ueast, unor, uup
-    )
+    arp_geom = compute_apc_to_pt_geometry_parameters(arp, varp, pt, ueast, unor, uup)
 
     # (11)
     ugpz = uup
@@ -214,14 +189,22 @@ def arp_to_rpt_geometry_xmlnames(xmt, vxmt, rcv, vrcv, pt, ueast, unor, uup):
     lo_n = -np.inner(unor, uspn)
     arp_lo_ang = np.rad2deg(np.arctan2(lo_e, lo_n)) % 360.0
 
-    return arp_geom | {
-        "ARPPos": arp,
-        "ARPVel": varp,
-        "BistaticAngle": bistat_ang * 180 / np.pi,
-        "BistaticAngleRate": bistat_ang_rate * 180 / np.pi,
-        "TwistAngle": arp_twst,
-        "SlopeAngle": arp_slope,
-        "LayoverAngle": arp_lo_ang,
+    return {
+        "ARP_COA": arp,
+        "VARP_COA": varp,
+        "Bistat_Ang": bistat_ang,
+        "Bistat_Ang_Rate": bistat_ang_rate,
+        "ARP_SideOfTrack": arp_geom["SideOfTrack"],
+        "R_ARP_RPT": arp_geom["R_APC_PT"],
+        "ARP_Rg_RPT": arp_geom["Rg_PT"],
+        "ARP_DCA": arp_geom["DCA"],
+        "ARP_SQNT": arp_geom["SQNT"],
+        "ARP_AZIM": arp_geom["AZIM"],
+        "ARP_GRAZ": arp_geom["GRAZ"],
+        "ARP_INCD": arp_geom["INCD"],
+        "ARP_TWST": arp_twst,
+        "ARP_SLOPE": arp_slope,
+        "ARP_LO_ANG": arp_lo_ang,
     }
 
 
@@ -489,3 +472,164 @@ def compute_dwelltimes_using_dta(
         dv_sa=~dt_ma.mask if np.ma.is_masked(dt_ma) else None,
     )[0]
     return t_cod, t_dwell
+
+
+def compute_reference_geometry(
+    crsd_xmltree: lxml.etree.ElementTree,
+    *,
+    pvps: np.ndarray | None = None,
+    ppps: np.ndarray | None = None,
+    dta: np.ndarray | None = None,
+) -> lxml.etree.Element:
+    """Return a CRSD/ReferenceGeometry XML element containing parameters computed from other metadata.
+
+    Parameters
+    ----------
+    crsd_xmltree : lxml.etree.ElementTree
+        CRSD XML
+    pvps : ndarray or None, optional
+        CRSD PVP array for the reference channel
+    ppps : ndarray or None, optional
+        CRSD PPP array for the reference sequence
+    dta : ndarray or None, optional
+        Dwell time array to use
+
+    Returns
+    -------
+    lxml.etree.Element
+        New CRSD/ReferenceGeometry XML element
+    """
+    crsdroot = skcrsd_xml.ElementWrapper(
+        copy.deepcopy(crsd_xmltree).getroot(),
+    )
+    crsdroot.pop("ReferenceGeometry", None)  # remove ReferenceGeometry if present
+    refgeom = crsdroot["ReferenceGeometry"]
+
+    # 8.1
+    crsd_type = lxml.etree.QName(crsd_xmltree.getroot()).localname
+    if crsd_type == "CRSDtx":
+        ref_tx_id = crsdroot["TxSequence"]["RefTxId"]
+        ref_tx_seq = {x["Identifier"]: x for x in crsdroot["TxSequence"]["Parameters"]}[
+            ref_tx_id
+        ]
+        rpt = ref_tx_seq["TxRefPoint"]["ECF"]
+        rpt_iac = ref_tx_seq["TxRefPoint"]["IAC"]
+    elif crsd_type in ("CRSDsar", "CRSDrcv"):
+        ref_ch_id = crsdroot["Channel"]["RefChId"]
+        ref_rcv_chan = {x["Identifier"]: x for x in crsdroot["Channel"]["Parameters"]}[
+            ref_ch_id
+        ]
+        rpt = ref_rcv_chan["RcvRefPoint"]["ECF"]
+        rpt_iac = ref_rcv_chan["RcvRefPoint"]["IAC"]
+    else:
+        raise ValueError(f"Unrecognized {crsd_type=}")
+
+    if crsd_type in ("CRSDtx", "CRSDsar"):
+        if crsd_type == "CRSDtx":
+            p_ref = ref_tx_seq["RefPulseIndex"]
+        if crsd_type == "CRSDsar":
+            p_ref = ref_rcv_chan["SARImage"]["RefVectorPulseIndex"]
+        if ppps is None:
+            raise ValueError("ppps are required for CRSDtx, CRSDsar")
+        txc_ref = ppps["TxTime"][p_ref]["Int"] + ppps["TxTime"][p_ref]["Frac"]
+        xmt_ref = ppps["TxPos"][p_ref]
+        vxmt_ref = ppps["TxVel"][p_ref]
+
+    if crsd_type in ("CRSDsar", "CRSDrcv"):
+        v_ref = ref_rcv_chan["RefVectorIndex"]
+        if pvps is None:
+            raise ValueError("pvps are required for CRSDsar, CRSDrcv")
+        trs_ref = pvps["RcvStart"][v_ref]["Int"] + pvps["RcvStart"][v_ref]["Frac"]
+        rcv_ref = pvps["RcvPos"][v_ref]
+        vrcv_ref = pvps["RcvVel"][v_ref]
+
+    # 8.2
+    _, (u_east, u_nor, u_up) = compute_ref_point_parameters(rpt)
+    refgeom["RefPoint"]["ECF"] = rpt
+    refgeom["RefPoint"]["IAC"] = rpt_iac
+
+    # 8.3.2
+    if crsd_type in ("CRSDsar", "CRSDtx"):
+        tx_geom_params = compute_apc_to_pt_geometry_parameters(
+            xmt_ref, vxmt_ref, rpt, u_east, u_nor, u_up
+        )
+        refgeom["TxParameters"] = {
+            "Time": txc_ref,
+            "APCPos": xmt_ref,
+            "APCVel": vxmt_ref,
+            "SideOfTrack": tx_geom_params["SideOfTrack"],
+            "SlantRange": tx_geom_params["R_APC_PT"],
+            "GroundRange": tx_geom_params["Rg_PT"],
+            "DopplerConeAngle": tx_geom_params["DCA"],
+            "SquintAngle": tx_geom_params["SQNT"],
+            "AzimuthAngle": tx_geom_params["AZIM"],
+            "GrazeAngle": tx_geom_params["GRAZ"],
+            "IncidenceAngle": tx_geom_params["INCD"],
+        }
+
+    # 8.3.3
+    if crsd_type in ("CRSDsar", "CRSDrcv"):
+        rcv_geom_params = compute_apc_to_pt_geometry_parameters(
+            rcv_ref, vrcv_ref, rpt, u_east, u_nor, u_up
+        )
+        refgeom["RcvParameters"] = {
+            "Time": trs_ref,
+            "APCPos": rcv_ref,
+            "APCVel": vrcv_ref,
+            "SideOfTrack": rcv_geom_params["SideOfTrack"],
+            "SlantRange": rcv_geom_params["R_APC_PT"],
+            "GroundRange": rcv_geom_params["Rg_PT"],
+            "DopplerConeAngle": rcv_geom_params["DCA"],
+            "AzimuthAngle": rcv_geom_params["AZIM"],
+            "GrazeAngle": rcv_geom_params["GRAZ"],
+            "IncidenceAngle": rcv_geom_params["INCD"],
+            "SquintAngle": rcv_geom_params["SQNT"],
+        }
+
+    # 8.4
+    if crsd_type == "CRSDsar":
+        # 8.4.1
+        # (1)
+        t_ref = txc_ref + (
+            tx_geom_params["R_APC_PT"]
+            / (tx_geom_params["R_APC_PT"] + rcv_geom_params["R_APC_PT"])
+        ) * (trs_ref - txc_ref)
+
+        # (2)
+        if dta is not None:
+            t_cod_rpt, t_dwell_rpt = compute_dwelltimes_using_dta(
+                ref_ch_id, rpt_iac[0], rpt_iac[1], crsd_xmltree, dta
+            )
+        else:
+            t_cod_rpt, t_dwell_rpt = compute_dwelltimes_using_poly(
+                ref_ch_id, rpt_iac[0], rpt_iac[1], crsd_xmltree
+            )
+
+        # 8.4.2
+        arp_to_rpt_geom = compute_arp_to_rpt_geometry(
+            xmt_ref, vxmt_ref, rcv_ref, vrcv_ref, rpt, u_east, u_nor, u_up
+        )
+
+        # 8.4.3
+        refgeom["SARImage"] = {
+            "CODTime": t_cod_rpt.item(),
+            "DwellTime": t_dwell_rpt.item(),
+            "ReferenceTime": t_ref,
+            "ARPPos": arp_to_rpt_geom["ARP_COA"],
+            "ARPVel": arp_to_rpt_geom["VARP_COA"],
+            "BistaticAngle": arp_to_rpt_geom["Bistat_Ang"] * (180 / np.pi),
+            "BistaticAngleRate": arp_to_rpt_geom["Bistat_Ang_Rate"] * (180 / np.pi),
+            "SideOfTrack": arp_to_rpt_geom["ARP_SideOfTrack"],
+            "SlantRange": arp_to_rpt_geom["R_ARP_RPT"],
+            "GroundRange": arp_to_rpt_geom["ARP_Rg_RPT"],
+            "DopplerConeAngle": arp_to_rpt_geom["ARP_DCA"],
+            "SquintAngle": arp_to_rpt_geom["ARP_SQNT"],
+            "AzimuthAngle": arp_to_rpt_geom["ARP_AZIM"],
+            "GrazeAngle": arp_to_rpt_geom["ARP_GRAZ"],
+            "IncidenceAngle": arp_to_rpt_geom["ARP_INCD"],
+            "TwistAngle": arp_to_rpt_geom["ARP_TWST"],
+            "SlopeAngle": arp_to_rpt_geom["ARP_SLOPE"],
+            "LayoverAngle": arp_to_rpt_geom["ARP_LO_ANG"],
+        }
+
+    return refgeom.elem
