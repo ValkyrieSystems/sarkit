@@ -114,3 +114,4 @@ ignore_missing_imports = true
 Documentation = "https://sarkit.readthedocs.io/"
 Repository = "https://github.com/ValkyrieSystems/sarkit.git"
 "Bug Tracker" = "https://github.com/ValkyrieSystems/sarkit/issues"
+Changelog = "https://github.com/ValkyrieSystems/sarkit/blob/main/CHANGELOG.md"
