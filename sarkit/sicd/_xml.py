@@ -3,110 +3,112 @@ Functions for interacting with SICD XML
 """
 
 import copy
-import re
+import importlib.resources
+import pathlib
 from collections.abc import Sequence
 
-import lxml.builder
 import lxml.etree
 import numpy as np
 import numpy.polynomial.polynomial as npp
 import numpy.typing as npt
 
-import sarkit._xmlhelp as skxml
-import sarkit.sicd._io as sicd_io
 import sarkit.sicd.projection as ss_proj
+import sarkit.xmlhelp as skxml
+import sarkit.xmlhelp._transcoders as skxt
 from sarkit import _constants
+
+from . import _constants as sicdconst
 
 
 # The following transcoders happen to share common implementation across several standards
-@skxml.inheritdocstring
-class TxtType(skxml.TxtType):
+@skxt.inheritdocstring
+class TxtType(skxt.TxtType):
     pass
 
 
-@skxml.inheritdocstring
-class EnuType(skxml.EnuType):
+@skxt.inheritdocstring
+class EnuType(skxt.EnuType):
     pass
 
 
-@skxml.inheritdocstring
-class BoolType(skxml.BoolType):
+@skxt.inheritdocstring
+class BoolType(skxt.BoolType):
     pass
 
 
-@skxml.inheritdocstring
-class IntType(skxml.IntType):
+@skxt.inheritdocstring
+class IntType(skxt.IntType):
     pass
 
 
-@skxml.inheritdocstring
-class DblType(skxml.DblType):
+@skxt.inheritdocstring
+class DblType(skxt.DblType):
     pass
 
 
-@skxml.inheritdocstring
-class XdtType(skxml.XdtType):
+@skxt.inheritdocstring
+class XdtType(skxt.XdtType):
     pass
 
 
-@skxml.inheritdocstring
-class RowColType(skxml.RowColType):
+@skxt.inheritdocstring
+class RowColType(skxt.RowColType):
     pass
 
 
-@skxml.inheritdocstring
-class CmplxType(skxml.CmplxType):
+@skxt.inheritdocstring
+class CmplxType(skxt.CmplxType):
     pass
 
 
-@skxml.inheritdocstring
-class XyzType(skxml.XyzType):
+@skxt.inheritdocstring
+class XyzType(skxt.XyzType):
     pass
 
 
-@skxml.inheritdocstring
-class LatLonHaeType(skxml.LatLonHaeType):
+@skxt.inheritdocstring
+class LatLonHaeType(skxt.LatLonHaeType):
     pass
 
 
-@skxml.inheritdocstring
-class LatLonType(skxml.LatLonType):
+@skxt.inheritdocstring
+class LatLonType(skxt.LatLonType):
     pass
 
 
-@skxml.inheritdocstring
-class PolyType(skxml.PolyType):
+@skxt.inheritdocstring
+class PolyType(skxt.PolyType):
     pass
 
 
-@skxml.inheritdocstring
-class Poly2dType(skxml.Poly2dType):
+@skxt.inheritdocstring
+class Poly2dType(skxt.Poly2dType):
     pass
 
 
-@skxml.inheritdocstring
-class XyzPolyType(skxml.XyzPolyType):
+@skxt.inheritdocstring
+class XyzPolyType(skxt.XyzPolyType):
     pass
 
 
-@skxml.inheritdocstring
-class MtxType(skxml.MtxType):
+@skxt.inheritdocstring
+class MtxType(skxt.MtxType):
     pass
 
 
-@skxml.inheritdocstring
-class ParameterType(skxml.ParameterType):
+@skxt.inheritdocstring
+class ParameterType(skxt.ParameterType):
     pass
 
 
-class ImageCornersType(skxml.ListType):
+class ImageCornersType(skxt.NdArrayType):
     """
     Transcoder for SICD-like GeoData/ImageCorners XML parameter types.
 
     """
 
     def __init__(self) -> None:
-        super().__init__("ICP", skxml.LatLonType())
+        super().__init__("ICP", skxt.LatLonType())
 
     def parse_elem(self, elem: lxml.etree.Element) -> npt.NDArray:
         """Returns the array of ImageCorners encoded in ``elem``.
@@ -153,406 +155,138 @@ class ImageCornersType(skxml.ListType):
             self.sub_type.set_elem(icp, coord)
 
 
-TRANSCODERS: dict[str, skxml.Type] = {
-    "CollectionInfo/CollectorName": TxtType(),
-    "CollectionInfo/IlluminatorName": TxtType(),
-    "CollectionInfo/CoreName": TxtType(),
-    "CollectionInfo/CollectType": TxtType(),
-    "CollectionInfo/RadarMode/ModeType": TxtType(),
-    "CollectionInfo/RadarMode/ModeID": TxtType(),
-    "CollectionInfo/Classification": TxtType(),
-    "CollectionInfo/InformationSecurityMarking": TxtType(),
-    "CollectionInfo/CountryCode": TxtType(),
-    "CollectionInfo/Parameter": ParameterType(),
-}
-TRANSCODERS |= {
-    "ImageCreation/Application": TxtType(),
-    "ImageCreation/DateTime": XdtType(),
-    "ImageCreation/Site": TxtType(),
-    "ImageCreation/Profile": TxtType(),
-}
-TRANSCODERS |= {
-    "ImageData/PixelType": TxtType(),
-    "ImageData/AmpTable": skxml.ListType("Amplitude", DblType(), index_start=0),
-    "ImageData/NumRows": IntType(),
-    "ImageData/NumCols": IntType(),
-    "ImageData/FirstRow": IntType(),
-    "ImageData/FirstCol": IntType(),
-    "ImageData/FullImage/NumRows": IntType(),
-    "ImageData/FullImage/NumCols": IntType(),
-    "ImageData/SCPPixel": RowColType(),
-    "ImageData/ValidData": skxml.ListType("Vertex", RowColType()),
-}
-TRANSCODERS |= {
-    "GeoData/EarthModel": TxtType(),
-    "GeoData/SCP/ECF": XyzType(),
-    "GeoData/SCP/LLH": LatLonHaeType(),
-    "GeoData/ImageCorners": ImageCornersType(),
-    "GeoData/ValidData": skxml.ListType("Vertex", LatLonType()),
-    "GeoData/GeoInfo/Desc": ParameterType(),
-    "GeoData/GeoInfo/Point": LatLonType(),
-    "GeoData/GeoInfo/Line": skxml.ListType("Endpoint", LatLonType()),
-    "GeoData/GeoInfo/Polygon": skxml.ListType("Vertex", LatLonType()),
-}
-TRANSCODERS |= {
-    "Grid/ImagePlane": TxtType(),
-    "Grid/Type": TxtType(),
-    "Grid/TimeCOAPoly": Poly2dType(),
-}
-for d in ("Row", "Col"):
-    TRANSCODERS |= {
-        f"Grid/{d}/UVectECF": XyzType(),
-        f"Grid/{d}/SS": DblType(),
-        f"Grid/{d}/ImpRespWid": DblType(),
-        f"Grid/{d}/Sgn": IntType(),
-        f"Grid/{d}/ImpRespBW": DblType(),
-        f"Grid/{d}/KCtr": DblType(),
-        f"Grid/{d}/DeltaK1": DblType(),
-        f"Grid/{d}/DeltaK2": DblType(),
-        f"Grid/{d}/DeltaKCOAPoly": Poly2dType(),
-        f"Grid/{d}/WgtType/WindowName": TxtType(),
-        f"Grid/{d}/WgtType/Parameter": ParameterType(),
-        f"Grid/{d}/WgtFunct": skxml.ListType("Wgt", DblType()),
-    }
-TRANSCODERS |= {
-    "Timeline/CollectStart": XdtType(),
-    "Timeline/CollectDuration": DblType(),
-    "Timeline/IPP/Set/TStart": DblType(),
-    "Timeline/IPP/Set/TEnd": DblType(),
-    "Timeline/IPP/Set/IPPStart": IntType(),
-    "Timeline/IPP/Set/IPPEnd": IntType(),
-    "Timeline/IPP/Set/IPPPoly": PolyType(),
-}
-TRANSCODERS |= {
-    "Position/ARPPoly": XyzPolyType(),
-    "Position/GRPPoly": XyzPolyType(),
-    "Position/TxAPCPoly": XyzPolyType(),
-    "Position/RcvAPC/RcvAPCPoly": XyzPolyType(),
-}
-TRANSCODERS |= {
-    "RadarCollection/TxFrequency/Min": DblType(),
-    "RadarCollection/TxFrequency/Max": DblType(),
-    "RadarCollection/RefFreqIndex": IntType(),
-    "RadarCollection/Waveform/WFParameters/TxPulseLength": DblType(),
-    "RadarCollection/Waveform/WFParameters/TxRFBandwidth": DblType(),
-    "RadarCollection/Waveform/WFParameters/TxFreqStart": DblType(),
-    "RadarCollection/Waveform/WFParameters/TxFMRate": DblType(),
-    "RadarCollection/Waveform/WFParameters/RcvDemodType": TxtType(),
-    "RadarCollection/Waveform/WFParameters/RcvWindowLength": DblType(),
-    "RadarCollection/Waveform/WFParameters/ADCSampleRate": DblType(),
-    "RadarCollection/Waveform/WFParameters/RcvIFBandwidth": DblType(),
-    "RadarCollection/Waveform/WFParameters/RcvFreqStart": DblType(),
-    "RadarCollection/Waveform/WFParameters/RcvFMRate": DblType(),
-    "RadarCollection/TxPolarization": TxtType(),
-    "RadarCollection/TxSequence/TxStep/WFIndex": IntType(),
-    "RadarCollection/TxSequence/TxStep/TxPolarization": TxtType(),
-    "RadarCollection/RcvChannels/ChanParameters/TxRcvPolarization": TxtType(),
-    "RadarCollection/RcvChannels/ChanParameters/RcvAPCIndex": IntType(),
-    "RadarCollection/Area/Corner": skxml.ListType(
-        "ACP", LatLonHaeType(), include_size_attr=False
-    ),
-    "RadarCollection/Area/Plane/RefPt/ECF": XyzType(),
-    "RadarCollection/Area/Plane/RefPt/Line": DblType(),
-    "RadarCollection/Area/Plane/RefPt/Sample": DblType(),
-    "RadarCollection/Area/Plane/XDir/UVectECF": XyzType(),
-    "RadarCollection/Area/Plane/XDir/LineSpacing": DblType(),
-    "RadarCollection/Area/Plane/XDir/NumLines": IntType(),
-    "RadarCollection/Area/Plane/XDir/FirstLine": IntType(),
-    "RadarCollection/Area/Plane/YDir/UVectECF": XyzType(),
-    "RadarCollection/Area/Plane/YDir/SampleSpacing": DblType(),
-    "RadarCollection/Area/Plane/YDir/NumSamples": IntType(),
-    "RadarCollection/Area/Plane/YDir/FirstSample": IntType(),
-    "RadarCollection/Area/Plane/SegmentList/Segment/StartLine": IntType(),
-    "RadarCollection/Area/Plane/SegmentList/Segment/StartSample": IntType(),
-    "RadarCollection/Area/Plane/SegmentList/Segment/EndLine": IntType(),
-    "RadarCollection/Area/Plane/SegmentList/Segment/EndSample": IntType(),
-    "RadarCollection/Area/Plane/SegmentList/Segment/Identifier": TxtType(),
-    "RadarCollection/Area/Plane/Orientation": TxtType(),
-    "RadarCollection/Parameter": ParameterType(),
-}
-TRANSCODERS |= {
-    "ImageFormation/RcvChanProc/NumChanProc": IntType(),
-    "ImageFormation/RcvChanProc/PRFScaleFactor": DblType(),
-    "ImageFormation/RcvChanProc/ChanIndex": IntType(),
-    "ImageFormation/TxRcvPolarizationProc": TxtType(),
-    "ImageFormation/TStartProc": DblType(),
-    "ImageFormation/TEndProc": DblType(),
-    "ImageFormation/TxFrequencyProc/MinProc": DblType(),
-    "ImageFormation/TxFrequencyProc/MaxProc": DblType(),
-    "ImageFormation/SegmentIdentifier": TxtType(),
-    "ImageFormation/ImageFormAlgo": TxtType(),
-    "ImageFormation/STBeamComp": TxtType(),
-    "ImageFormation/ImageBeamComp": TxtType(),
-    "ImageFormation/AzAutofocus": TxtType(),
-    "ImageFormation/RgAutofocus": TxtType(),
-    "ImageFormation/Processing/Type": TxtType(),
-    "ImageFormation/Processing/Applied": BoolType(),
-    "ImageFormation/Processing/Parameter": ParameterType(),
-    "ImageFormation/PolarizationCalibration/DistortCorrectionApplied": BoolType(),
-    "ImageFormation/PolarizationCalibration/Distortion/CalibrationDate": XdtType(),
-    "ImageFormation/PolarizationCalibration/Distortion/A": DblType(),
-    "ImageFormation/PolarizationCalibration/Distortion/F1": CmplxType(),
-    "ImageFormation/PolarizationCalibration/Distortion/Q1": CmplxType(),
-    "ImageFormation/PolarizationCalibration/Distortion/Q2": CmplxType(),
-    "ImageFormation/PolarizationCalibration/Distortion/F2": CmplxType(),
-    "ImageFormation/PolarizationCalibration/Distortion/Q3": CmplxType(),
-    "ImageFormation/PolarizationCalibration/Distortion/Q4": CmplxType(),
-    "ImageFormation/PolarizationCalibration/Distortion/GainErrorA": DblType(),
-    "ImageFormation/PolarizationCalibration/Distortion/GainErrorF1": DblType(),
-    "ImageFormation/PolarizationCalibration/Distortion/GainErrorF2": DblType(),
-    "ImageFormation/PolarizationCalibration/Distortion/PhaseErrorF1": DblType(),
-    "ImageFormation/PolarizationCalibration/Distortion/PhaseErrorF2": DblType(),
-}
-TRANSCODERS |= {
-    "SCPCOA/SCPTime": DblType(),
-    "SCPCOA/ARPPos": XyzType(),
-    "SCPCOA/ARPVel": XyzType(),
-    "SCPCOA/ARPAcc": XyzType(),
-    "SCPCOA/SideOfTrack": TxtType(),
-    "SCPCOA/SlantRange": DblType(),
-    "SCPCOA/GroundRange": DblType(),
-    "SCPCOA/DopplerConeAng": DblType(),
-    "SCPCOA/GrazeAng": DblType(),
-    "SCPCOA/IncidenceAng": DblType(),
-    "SCPCOA/TwistAng": DblType(),
-    "SCPCOA/SlopeAng": DblType(),
-    "SCPCOA/AzimAng": DblType(),
-    "SCPCOA/LayoverAng": DblType(),
-    "SCPCOA/Bistatic/BistaticAng": DblType(),
-    "SCPCOA/Bistatic/BistaticAngRate": DblType(),
-}
-for d in ("Tx", "Rcv"):
-    TRANSCODERS |= {
-        f"SCPCOA/Bistatic/{d}Platform/Time": DblType(),
-        f"SCPCOA/Bistatic/{d}Platform/Pos": XyzType(),
-        f"SCPCOA/Bistatic/{d}Platform/Vel": XyzType(),
-        f"SCPCOA/Bistatic/{d}Platform/Acc": XyzType(),
-        f"SCPCOA/Bistatic/{d}Platform/SideOfTrack": TxtType(),
-        f"SCPCOA/Bistatic/{d}Platform/SlantRange": DblType(),
-        f"SCPCOA/Bistatic/{d}Platform/GroundRange": DblType(),
-        f"SCPCOA/Bistatic/{d}Platform/DopplerConeAng": DblType(),
-        f"SCPCOA/Bistatic/{d}Platform/GrazeAng": DblType(),
-        f"SCPCOA/Bistatic/{d}Platform/IncidenceAng": DblType(),
-        f"SCPCOA/Bistatic/{d}Platform/AzimAng": DblType(),
-    }
-TRANSCODERS |= {
-    "Radiometric/NoiseLevel/NoiseLevelType": TxtType(),
-    "Radiometric/NoiseLevel/NoisePoly": Poly2dType(),
-    "Radiometric/RCSSFPoly": Poly2dType(),
-    "Radiometric/SigmaZeroSFPoly": Poly2dType(),
-    "Radiometric/BetaZeroSFPoly": Poly2dType(),
-    "Radiometric/GammaZeroSFPoly": Poly2dType(),
-}
-for a in ("Tx", "Rcv", "TwoWay"):
-    TRANSCODERS |= {
-        f"Antenna/{a}/XAxisPoly": XyzPolyType(),
-        f"Antenna/{a}/YAxisPoly": XyzPolyType(),
-        f"Antenna/{a}/FreqZero": DblType(),
-        f"Antenna/{a}/EB/DCXPoly": PolyType(),
-        f"Antenna/{a}/EB/DCYPoly": PolyType(),
-        f"Antenna/{a}/Array/GainPoly": Poly2dType(),
-        f"Antenna/{a}/Array/PhasePoly": Poly2dType(),
-        f"Antenna/{a}/Elem/GainPoly": Poly2dType(),
-        f"Antenna/{a}/Elem/PhasePoly": Poly2dType(),
-        f"Antenna/{a}/GainBSPoly": PolyType(),
-        f"Antenna/{a}/EBFreqShift": BoolType(),
-        f"Antenna/{a}/MLFreqDilation": BoolType(),
-    }
-
-
-def _decorr_type(xml_path):
-    return {f"{xml_path}/{x}": DblType() for x in ("CorrCoefZero", "DecorrRate")}
-
-
-TRANSCODERS |= {
-    "ErrorStatistics/CompositeSCP/Rg": DblType(),
-    "ErrorStatistics/CompositeSCP/Az": DblType(),
-    "ErrorStatistics/CompositeSCP/RgAz": DblType(),
-    "ErrorStatistics/BistaticCompositeSCP/RAvg": DblType(),
-    "ErrorStatistics/BistaticCompositeSCP/RdotAvg": DblType(),
-    "ErrorStatistics/BistaticCompositeSCP/RAvgRdotAvg": DblType(),
-    "ErrorStatistics/Components/PosVelErr/Frame": TxtType(),
-    "ErrorStatistics/Components/PosVelErr/P1": DblType(),
-    "ErrorStatistics/Components/PosVelErr/P2": DblType(),
-    "ErrorStatistics/Components/PosVelErr/P3": DblType(),
-    "ErrorStatistics/Components/PosVelErr/V1": DblType(),
-    "ErrorStatistics/Components/PosVelErr/V2": DblType(),
-    "ErrorStatistics/Components/PosVelErr/V3": DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P1P2": DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P1P3": DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P1V1": DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P1V2": DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P1V3": DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P2P3": DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P2V1": DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P2V2": DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P2V3": DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P3V1": DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P3V2": DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/P3V3": DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/V1V2": DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/V1V3": DblType(),
-    "ErrorStatistics/Components/PosVelErr/CorrCoefs/V2V3": DblType(),
-    **_decorr_type("ErrorStatistics/Components/PosVelErr/PositionDecorr"),
-    "ErrorStatistics/Components/RadarSensor/RangeBias": DblType(),
-    "ErrorStatistics/Components/RadarSensor/ClockFreqSF": DblType(),
-    "ErrorStatistics/Components/RadarSensor/TransmitFreqSF": DblType(),
-    **_decorr_type("ErrorStatistics/Components/RadarSensor/RangeBiasDecorr"),
-    "ErrorStatistics/Components/TropoError/TropoRangeVertical": DblType(),
-    "ErrorStatistics/Components/TropoError/TropoRangeSlant": DblType(),
-    **_decorr_type("ErrorStatistics/Components/TropoError/TropoRangeDecorr"),
-    "ErrorStatistics/Components/IonoError/IonoRangeVertical": DblType(),
-    "ErrorStatistics/Components/IonoError/IonoRangeRateVertical": DblType(),
-    "ErrorStatistics/Components/IonoError/IonoRgRgRateCC": DblType(),
-    **_decorr_type("ErrorStatistics/Components/IonoError/IonoRangeVertDecorr"),
-    "ErrorStatistics/BistaticComponents/PosVelErr/TxFrame": TxtType(),
-    "ErrorStatistics/BistaticComponents/PosVelErr/TxPVCov": MtxType((6, 6)),
-    "ErrorStatistics/BistaticComponents/PosVelErr/RcvFrame": TxtType(),
-    "ErrorStatistics/BistaticComponents/PosVelErr/RcvPVCov": MtxType((6, 6)),
-    "ErrorStatistics/BistaticComponents/PosVelErr/TxRcvPVXCov": MtxType((6, 6)),
-    "ErrorStatistics/BistaticComponents/RadarSensor/TxRcvTimeFreq": MtxType((4, 4)),
-    **_decorr_type(
-        "ErrorStatistics/BistaticComponents/RadarSensor/TxRcvTimeFreqDecorr/TxTimeDecorr"
-    ),
-    **_decorr_type(
-        "ErrorStatistics/BistaticComponents/RadarSensor/TxRcvTimeFreqDecorr/TxClockFreqDecorr"
-    ),
-    **_decorr_type(
-        "ErrorStatistics/BistaticComponents/RadarSensor/TxRcvTimeFreqDecorr/RcvTimeDecorr"
-    ),
-    **_decorr_type(
-        "ErrorStatistics/BistaticComponents/RadarSensor/TxRcvTimeFreqDecorr/RcvClockFreqDecorr"
-    ),
-    "ErrorStatistics/BistaticComponents/AtmosphericError/TxSCP": DblType(),
-    "ErrorStatistics/BistaticComponents/AtmosphericError/RcvSCP": DblType(),
-    "ErrorStatistics/BistaticComponents/AtmosphericError/TxRcvCC": DblType(),
-    "ErrorStatistics/Unmodeled/Xrow": DblType(),
-    "ErrorStatistics/Unmodeled/Ycol": DblType(),
-    "ErrorStatistics/Unmodeled/XrowYcol": DblType(),
-    **_decorr_type("ErrorStatistics/Unmodeled/UnmodeledDecorr/Xrow"),
-    **_decorr_type("ErrorStatistics/Unmodeled/UnmodeledDecorr/Ycol"),
-    "ErrorStatistics/AdditionalParms/Parameter": ParameterType(),
-    "ErrorStatistics/AdjustableParameterOffsets/ARPPosSCPCOA": XyzType(),
-    "ErrorStatistics/AdjustableParameterOffsets/ARPVel": XyzType(),
-    "ErrorStatistics/AdjustableParameterOffsets/TxTimeSCPCOA": DblType(),
-    "ErrorStatistics/AdjustableParameterOffsets/RcvTimeSCPCOA": DblType(),
-    "ErrorStatistics/AdjustableParameterOffsets/APOError": MtxType((8, 8)),
-    "ErrorStatistics/AdjustableParameterOffsets/CompositeSCP/Rg": DblType(),
-    "ErrorStatistics/AdjustableParameterOffsets/CompositeSCP/Az": DblType(),
-    "ErrorStatistics/AdjustableParameterOffsets/CompositeSCP/RgAz": DblType(),
-}
-for p in ("Tx", "Rcv"):
-    TRANSCODERS |= {
-        f"ErrorStatistics/BistaticAdjustableParameterOffsets/{p}Platform/APCPosSCPCOA": XyzType(),
-        f"ErrorStatistics/BistaticAdjustableParameterOffsets/{p}Platform/APCVel": XyzType(),
-        f"ErrorStatistics/BistaticAdjustableParameterOffsets/{p}Platform/TimeSCPCOA": DblType(),
-        f"ErrorStatistics/BistaticAdjustableParameterOffsets/{p}Platform/ClockFreqSF": DblType(),
-    }
-TRANSCODERS |= {
-    "ErrorStatistics/BistaticAdjustableParameterOffsets/APOError": MtxType((16, 16)),
-    "ErrorStatistics/BistaticAdjustableParameterOffsets/BistaticCompositeSCP/RAvg": DblType(),
-    "ErrorStatistics/BistaticAdjustableParameterOffsets/BistaticCompositeSCP/RdotAvg": DblType(),
-    "ErrorStatistics/BistaticAdjustableParameterOffsets/BistaticCompositeSCP/RAvgRdotAvg": DblType(),
-}
-TRANSCODERS |= {
-    "MatchInfo/NumMatchTypes": IntType(),
-    "MatchInfo/MatchType/TypeID": TxtType(),
-    "MatchInfo/MatchType/CurrentIndex": IntType(),
-    "MatchInfo/MatchType/NumMatchCollections": IntType(),
-    "MatchInfo/MatchType/MatchCollection/CoreName": TxtType(),
-    "MatchInfo/MatchType/MatchCollection/MatchIndex": IntType(),
-    "MatchInfo/MatchType/MatchCollection/Parameter": ParameterType(),
-}
-TRANSCODERS |= {
-    "RgAzComp/AzSF": DblType(),
-    "RgAzComp/KazPoly": PolyType(),
-}
-TRANSCODERS |= {
-    "PFA/FPN": XyzType(),
-    "PFA/IPN": XyzType(),
-    "PFA/PolarAngRefTime": DblType(),
-    "PFA/PolarAngPoly": PolyType(),
-    "PFA/SpatialFreqSFPoly": PolyType(),
-    "PFA/Krg1": DblType(),
-    "PFA/Krg2": DblType(),
-    "PFA/Kaz1": DblType(),
-    "PFA/Kaz2": DblType(),
-    "PFA/STDeskew/Applied": BoolType(),
-    "PFA/STDeskew/STDSPhasePoly": Poly2dType(),
-}
-TRANSCODERS |= {
-    "RMA/RMAlgoType": TxtType(),
-    "RMA/ImageType": TxtType(),
-    "RMA/RMAT/PosRef": XyzType(),
-    "RMA/RMAT/VelRef": XyzType(),
-    "RMA/RMAT/DopConeAngRef": DblType(),
-    "RMA/RMCR/PosRef": XyzType(),
-    "RMA/RMCR/VelRef": XyzType(),
-    "RMA/RMCR/DopConeAngRef": DblType(),
-    "RMA/INCA/TimeCAPoly": PolyType(),
-    "RMA/INCA/R_CA_SCP": DblType(),
-    "RMA/INCA/FreqZero": DblType(),
-    "RMA/INCA/DRateSFPoly": Poly2dType(),
-    "RMA/INCA/DopCentroidPoly": Poly2dType(),
-    "RMA/INCA/DopCentroidCOA": BoolType(),
-}
-
-# Polynomial subelements
-TRANSCODERS.update(
-    {
-        f"{p}/{coord}": PolyType()
-        for p, v in TRANSCODERS.items()
-        if isinstance(v, skxml.XyzPolyType)
-        for coord in "XYZ"
-    }
-)
-TRANSCODERS.update(
-    {
-        f"{p}/Coef": DblType()
-        for p, v in TRANSCODERS.items()
-        if isinstance(v, skxml.PolyNdType)
-    }
-)
-
-# Matrix subelements
-TRANSCODERS.update(
-    {
-        f"{p}/Entry": DblType()
-        for p, v in TRANSCODERS.items()
-        if isinstance(v, skxml.MtxType)
-    }
-)
-
-# List subelements
-TRANSCODERS.update(
-    {
-        f"{p}/{v.sub_tag}": v.sub_type
-        for p, v in TRANSCODERS.items()
-        if isinstance(v, skxml.ListType)
-    }
-)
-
-# Sequence subelements
-TRANSCODERS.update(
-    {
-        f"{p}/{sub_name}": sub_type
-        for p, v in TRANSCODERS.items()
-        if isinstance(v, skxml.SequenceType)
-        for sub_name, sub_type in v.subelements.items()
-    }
-)
-
-
 class XmlHelper(skxml.XmlHelper):
     """
-    XmlHelper for Sensor Independent Complex Data (SICD).
+    :py:class:`~sarkit.xmlhelp.XmlHelper` for SICD
 
     """
 
-    _transcoders_ = TRANSCODERS
+    def __init__(self, element_tree):
+        root_ns = lxml.etree.QName(element_tree.getroot()).namespace
+        super().__init__(element_tree, XsdHelper(root_ns))
 
-    def _get_simple_path(self, elem):
-        return re.sub(r"(GeoInfo/)+", "GeoInfo/", super()._get_simple_path(elem))
+
+class XsdHelper(skxml.XsdHelper):
+    """
+    :py:class:`~sarkit.xmlhelp.XsdHelper` for SICD
+
+    """
+
+    def _read_xsdtypes_json(self, root_ns: str) -> str:
+        """Return the text contents of the appropriate xsdtypes JSON"""
+        schema_name = sicdconst.VERSION_INFO[root_ns]["schema"].name
+        return importlib.resources.read_text(
+            "sarkit.sicd.xsdtypes",
+            pathlib.PurePath(schema_name).with_suffix(".json").name,
+        )
+
+    def get_transcoder(self, typename, tag=None):
+        """Return the appropriate transcoder given the typename (and optionally tag)."""
+        known_builtins = {
+            "{http://www.w3.org/2001/XMLSchema}boolean": BoolType(),
+            "{http://www.w3.org/2001/XMLSchema}dateTime": XdtType(),
+            "{http://www.w3.org/2001/XMLSchema}double": DblType(),
+            "{http://www.w3.org/2001/XMLSchema}int": IntType(),
+            "{http://www.w3.org/2001/XMLSchema}integer": IntType(),
+            "{http://www.w3.org/2001/XMLSchema}nonNegativeInteger": IntType(),
+            "{http://www.w3.org/2001/XMLSchema}positiveInteger": IntType(),
+            "{http://www.w3.org/2001/XMLSchema}string": TxtType(),
+        }
+        typedef = self.xsdtypes[typename]
+        sicd_110 = {
+            "<UNNAMED>-{urn:SICD:1.1.0}DirParamType/{urn:SICD:1.1.0}WgtFunct": skxt.NdArrayType(
+                "Wgt", DblType()
+            ),
+            "<UNNAMED>-{urn:SICD:1.1.0}GeoDataType/{urn:SICD:1.1.0}ImageCorners": ImageCornersType(),
+            "<UNNAMED>-{urn:SICD:1.1.0}ImageDataType/{urn:SICD:1.1.0}AmpTable": skxt.NdArrayType(
+                "Amplitude", DblType(), index_start=0
+            ),
+            "<UNNAMED>-{urn:SICD:1.1.0}ImageDataType/{urn:SICD:1.1.0}ValidData": skxt.NdArrayType(
+                "Vertex", RowColType()
+            ),
+            "<UNNAMED>-{urn:SICD:1.1.0}LineType/{urn:SICD:1.1.0}Endpoint": LatLonType(),
+            "<UNNAMED>-{urn:SICD:1.1.0}PolygonType/{urn:SICD:1.1.0}Vertex": LatLonType(),
+            "<UNNAMED>-{urn:SICD:1.1.0}PositionType/{urn:SICD:1.1.0}RcvAPC": skxt.ListType(
+                "RcvAPCPoly", XyzPolyType()
+            ),
+            (
+                "<UNNAMED>-{urn:SICD:1.1.0}RadarCollectionType"
+                "/{urn:SICD:1.1.0}Area"
+                "/{urn:SICD:1.1.0}Corner"
+            ): skxt.NdArrayType("ACP", LatLonHaeType(), include_size_attr=False),
+            "{urn:SICD:1.1.0}ComplexType": CmplxType(),
+            "{urn:SICD:1.1.0}LatLonCornerStringType": LatLonType(),
+            "{urn:SICD:1.1.0}LatLonHAECornerRestrictType": LatLonHaeType(),
+            "{urn:SICD:1.1.0}LatLonHAERestrictionType": LatLonHaeType(),
+            "{urn:SICD:1.1.0}LatLonRestrictionType": LatLonType(),
+            "{urn:SICD:1.1.0}LineType": skxt.NdArrayType("Endpoint", LatLonType()),
+            "{urn:SICD:1.1.0}ParameterType": ParameterType(),
+            "{urn:SICD:1.1.0}Poly1DType": PolyType(),
+            "{urn:SICD:1.1.0}Poly2DType": Poly2dType(),
+            "{urn:SICD:1.1.0}PolygonType": skxt.NdArrayType("Vertex", LatLonType()),
+            "{urn:SICD:1.1.0}RowColType": RowColType(),
+            "{urn:SICD:1.1.0}RowColvertexType": RowColType(),
+            "{urn:SICD:1.1.0}XYZPolyAttributeType": XyzPolyType(),
+            "{urn:SICD:1.1.0}XYZPolyType": XyzPolyType(),
+            "{urn:SICD:1.1.0}XYZType": XyzType(),
+        }
+        sicd_121 = {
+            k.replace("urn:SICD:1.1.0", "urn:SICD:1.2.1"): v
+            for k, v in sicd_110.items()
+        }
+        sicd_130 = {
+            k.replace("urn:SICD:1.1.0", "urn:SICD:1.3.0"): v
+            for k, v in sicd_110.items()
+        }
+        sicd_140 = {
+            k.replace("urn:SICD:1.1.0", "urn:SICD:1.4.0"): v
+            for k, v in sicd_110.items()
+        }
+        sicd_140 |= {
+            "<UNNAMED>-{urn:SICD:1.4.0}ErrorStatisticsType/{urn:SICD:1.4.0}AdjustableParameterOffsets/{urn:SICD:1.4.0}APOError": MtxType(
+                (8, 8)
+            ),
+            "<UNNAMED>-{urn:SICD:1.4.0}ErrorStatisticsType/{urn:SICD:1.4.0}BistaticAdjustableParameterOffsets/{urn:SICD:1.4.0}APOError": MtxType(
+                (16, 16)
+            ),
+            "<UNNAMED>-{urn:SICD:1.4.0}ErrorStatisticsType/{urn:SICD:1.4.0}BistaticComponents/{urn:SICD:1.4.0}RadarSensor/{urn:SICD:1.4.0}TxRcvTimeFreq": MtxType(
+                (4, 4)
+            ),
+            "{urn:SICD:1.4.0}Matrix6x6Type": MtxType((6, 6)),
+        }
+        easy = sicd_110 | sicd_121 | sicd_130 | sicd_140
+        if tag is not None and lxml.etree.QName(tag).localname == "CalibrationDate":
+            return skxt.XdtType(force_utc=False)
+        if typename.startswith("{http://www.w3.org/2001/XMLSchema}"):
+            return known_builtins[typename]
+        if typename in easy:
+            return easy[typename]
+        if not typedef.children:
+            return known_builtins.get(typedef.text_typename, TxtType())
+        return None
+
+
+class ElementWrapper(skxml.ElementWrapper):
+    """:py:class:`~sarkit.xmlhelp.ElementWrapper` for SICD that can set ``xsdhelper`` automatically.
+
+    Refer to :py:class:`sarkit.xmlhelp.ElementWrapper` for full documentation.
+    """
+
+    def __init__(
+        self,
+        elem,
+        xsdhelper=None,
+        wrapped_parent=None,
+        typename=None,
+        elementpath=None,
+        roottag=None,
+    ):
+        if xsdhelper is None:
+            root_ns = lxml.etree.QName(roottag or elem).namespace
+            xsdhelper = XsdHelper(root_ns)
+        super().__init__(
+            elem, xsdhelper, wrapped_parent, typename, elementpath, roottag
+        )
 
 
 def compute_scp_coa(sicd_xmltree: lxml.etree.ElementTree) -> lxml.etree.ElementTree:
@@ -570,47 +304,49 @@ def compute_scp_coa(sicd_xmltree: lxml.etree.ElementTree) -> lxml.etree.ElementT
     lxml.etree.Element
         New SICD/SCPCOA XML element
     """
-    xmlhelp = XmlHelper(copy.deepcopy(sicd_xmltree))
     version_ns = lxml.etree.QName(sicd_xmltree.getroot()).namespace
-    sicd_versions = list(sicd_io.VERSION_INFO)
+    sicdroot = ElementWrapper(
+        copy.deepcopy(sicd_xmltree).getroot(),
+    )
+    sicd_versions = list(sicdconst.VERSION_INFO)
     pre_1_4 = sicd_versions.index(version_ns) < sicd_versions.index("urn:SICD:1.4.0")
 
     # COA Parameters for All Images
-    scpcoa_params = {}
-    t_coa = xmlhelp.load("./{*}Grid/{*}TimeCOAPoly")[0, 0]
-    scpcoa_params["SCPTime"] = t_coa
-    scp = xmlhelp.load("./{*}GeoData/{*}SCP/{*}ECF")
+    sicdroot.pop("SCPCOA", None)  # remove SCPCOA if present
+    scpcoa = sicdroot["SCPCOA"]
+    t_coa = sicdroot["Grid"]["TimeCOAPoly"][0, 0]
+    scpcoa["SCPTime"] = t_coa
+    scp = sicdroot["GeoData"]["SCP"]["ECF"]
 
-    arp_poly = xmlhelp.load("./{*}Position/{*}ARPPoly")
+    arp_poly = sicdroot["Position"]["ARPPoly"]
     arp_coa = npp.polyval(t_coa, arp_poly).squeeze()
-    scpcoa_params["ARPPos"] = arp_coa
+    scpcoa["ARPPos"] = arp_coa
     varp_coa = npp.polyval(t_coa, npp.polyder(arp_poly, m=1)).squeeze()
-    scpcoa_params["ARPVel"] = varp_coa
+    scpcoa["ARPVel"] = varp_coa
     aarp_coa = npp.polyval(t_coa, npp.polyder(arp_poly, m=2)).squeeze()
-    scpcoa_params["ARPAcc"] = aarp_coa
+    scpcoa["ARPAcc"] = aarp_coa
 
     r_coa = np.linalg.norm(scp - arp_coa)
-    scpcoa_params["SlantRange"] = r_coa
+    scpcoa["SlantRange"] = r_coa
     arp_dec_coa = np.linalg.norm(arp_coa)
     u_arp_coa = arp_coa / arp_dec_coa
     scp_dec = np.linalg.norm(scp)
     u_scp = scp / scp_dec
     ea_coa = np.arccos(np.dot(u_arp_coa, u_scp))
     rg_coa = scp_dec * ea_coa
-    scpcoa_params["GroundRange"] = rg_coa
+    scpcoa["GroundRange"] = rg_coa
 
     vm_coa = np.linalg.norm(varp_coa)
     u_varp_coa = varp_coa / vm_coa
     u_los_coa = (scp - arp_coa) / r_coa
     left_coa = np.cross(u_arp_coa, u_varp_coa)
     dca_coa = np.arccos(np.dot(u_varp_coa, u_los_coa))
-    scpcoa_params["DopplerConeAng"] = np.rad2deg(dca_coa)
+    scpcoa["DopplerConeAng"] = np.rad2deg(dca_coa)
     side_of_track = "L" if np.dot(left_coa, u_los_coa) > 0 else "R"
-    scpcoa_params["SideOfTrack"] = side_of_track
+    scpcoa["SideOfTrack"] = side_of_track
     look = 1 if np.dot(left_coa, u_los_coa) > 0 else -1
 
-    scp_lon = xmlhelp.load("./{*}GeoData/{*}SCP/{*}LLH/{*}Lon")
-    scp_lat = xmlhelp.load("./{*}GeoData/{*}SCP/{*}LLH/{*}Lat")
+    scp_lat, scp_lon = sicdroot["GeoData"]["SCP"]["LLH"][:2]
     u_gpz = np.array(
         [
             np.cos(np.deg2rad(scp_lon)) * np.cos(np.deg2rad(scp_lat)),
@@ -627,9 +363,9 @@ def compute_scp_coa(sicd_xmltree: lxml.etree.ElementTree) -> lxml.etree.ElementT
     cos_graz = arp_gpx_coa / r_coa
     sin_graz = arp_gpz_coa / r_coa
     graz = np.arccos(cos_graz) if pre_1_4 else np.arcsin(sin_graz)
-    scpcoa_params["GrazeAng"] = np.rad2deg(graz)
+    scpcoa["GrazeAng"] = np.rad2deg(graz)
     incd = 90.0 - np.rad2deg(graz)
-    scpcoa_params["IncidenceAng"] = incd
+    scpcoa["IncidenceAng"] = incd
 
     spz = look * np.cross(u_varp_coa, u_los_coa)
     u_spz = spz / np.linalg.norm(spz)
@@ -639,44 +375,26 @@ def compute_scp_coa(sicd_xmltree: lxml.etree.ElementTree) -> lxml.etree.ElementT
     # arp/varp in slant plane coordinates intentionally omitted
 
     slope = np.arccos(np.dot(u_gpz, u_spz))
-    scpcoa_params["SlopeAng"] = np.rad2deg(slope)
+    scpcoa["SlopeAng"] = np.rad2deg(slope)
 
     u_east = np.array([-np.sin(np.deg2rad(scp_lon)), np.cos(np.deg2rad(scp_lon)), 0.0])
     u_north = np.cross(u_gpz, u_east)
     az_north = np.dot(u_north, u_gpx)
     az_east = np.dot(u_east, u_gpx)
     azim = np.arctan2(az_east, az_north)
-    scpcoa_params["AzimAng"] = np.rad2deg(azim) % 360
+    scpcoa["AzimAng"] = np.rad2deg(azim) % 360
 
     cos_slope = np.cos(slope)  # this symbol seems to be undefined in SICD Vol 1
     lodir_coa = u_gpz - u_spz / cos_slope
     lo_north = np.dot(u_north, lodir_coa)
     lo_east = np.dot(u_east, lodir_coa)
     layover = np.arctan2(lo_east, lo_north)
-    scpcoa_params["LayoverAng"] = np.rad2deg(layover) % 360
+    scpcoa["LayoverAng"] = np.rad2deg(layover) % 360
 
     # uZI intentionally omitted
 
     twst = -np.arcsin(np.dot(u_gpy, u_spz))
-    scpcoa_params["TwistAng"] = np.rad2deg(twst)
-
-    # Build new XML element
-    em = lxml.builder.ElementMaker(namespace=version_ns, nsmap={None: version_ns})
-    sicd = em.SICD(em.SCPCOA())
-    new_scpcoa_elem = sicd[0]
-    xmlhelp_out = XmlHelper(sicd.getroottree())
-
-    def _append_elems(parent, d):
-        element_path = xmlhelp_out.element_tree.getelementpath(parent)
-        no_ns_path = re.sub(r"\{.*?\}|\[.*?\]", "", element_path)
-        for name, val in sorted(
-            d.items(), key=lambda x: list(TRANSCODERS).index(f"{no_ns_path}/{x[0]}")
-        ):
-            elem = em(name)
-            parent.append(elem)
-            xmlhelp_out.set_elem(elem, val)
-
-    _append_elems(new_scpcoa_elem, scpcoa_params)
+    scpcoa["TwistAng"] = np.rad2deg(twst)
 
     # Additional COA Parameters for Bistatic Images
     params = ss_proj.MetadataParams.from_xml(sicd_xmltree)
@@ -756,38 +474,20 @@ def compute_scp_coa(sicd_xmltree: lxml.etree.ElementTree) -> lxml.etree.ElementT
                 "AzimAng": np.rad2deg(azim_xmt) % 360,
             }
 
-        bistat_elem = em.Bistatic()
-        new_scpcoa_elem.append(bistat_elem)
-        _append_elems(
-            bistat_elem,
-            {
-                "BistaticAng": np.rad2deg(bistat_ang_coa),
-                "BistaticAngRate": bistat_ang_rate_coa,
-            },
-        )
-        tx_platform_elem = em.TxPlatform()
-        bistat_elem.append(tx_platform_elem)
-        _append_elems(
-            tx_platform_elem,
-            {
-                "Time": tx_coa,
-                "Pos": xmt_coa,
-                "Vel": vxmt_coa,
-                "Acc": axmt_coa,
-                **_steps_10_to_15(xmt_coa, vxmt_coa, u_xmt_coa, r_xmt_scp),
-            },
-        )
-        rcv_platform_elem = em.RcvPlatform()
-        bistat_elem.append(rcv_platform_elem)
-        _append_elems(
-            rcv_platform_elem,
-            {
-                "Time": tr_coa,
-                "Pos": rcv_coa,
-                "Vel": vrcv_coa,
-                "Acc": arcv_coa,
-                **_steps_10_to_15(rcv_coa, vrcv_coa, u_rcv_coa, r_rcv_scp),
-            },
-        )
-
-    return new_scpcoa_elem
+        scpcoa["Bistatic"]["BistaticAng"] = np.rad2deg(bistat_ang_coa)
+        scpcoa["Bistatic"]["BistaticAngRate"] = bistat_ang_rate_coa
+        scpcoa["Bistatic"]["TxPlatform"] = {
+            "Time": tx_coa,
+            "Pos": xmt_coa,
+            "Vel": vxmt_coa,
+            "Acc": axmt_coa,
+            **_steps_10_to_15(xmt_coa, vxmt_coa, u_xmt_coa, r_xmt_scp),
+        }
+        scpcoa["Bistatic"]["RcvPlatform"] = {
+            "Time": tr_coa,
+            "Pos": rcv_coa,
+            "Vel": vrcv_coa,
+            "Acc": arcv_coa,
+            **_steps_10_to_15(rcv_coa, vrcv_coa, u_rcv_coa, r_rcv_scp),
+        }
+    return scpcoa.elem

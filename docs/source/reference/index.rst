@@ -9,10 +9,12 @@ SARkit API Reference
 
 API reference for ``sarkit``.
 
+Main namespaces
+===============
+
 * :py:mod:`sarkit`
 * `sarkit.cphd`
 * `sarkit.crsd`
-* `sarkit.processing`
 * `sarkit.sicd`
 
   - `sarkit.sicd.projection`
@@ -30,8 +32,18 @@ API reference for ``sarkit``.
     sarkit <sarkit>
     sarkit.cphd <cphd>
     sarkit.crsd <crsd>
-    sarkit.processing <processing>
     sarkit.sicd <sicd>
     sarkit.sidd <sidd>
     sarkit.verification <verification>
     sarkit.wgs84 <wgs84>
+
+
+Special-purpose namespaces
+==========================
+
+* `sarkit.xmlhelp` - XML helper functions (typically not used directly by end users)
+
+.. toctree::
+   :hidden:
+
+    sarkit.xmlhelp <xmlhelp>

@@ -21,6 +21,7 @@ classifiers = [
 dynamic = ["version"]
 
 dependencies = [
+    "jbpy>=0.1.0",
     "lxml>=5.1.0",
     "numpy>=1.25.0",
 ]
@@ -29,18 +30,18 @@ dependencies = [
 verification = [
     "shapely>=2.0.2",
 ]
-processing = [
-    "numba>=0.59.1",
-]
 all = [
-    "sarkit[processing,verification]"
+    "sarkit[verification]"
 ]
 dev-lint = [
     "ruff>=0.3.0",
     "mypy>=1.8.0",
 ]
 dev-test = [
+    "aiohttp>=3.11",
     "pytest>=7.4.4",
+    "smart_open[http]>=7.1.0",
+    "scipy>=1.12.0",
 ]
 dev = [
     "sarkit[dev-test,dev-lint]",
@@ -50,18 +51,28 @@ dev = [
 test = [
     "nox>=2024.3.2",
 ]
+processing = [
+    "numba>=0.59.1",
+]
 doc = [
     "sphinx>=7.2.6",
     "numpydoc>=1.7.0",
     "sphinx-rtd-theme>=2.0.0",
     "sphinxcontrib-autoprogram>=0.1.9",
 ]
+xsdtypes-generation = [
+    "xmlschema>=4.0.1",
+]
 
 [project.scripts]
-cphd-consistency = "sarkit.verification._cphd_consistency:main"
-crsd-consistency = "sarkit.verification._crsd_consistency:main"
-sicd-consistency = "sarkit.verification._sicd_consistency:main"
-sidd-consistency = "sarkit.verification._sidd_consistency:main"
+cphdcheck = "sarkit.verification._cphdcheck:main"
+crsdcheck = "sarkit.verification._crsdcheck:main"
+sicdcheck = "sarkit.verification._sicdcheck:main"
+siddcheck = "sarkit.verification._siddcheck:main"
+cphdinfo = "sarkit.cphd._cphdinfo:main"
+crsdinfo = "sarkit.crsd._crsdinfo:main"
+sicdinfo = "sarkit.sicd._sicdinfo:main"
+siddinfo = "sarkit.sidd._siddinfo:main"
 
 [build-system]
 requires = ["pdm-backend"]
@@ -94,6 +105,8 @@ module = [
     "lxml.*",
     "numba.*",
     "shapely.*",
+    "smart_open.*",
+    "jbpy.*",
 ]
 ignore_missing_imports = true
 
@@ -101,3 +114,4 @@ ignore_missing_imports = true
 Documentation = "https://sarkit.readthedocs.io/"
 Repository = "https://github.com/ValkyrieSystems/sarkit.git"
 "Bug Tracker" = "https://github.com/ValkyrieSystems/sarkit/issues"
+Changelog = "https://github.com/ValkyrieSystems/sarkit/blob/main/CHANGELOG.md"

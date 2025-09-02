@@ -29,6 +29,7 @@ Data Structure & File Format
    NitfWriter
    SizingImhdr
    image_segment_sizing_calculations
+   jbp_from_nitf_metadata
 
 XML Metadata
 ============
@@ -37,6 +38,8 @@ XML Metadata
    :toctree: generated/
 
    XmlHelper
+   ElementWrapper
+   XsdHelper
    TxtType
    EnuType
    BoolType
@@ -79,8 +82,18 @@ Constants
      - `dict` of {xml namespace: version-specific information}
    * - ``PIXEL_TYPES``
      - `dict` of {PixelType: pixel-type-specific information}
-   * - ``TRANSCODERS``
-     - `dict` of {name: transcoder}
+   * - ``IS_SIZE_MAX``
+     - maximum NITF image segment length in bytes (:math:`10^{10}-2`)
+   * - ``ILOC_MAX``
+     - maximum number of rows contained in a segmented SICD NITF image segment (99,999)
+
+CLI Utilities
+=============
+
+.. _sicdinfo-cli:
+
+.. autoprogram:: sarkit.sicd._sicdinfo:_parser()
+   :prog: sicdinfo
 
 References
 ==========
@@ -170,9 +183,13 @@ SICD 1.4.0
    https://nsgreg.nga.mil/doc/view?i=5538
 """
 
-from ._io import (
+from ._constants import (
+    ILOC_MAX,
+    IS_SIZE_MAX,
     PIXEL_TYPES,
     VERSION_INFO,
+)
+from ._io import (
     NitfDeSubheaderPart,
     NitfFileHeaderPart,
     NitfImSubheaderPart,
@@ -182,12 +199,13 @@ from ._io import (
     NitfWriter,
     SizingImhdr,
     image_segment_sizing_calculations,
+    jbp_from_nitf_metadata,
 )
 from ._xml import (
-    TRANSCODERS,
     BoolType,
     CmplxType,
     DblType,
+    ElementWrapper,
     EnuType,
     ImageCornersType,
     IntType,
@@ -201,6 +219,7 @@ from ._xml import (
     TxtType,
     XdtType,
     XmlHelper,
+    XsdHelper,
     XyzPolyType,
     XyzType,
     compute_scp_coa,
@@ -213,12 +232,14 @@ from .projection._derived import (
 )
 
 __all__ = [
+    "ILOC_MAX",
+    "IS_SIZE_MAX",
     "PIXEL_TYPES",
-    "TRANSCODERS",
     "VERSION_INFO",
     "BoolType",
     "CmplxType",
     "DblType",
+    "ElementWrapper",
     "EnuType",
     "ImageCornersType",
     "IntType",
@@ -240,6 +261,7 @@ __all__ = [
     "TxtType",
     "XdtType",
     "XmlHelper",
+    "XsdHelper",
     "XyzPolyType",
     "XyzType",
     "compute_scp_coa",
@@ -247,5 +269,6 @@ __all__ = [
     "image_to_constant_hae_surface",
     "image_to_dem_surface",
     "image_to_ground_plane",
+    "jbp_from_nitf_metadata",
     "scene_to_image",
 ]

@@ -5,8 +5,10 @@ import lxml.builder
 import lxml.etree
 import numpy as np
 import pytest
+import smart_open
 
 import sarkit.cphd as skcphd
+import tests.utils
 
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
 
@@ -264,3 +266,13 @@ def test_write_support_array(is_masked, nodata_in_xml, tmp_path):
     with open(out_cphd, "rb") as f, skcphd.Reader(f) as reader:
         read_sa = reader.read_support_array(sa_id)
         assert np.array_equal(mx, read_sa)
+
+
+def test_remote_read(example_cphd):
+    with tests.utils.static_http_server(example_cphd.parent) as server_url:
+        with smart_open.open(
+            f"{server_url}/{example_cphd.name}", mode="rb"
+        ) as file_object:
+            with skcphd.Reader(file_object) as r:
+                ch_id = r.metadata.xmltree.findtext("{*}Data/{*}Channel/{*}Identifier")
+                _, _ = r.read_channel(ch_id)

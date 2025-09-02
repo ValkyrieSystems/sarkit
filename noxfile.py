@@ -8,6 +8,7 @@ os.environ.update({"PDM_IGNORE_SAVED_PYTHON": "1"})
 nox.options.sessions = (
     "lint",
     "data",
+    "xsdtypes",
     "test",
 )
 
@@ -73,7 +74,6 @@ def test_processing(session):
     session.run_install(
         "pdm",
         "sync",
-        "--prod",
         "-G",
         "dev-test",
         "-G",
@@ -110,3 +110,9 @@ def data(session):
     session.run(
         "python", "data/syntax_only/crsd/make_syntax_only_crsd_xmls.py", "--check"
     )
+
+
+@nox.session
+def xsdtypes(session):
+    session.run_install("pdm", "sync", "-G", "xsdtypes-generation", external=True)
+    session.run("python", "generate_xsdtypes.py", "--check")

@@ -34,7 +34,7 @@
                 <Coef phasing="0" point="2">0.2</Coef>
                 <Coef phasing="1" point="0">1.0</Coef>
                 <Coef phasing="1" point="1">1.1</Coef>
-                <Coef phasing="1" point="1">1.2</Coef>
+                <Coef phasing="1" point="2">1.2</Coef>
               </FilterCoefficients>
             </Custom>
           </FilterBank>
@@ -79,7 +79,7 @@
                 <Coef row="0" col="2">0.2</Coef>
                 <Coef row="1" col="0">1.0</Coef>
                 <Coef row="1" col="1">1.1</Coef>
-                <Coef row="1" col="1">1.2</Coef>
+                <Coef row="1" col="2">1.2</Coef>
               </FilterCoefficients>
             </Custom>
           </FilterKernel>

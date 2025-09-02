@@ -9,9 +9,7 @@ documents that define the Compensated Radar Signal Data (CRSD) format.
 Supported Versions
 ==================
 
-* `CRSD 1.0 DRAFT 2025-02-25`_
-
-.. WARNING:: v1.0 DRAFT support is temporary and will be replaced upon NTB approval
+* `CRSD 1.0`_
 
 Data Structure & File Format
 ============================
@@ -37,6 +35,8 @@ XML Metadata
    :toctree: generated/
 
    XmlHelper
+   ElementWrapper
+   XsdHelper
    TxtType
    EnuType
    BoolType
@@ -59,7 +59,16 @@ XML Metadata
    ImageAreaCornerPointsType
    ParameterType
 
-Reference Geometry Computations
+Receive Channel Parameters
+==========================
+
+.. autosummary::
+   :toctree: generated/
+
+   compute_dwelltimes_using_poly
+   compute_dwelltimes_using_dta
+
+Reference Geometry Parameters
 ===============================
 
 .. autosummary::
@@ -67,15 +76,16 @@ Reference Geometry Computations
 
    compute_ref_point_parameters
    compute_apc_to_pt_geometry_parameters
-   compute_apc_to_pt_geometry_parameters_xmlnames
-   arp_to_rpt_geometry_xmlnames
+   compute_arp_to_rpt_geometry
+   compute_reference_geometry
 
-Polarization Parameter Computations
-===================================
+Antenna Parameters
+==================
 
 .. autosummary::
    :toctree: generated/
 
+   interpolate_support_array
    compute_h_v_los_unit_vectors
    compute_h_v_pol_parameters
 
@@ -90,30 +100,47 @@ Constants
      - :external:py:obj:`set` of KVP keys defined in the standard
    * - ``SECTION_TERMINATOR``
      - Two-byte sequence that marks the end of the file header
-   * - ``TRANSCODERS``
-     - `dict` of {name: transcoder}
+
+CLI Utilities
+=============
+
+.. _crsdinfo-cli:
+
+.. autoprogram:: sarkit.crsd._crsdinfo:_parser()
+   :prog: crsdinfo
 
 References
 ==========
 
-CRSD 1.0 DRAFT 2025-02-25
--------------------------
-TBD
+CRSD 1.0
+--------
+.. [NGA.STND.0080-1_1.0_CRSD] National Center for Geospatial Intelligence Standards,
+   "Compensated Radar Signal Data (CRSD), Vol. 1, Design & Implementation Description Document,
+   Version 1.0", 2025.
+   https://nsgreg.nga.mil/doc/view?i=5672
 
+.. [NGA.STND.0080-2_1.0_CRSD_schema_2025_02_25.xsd] National Center for Geospatial Intelligence Standards,
+   "Compensated Radar Signal Data (CRSD) XML Schema, Version 1.0", 2025.
+   https://nsgreg.nga.mil/doc/view?i=5673
 """
 
 from ._computations import (
-    arp_to_rpt_geometry_xmlnames,
     compute_apc_to_pt_geometry_parameters,
-    compute_apc_to_pt_geometry_parameters_xmlnames,
+    compute_arp_to_rpt_geometry,
+    compute_dwelltimes_using_dta,
+    compute_dwelltimes_using_poly,
     compute_h_v_los_unit_vectors,
     compute_h_v_pol_parameters,
     compute_ref_point_parameters,
+    compute_reference_geometry,
+    interpolate_support_array,
 )
-from ._io import (
+from ._constants import (
     DEFINED_HEADER_KEYS,
     SECTION_TERMINATOR,
     VERSION_INFO,
+)
+from ._io import (
     FileHeaderPart,
     Metadata,
     Reader,
@@ -126,11 +153,11 @@ from ._io import (
     read_file_header,
 )
 from ._xml import (
-    TRANSCODERS,
     AddedPxpType,
     BoolType,
     DblType,
     EdfType,
+    ElementWrapper,
     EnuType,
     HexType,
     ImageAreaCornerPointsType,
@@ -146,6 +173,7 @@ from ._xml import (
     TxtType,
     XdtType,
     XmlHelper,
+    XsdHelper,
     XyType,
     XyzPolyType,
     XyzType,
@@ -154,12 +182,12 @@ from ._xml import (
 __all__ = [
     "DEFINED_HEADER_KEYS",
     "SECTION_TERMINATOR",
-    "TRANSCODERS",
     "VERSION_INFO",
     "AddedPxpType",
     "BoolType",
     "DblType",
     "EdfType",
+    "ElementWrapper",
     "EnuType",
     "FileHeaderPart",
     "HexType",
@@ -179,31 +207,23 @@ __all__ = [
     "Writer",
     "XdtType",
     "XmlHelper",
+    "XsdHelper",
     "XyType",
     "XyzPolyType",
     "XyzType",
-    "arp_to_rpt_geometry_xmlnames",
     "binary_format_string_to_dtype",
     "compute_apc_to_pt_geometry_parameters",
-    "compute_apc_to_pt_geometry_parameters_xmlnames",
+    "compute_arp_to_rpt_geometry",
+    "compute_dwelltimes_using_dta",
+    "compute_dwelltimes_using_poly",
     "compute_h_v_los_unit_vectors",
     "compute_h_v_pol_parameters",
     "compute_ref_point_parameters",
+    "compute_reference_geometry",
     "dtype_to_binary_format_string",
     "get_ppp_dtype",
     "get_pvp_dtype",
+    "interpolate_support_array",
     "mask_support_array",
     "read_file_header",
 ]
-
-
-import os  # noqa: I001
-import sys  # noqa: I001
-
-print(
-    "\033[93m" if sys.stdout.isatty() and not os.environ.get("NO_COLOR") else "",
-    "WARNING: SARkit's CRSD modules are provisional and implement the 2025-02-25 draft\n",
-    "The modules will be updated and this message will be removed when the standard is published",
-    "\x1b[0m" if sys.stdout.isatty() and not os.environ.get("NO_COLOR") else "",
-    file=sys.stderr,
-)

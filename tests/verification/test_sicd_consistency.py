@@ -1,14 +1,18 @@
 import copy
 import pathlib
+import unittest.mock
 
+import jbpy
 import lxml.builder
 import numpy as np
 import pytest
 from lxml import etree
 
-import sarkit._nitf_io
 import sarkit.sicd as sksicd
-from sarkit.verification._sicd_consistency import SicdConsistency, main
+import sarkit.verification._sicdcheck
+import tests.utils
+from sarkit.verification._sicd_consistency import SicdConsistency
+from sarkit.verification._sicdcheck import main
 
 from . import testing
 
@@ -18,22 +22,9 @@ good_sicd_xml_path = DATAPATH / "example-sicd-1.2.1.xml"
 
 
 @pytest.fixture(scope="session")
-def example_sicd_file(tmp_path_factory):
-    sicd_etree = etree.parse(good_sicd_xml_path)
-    tmp_sicd = (
-        tmp_path_factory.mktemp("data") / good_sicd_xml_path.with_suffix(".sicd").name
-    )
-    sec = {"security": {"clas": "U"}}
-    sicd_meta = sksicd.NitfMetadata(
-        xmltree=sicd_etree,
-        file_header_part={"ostaid": "nowhere"} | sec,
-        im_subheader_part={"isorce": "this sensor"} | sec,
-        de_subheader_part=sec,
-    )
-    with open(tmp_sicd, "wb") as f, sksicd.NitfWriter(f, sicd_meta):
-        pass  # don't currently care about the pixels
-    assert not main([str(tmp_sicd)])
-    with tmp_sicd.open("rb") as f:
+def example_sicd_file(example_sicd):
+    assert not main([str(example_sicd)])
+    with example_sicd.open("rb") as f:
         yield f
 
 
@@ -360,8 +351,15 @@ def _misaligned_image_corners(xml):
     _change_node(last_corner, "./{*}Lat", -1.0 * latitude)
 
 
+def _subimage_image_corners(xml):
+    xml.find("./{*}ImageData/{*}FirstRow").text = str(
+        int(xml.find("./{*}ImageData/{*}NumRows").text) // 2
+    )
+
+
 @pytest.mark.parametrize(
-    "invalidate_func", [_invalid_num_icps, _misaligned_image_corners]
+    "invalidate_func",
+    [_invalid_num_icps, _misaligned_image_corners, _subimage_image_corners],
 )
 def test_image_corners(sicd_con, invalidate_func):
     invalidate_func(sicd_con.sicdroot)
@@ -653,6 +651,73 @@ def test_check_rma_inca_polys(sicd_con_bad_inca, poly_to_invalidate):
     assert sicd_con.failures()
 
 
+def test_segment_bounds(sicd_con, em):
+    rca_plane = sicd_con.sicdroot.find("./{*}RadarCollection/{*}Area/{*}Plane")
+    assert rca_plane.find("./{*}SegmentList") is None
+
+    first_line = sicd_con.xmlhelp.load(
+        "./{*}RadarCollection/{*}Area/{*}Plane/{*}XDir/{*}FirstLine"
+    )
+    first_sample = sicd_con.xmlhelp.load(
+        "./{*}RadarCollection/{*}Area/{*}Plane/{*}YDir/{*}FirstSample"
+    )
+    num_lines = sicd_con.xmlhelp.load(
+        "./{*}RadarCollection/{*}Area/{*}Plane/{*}XDir/{*}NumLines"
+    )
+    num_samples = sicd_con.xmlhelp.load(
+        "./{*}RadarCollection/{*}Area/{*}Plane/{*}YDir/{*}NumSamples"
+    )
+
+    rca_plane.append(
+        em.SegmentList(
+            em.Segment(
+                em.StartLine(str(first_line)),
+                em.StartSample(str(first_sample)),
+                em.EndLine(str(int(first_line + num_lines // 2 - 1))),
+                em.EndSample(str(int(first_sample + num_samples // 2 - 1))),
+            ),
+            em.Segment(
+                em.StartLine(str(int(first_line + num_lines // 2))),
+                em.StartSample(str(int(first_sample + num_samples // 2))),
+                em.EndLine(str(int(first_line + num_lines - 1))),
+                em.EndSample(str(int(first_sample + num_samples - 1))),
+            ),
+        )
+    )
+    sicd_con.check("check_segmentlist_bounds")
+    assert sicd_con.passes()
+
+    rca_plane.find("./{*}XDir/{*}NumLines").text = str(num_lines - 10)
+    sicd_con.check("check_segmentlist_bounds")
+    testing.assert_failures(
+        sicd_con, "All segments within the segment_list are bounded"
+    )
+
+
+def test_segment_identifier(sicd_con, em):
+    imform = sicd_con.sicdroot.find("./{*}ImageFormation")
+    assert imform.find("./{*}SegmentIdentifier") is None
+    rca_plane = sicd_con.sicdroot.find("./{*}RadarCollection/{*}Area/{*}Plane")
+    assert rca_plane.find("./{*}SegmentList") is None
+
+    rca_plane.append(
+        em.SegmentList(
+            em.Segment(em.Identifier("SegmentID 1")),
+            em.Segment(em.Identifier("SegmentID 2")),
+        )
+    )
+    sicd_con.check("check_segment_identifier")
+    testing.assert_failures(sicd_con, "SegmentIdentifier is included")
+
+    segid = em.SegmentIdentifier("not found ID")
+    imform.append(segid)
+    sicd_con.check("check_segment_identifier")
+    testing.assert_failures(sicd_con, "SegmentList has SegmentIdentifier")
+    segid.text = "SegmentID 2"
+    sicd_con.check("check_segment_identifier")
+    assert sicd_con.passes()
+
+
 def test_check_image_formation_timeline(sicd_con):
     sicd_con.xmlhelp.set(
         "./{*}ImageFormation/{*}TStartProc",
@@ -709,12 +774,83 @@ def test_check_nitf_imseg(example_sicd_file, tmp_path):
 
     # monkey with the IID1s
     with tmp_sicd.open("rb+") as fd:
-        ntf = sarkit._nitf_io.Nitf()
+        ntf = jbpy.Jbp()
         ntf.load(fd)
         for imseg in ntf["ImageSegments"]:
-            imseg["SubHeader"]["IID1"].value = "SICD000"
-            imseg["SubHeader"]["IID1"].dump(fd, seek_first=True)
+            imseg["subheader"]["IID1"].value = "SICD000"
+            imseg["subheader"]["IID1"].dump(fd, seek_first=True)
     with tmp_sicd.open("rb") as f:
         sicd_con = SicdConsistency.from_file(f)
     sicd_con.check("check_nitf_imseg")
     testing.assert_failures(sicd_con, "Sequential IID1")
+
+
+def test_check_error_components_posvel_stddev(sicd_con, em):
+    p2 = em.P2("0.2")
+    assert sicd_con.sicdroot.find("./{*}ErrorStatistics") is None
+    sicd_con.sicdroot.append(
+        em.ErrorStatistics(
+            em.Components(
+                em.PosVelErr(
+                    em.P1("0.1"),
+                    p2,
+                    em.P3("0.3"),
+                    em.V1("0.4"),
+                    em.V2("0.5"),
+                    em.V3("0.6"),
+                )
+            )
+        )
+    )
+    sicd_con.check("check_error_components_posvel_stddev")
+    assert sicd_con.passes()
+    p2.text = "-1.0"
+    sicd_con.check("check_error_components_posvel_stddev")
+    testing.assert_failures(sicd_con, "PosVelErr P2 >= 0.0")
+
+
+def test_check_error_components_posvel_corr(sicd_con, em):
+    p1v1 = em.P1V1("0.17")
+    assert sicd_con.sicdroot.find("./{*}ErrorStatistics") is None
+    sicd_con.sicdroot.append(
+        em.ErrorStatistics(
+            em.Components(
+                em.PosVelErr(
+                    em.CorrCoefs(
+                        em.P1P2("0.12"),
+                        em.P1P3("0.13"),
+                        p1v1,
+                        em.P1V2("0.18"),
+                        em.P1V3("0.19"),
+                        em.P2P3("0.23"),
+                        em.P2V1("0.27"),
+                        em.P2V2("-0.28"),
+                        em.P2V3("-0.29"),
+                        em.P3V1("-0.37"),
+                        em.P3V2("-0.38"),
+                        em.P3V3("-0.39"),
+                        em.V1V2("-0.78"),
+                        em.V1V3("-0.79"),
+                        em.V2V3("-0.89"),
+                    )
+                )
+            )
+        )
+    )
+    sicd_con.check("check_error_components_posvel_corr")
+    assert sicd_con.passes()
+    p1v1.text = "-1.1"
+    sicd_con.check("check_error_components_posvel_corr")
+    testing.assert_failures(sicd_con, "CorrCoefs P1V1 <= 1.0")
+
+
+def test_smart_open_http(example_sicd):
+    with tests.utils.static_http_server(example_sicd.parent) as server_url:
+        assert not main([f"{server_url}/{example_sicd.name}"])
+
+
+def test_smart_open_contract(example_sicd, monkeypatch):
+    mock_open = unittest.mock.MagicMock(side_effect=tests.utils.simple_open_read)
+    monkeypatch.setattr(sarkit.verification._sicdcheck, "open", mock_open)
+    assert not main([str(example_sicd)])
+    mock_open.assert_called_once_with(str(example_sicd), "rb")

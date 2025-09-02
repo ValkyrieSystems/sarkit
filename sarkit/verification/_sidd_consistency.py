@@ -1,22 +1,28 @@
-import argparse
 import datetime
 import functools
 import itertools
+import logging
 import os
-import pathlib
 import pprint
 import re
 from typing import Any, Optional
 
+import jbpy
 import lxml.etree
 import numpy as np
 import numpy.polynomial.polynomial as npp
-import shapely.geometry as shg
 
-import sarkit._nitf_io
 import sarkit.sidd as sksidd
 import sarkit.verification._consistency as con
 from sarkit import wgs84
+
+logger = logging.getLogger(__name__)
+
+try:
+    import shapely.geometry as shg
+except ImportError as ie:
+    logger.warning("'shapely' package not found. Some features may not work correctly.")
+    shg = con._ExceptionOnUse(ie)
 
 _PIXEL_INFO = {
     "MONO8I": {
@@ -92,7 +98,7 @@ class SiddConsistency(con.ConsistencyChecker):
         self.schema_override = schema_override
         if file is not None:
             file.seek(0, os.SEEK_SET)
-            self.ntf = sarkit._nitf_io.Nitf().load(file)
+            self.ntf = jbpy.Jbp().load(file)
         else:
             self.ntf = None
 
@@ -189,12 +195,12 @@ class SiddConsistency(con.ConsistencyChecker):
         try:
             xml_trees = [lxml.etree.parse(file)]
         except lxml.etree.XMLSyntaxError:
-            ntf = sarkit._nitf_io.Nitf()
+            ntf = jbpy.Jbp()
             xml_trees = []
             file.seek(0, os.SEEK_SET)
             ntf.load(file)
-            for deseg in ntf["DESegments"]:
-                if not deseg["SubHeader"]["DESSHF"]["DESSHTN"].value.startswith(
+            for deseg in ntf["DataExtensionSegments"]:
+                if not deseg["subheader"]["DESSHF"]["DESSHTN"].value.startswith(
                     "urn:SIDD"
                 ):
                     continue
@@ -273,7 +279,7 @@ class SiddConsistency(con.ConsistencyChecker):
             assert len(namespaces) == 1
 
     def check_nitf_des_headers(self) -> None:
-        """DES SubHeader fields match spec"""
+        """DES Subheader fields match spec"""
         with self.precondition():
             assert self.ntf is not None
             actual: Any = None
@@ -281,12 +287,12 @@ class SiddConsistency(con.ConsistencyChecker):
 
             def _de_segment_type(segment):
                 deseg_type = "OTHER"
-                if segment["SubHeader"]["DESID"].value == "XML_DATA_CONTENT":
-                    if segment["SubHeader"]["DESSHF"]["DESSHTN"].value.startswith(
+                if segment["subheader"]["DESID"].value == "XML_DATA_CONTENT":
+                    if segment["subheader"]["DESSHF"]["DESSHTN"].value.startswith(
                         "urn:SIDD"
                     ):
                         deseg_type = "SIDD"
-                    if segment["SubHeader"]["DESSHF"]["DESSHTN"].value.startswith(
+                    if segment["subheader"]["DESSHF"]["DESSHTN"].value.startswith(
                         "urn:SICD"
                     ):
                         deseg_type = "SICD"
@@ -294,7 +300,9 @@ class SiddConsistency(con.ConsistencyChecker):
                         deseg_type = "SUPPORT"
                 return deseg_type
 
-            deseg_types = [_de_segment_type(deseg) for deseg in self.ntf["DESegments"]]
+            deseg_types = [
+                _de_segment_type(deseg) for deseg in self.ntf["DataExtensionSegments"]
+            ]
             with self.need("DE segments are in SIDD->SICD->OTHER order"):
                 expected = sorted(
                     deseg_types, key=["SIDD", "SUPPORT", "SICD", "OTHER"].index
@@ -302,7 +310,7 @@ class SiddConsistency(con.ConsistencyChecker):
                 assert deseg_types == expected
 
             for des_idx, xml_tree in enumerate(self.xml_trees):
-                subhdr = self.ntf["DESegments"][des_idx]["SubHeader"]
+                subhdr = self.ntf["DataExtensionSegments"][des_idx]["subheader"]
                 with self.need("SIDD XML is in a XML_DATA_CONTENT DES"):
                     assert subhdr["DESID"].value == "XML_DATA_CONTENT"
                 with self.need("DESVER is 1"):
@@ -370,12 +378,12 @@ class SiddConsistency(con.ConsistencyChecker):
     @staticmethod
     def _im_segment_type(segment):
         imseg_type = "OTHER"
-        if segment["SubHeader"]["IID1"].value.startswith("SIDD"):
-            if segment["SubHeader"]["ICAT"].value == "SAR":
+        if segment["subheader"]["IID1"].value.startswith("SIDD"):
+            if segment["subheader"]["ICAT"].value == "SAR":
                 imseg_type = "SIDD_SAR"
-            if segment["SubHeader"]["ICAT"].value == "LEG":
+            if segment["subheader"]["ICAT"].value == "LEG":
                 imseg_type = "SIDD_LEGEND"
-            if segment["SubHeader"]["ICAT"].value == "DED":
+            if segment["subheader"]["ICAT"].value == "DED":
                 imseg_type = "SIDD_DED"
         return imseg_type
 
@@ -403,7 +411,7 @@ class SiddConsistency(con.ConsistencyChecker):
                 for imseg in self.ntf["ImageSegments"]
                 if self._im_segment_type(imseg) == "SIDD_SAR"
             ]
-            iid1s = [imseg["SubHeader"]["IID1"].value for imseg in sar_segments]
+            iid1s = [imseg["subheader"]["IID1"].value for imseg in sar_segments]
             with self.need("SIDD image segments must be in order"):
                 assert iid1s == sorted(iid1s)
 
@@ -416,38 +424,38 @@ class SiddConsistency(con.ConsistencyChecker):
             for idx, expected in enumerate(segmentation_imhdrs):
                 with self.need(f"Image Segment {idx} must be SAR"):
                     assert (
-                        self.ntf["ImageSegments"][idx]["SubHeader"]["ICAT"].value
+                        self.ntf["ImageSegments"][idx]["subheader"]["ICAT"].value
                         == "SAR"
                     )
 
                 with self.need(f"Image Segment {idx} has expected IDLVL"):
                     assert (
-                        self.ntf["ImageSegments"][idx]["SubHeader"]["IDLVL"].value
+                        self.ntf["ImageSegments"][idx]["subheader"]["IDLVL"].value
                         == expected["idlvl"]
                     )
                 with self.need(f"Image Segment {idx} has expected IALVL"):
                     assert (
-                        self.ntf["ImageSegments"][idx]["SubHeader"]["IALVL"].value
+                        self.ntf["ImageSegments"][idx]["subheader"]["IALVL"].value
                         == expected["ialvl"]
                     )
                 with self.need(f"Image Segment {idx} has expected ILOC"):
                     assert (
-                        self.ntf["ImageSegments"][idx]["SubHeader"]["ILOC"].value
+                        self.ntf["ImageSegments"][idx]["subheader"]["ILOC"].value
                         == expected["iloc"]
                     )
                 with self.need(f"Image Segment {idx} has expected IID1"):
                     assert (
-                        self.ntf["ImageSegments"][idx]["SubHeader"]["IID1"].value
+                        self.ntf["ImageSegments"][idx]["subheader"]["IID1"].value
                         == expected["iid1"]
                     )
                 with self.need(f"Image Segment {idx} has expected NROWS"):
                     assert (
-                        self.ntf["ImageSegments"][idx]["SubHeader"]["NROWS"].value
+                        self.ntf["ImageSegments"][idx]["subheader"]["NROWS"].value
                         == expected["nrows"]
                     )
                 with self.need(f"Image Segment {idx} has expected NCOLS"):
                     assert (
-                        self.ntf["ImageSegments"][idx]["SubHeader"]["NCOLS"].value
+                        self.ntf["ImageSegments"][idx]["subheader"]["NCOLS"].value
                         == expected["ncols"]
                     )
 
@@ -459,7 +467,7 @@ class SiddConsistency(con.ConsistencyChecker):
                     sign = 1 if direction in ["E", "N"] else -1
                     return sign * (dd + mm / 60 + ss / 60 / 60)
 
-                igeolo = self.ntf["ImageSegments"][idx]["SubHeader"]["IGEOLO"].value
+                igeolo = self.ntf["ImageSegments"][idx]["subheader"]["IGEOLO"].value
                 igeolo_ll = [
                     [_dms_to_dd(igeolo[0:7]), _dms_to_dd(igeolo[7:15])],
                     [_dms_to_dd(igeolo[15:22]), _dms_to_dd(igeolo[22:30])],
@@ -483,10 +491,10 @@ class SiddConsistency(con.ConsistencyChecker):
             imsegs = [
                 imseg
                 for imseg in self.ntf["ImageSegments"]
-                if imseg["SubHeader"]["IID1"].value.startswith(iid1prefix)
+                if imseg["subheader"]["IID1"].value.startswith(iid1prefix)
             ]
             for imseg in imsegs:
-                icat = imseg["SubHeader"]["ICAT"].value
+                icat = imseg["subheader"]["ICAT"].value
                 with self.need("Valid ICAT"):
                     assert icat in ("SAR", "LEG")
 
@@ -494,7 +502,7 @@ class SiddConsistency(con.ConsistencyChecker):
                     continue  # checks for Legends not implemented
 
                 idatim = datetime.datetime.strptime(
-                    imseg["SubHeader"]["IDATIM"].value, "%Y%m%d%H%M%S"
+                    imseg["subheader"]["IDATIM"].value, "%Y%m%d%H%M%S"
                 )
                 idatim = idatim.replace(tzinfo=datetime.timezone.utc)
                 collection_date_time = helper.load(
@@ -509,31 +517,31 @@ class SiddConsistency(con.ConsistencyChecker):
                     "./{*}ExploitationFeatures/{*}Collection/{*}Information/{*}SensorName"
                 )
                 with self.need("ISORCE matches 1st SensorName"):
-                    assert imseg["SubHeader"]["ISORCE"].value == sensor_name
+                    assert imseg["subheader"]["ISORCE"].value == sensor_name
 
                 with self.need("PVTYPE is INT for SIDD product images"):
-                    assert imseg["SubHeader"]["PVTYPE"].value == "INT"
+                    assert imseg["subheader"]["PVTYPE"].value == "INT"
 
                 pixel_info = _PIXEL_INFO[xml_tree.findtext("./{*}Display/{*}PixelType")]
 
                 with self.need("IREP is valid for product images"):
-                    assert imseg["SubHeader"]["IREP"].value == pixel_info["IREP"]
+                    assert imseg["subheader"]["IREP"].value == pixel_info["IREP"]
 
                 with self.need("ABPP is either 8 or 16"):
-                    assert imseg["SubHeader"]["ABPP"].value in (8, 16)
+                    assert imseg["subheader"]["ABPP"].value in (8, 16)
 
                 with self.need("PJUST is R"):
-                    assert imseg["SubHeader"]["PJUST"].value == "R"
+                    assert imseg["subheader"]["PJUST"].value == "R"
 
                 with self.need("ICORDS is G for product images"):
-                    assert imseg["SubHeader"]["ICORDS"].value == "G"
+                    assert imseg["subheader"]["ICORDS"].value == "G"
 
                 with self.need("IC is valid"):
-                    assert imseg["SubHeader"]["IC"].value in ("NC", "C8", "M8")
+                    assert imseg["subheader"]["IC"].value in ("NC", "C8", "M8")
 
-                if imseg["SubHeader"]["IC"].value in ("C8", "M8"):
+                if imseg["subheader"]["IC"].value in ("C8", "M8"):
                     with self.need("COMRAT describes J2K"):
-                        comrat = imseg["SubHeader"]["COMRAT"].value
+                        comrat = imseg["subheader"]["COMRAT"].value
 
                         def is_numerically_lossless():
                             return re.fullmatch("N[0-9]{3}", comrat) is not None
@@ -554,41 +562,41 @@ class SiddConsistency(con.ConsistencyChecker):
                         )
 
                 with self.need("NBANDS matches PixelType"):
-                    assert imseg["SubHeader"]["NBANDS"].value == pixel_info["NBANDS"]
+                    assert imseg["subheader"]["NBANDS"].value == pixel_info["NBANDS"]
 
                 for idx, (irepband, nlut_options) in enumerate(
                     zip(pixel_info["IREPBAND"], pixel_info["NLUTS"])
                 ):
                     with self.need("IREPBAND consistent with PixelType"):
                         assert (
-                            imseg["SubHeader"][f"IREPBAND{idx + 1:05d}"].value
+                            imseg["subheader"][f"IREPBAND{idx + 1:05d}"].value
                             == irepband
                         )
                     with self.need("ISUBCAT is space-filled"):
-                        assert imseg["SubHeader"][f"ISUBCAT{idx + 1:05d}"].value == ""
+                        assert imseg["subheader"][f"ISUBCAT{idx + 1:05d}"].value == ""
                     with self.need('IFC is "N"'):
-                        assert imseg["SubHeader"][f"IFC{idx + 1:05d}"].value == "N"
+                        assert imseg["subheader"][f"IFC{idx + 1:05d}"].value == "N"
                     with self.need("IREPBAND is space-filled"):
-                        assert imseg["SubHeader"][f"IMFLT{idx + 1:05d}"].value == ""
+                        assert imseg["subheader"][f"IMFLT{idx + 1:05d}"].value == ""
                     with self.need("NLUTS consistent with PixelType"):
                         assert (
-                            imseg["SubHeader"][f"NLUTS{idx + 1:05d}"].value
+                            imseg["subheader"][f"NLUTS{idx + 1:05d}"].value
                             in nlut_options
                         )
 
                 with self.need("ISYNC is 0"):
-                    assert imseg["SubHeader"]["ISYNC"].value == 0
+                    assert imseg["subheader"]["ISYNC"].value == 0
 
                 with self.need("IMODE consistent with PixelType"):
-                    assert imseg["SubHeader"]["IMODE"].value == pixel_info["IMODE"]
+                    assert imseg["subheader"]["IMODE"].value == pixel_info["IMODE"]
 
                 with self.need("NBPP is either 8 or 16"):
-                    assert imseg["SubHeader"]["NBPP"].value in (8, 16)
+                    assert imseg["subheader"]["NBPP"].value in (8, 16)
 
                 with self.want("NBPP matches ABPP"):
                     assert (
-                        imseg["SubHeader"]["NBPP"].value
-                        == imseg["SubHeader"]["ABPP"].value
+                        imseg["subheader"]["NBPP"].value
+                        == imseg["subheader"]["ABPP"].value
                     )
 
     def _image_segmentation(self):
@@ -1226,31 +1234,3 @@ def calc_geodata_imagecorners(sidd_xml):
     r_corner = np.array([-0.5, -0.5, n_rows - 0.5, n_rows - 0.5])
     c_corner = np.array([-0.5, n_cols - 0.5, n_cols - 0.5, -0.5])
     return sensor_coord_to_ecef(*rc_to_sensor_coord(r_corner, c_corner))
-
-
-def _parser():
-    parser = argparse.ArgumentParser(
-        description="Analyze a SIDD and display inconsistencies"
-    )
-    parser.add_argument(
-        "file_name", type=pathlib.Path, help="SIDD or SIDD XML to check"
-    )
-    parser.add_argument(
-        "--schema", type=pathlib.Path, help="Use a supplied schema file", default=None
-    )
-    SiddConsistency.add_cli_args(parser)
-    return parser
-
-
-def main(args=None):
-    config = _parser().parse_args(args)
-
-    with config.file_name.open("rb") as file:
-        sidd_con = SiddConsistency.from_file(file, config.schema)
-    return sidd_con.run_cli(config)
-
-
-if __name__ == "__main__":  # pragma: no cover
-    import sys
-
-    sys.exit(int(main()))

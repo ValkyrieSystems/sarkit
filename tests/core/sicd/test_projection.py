@@ -8,7 +8,6 @@ import lxml.etree
 import numpy as np
 import pytest
 
-import sarkit.sicd as sksicd
 import sarkit.sicd.projection as sicdproj
 import sarkit.wgs84
 
@@ -491,90 +490,67 @@ def test_r_rdot_from_plane(mono_and_bi_proj_metadata, image_grid_locations):
     _projection_sets_smoketest(mono_and_bi_proj_metadata, image_grid_locations)
 
 
-@pytest.fixture(
-    params=[
-        DATAPATH / "example-sicd-1.3.0.xml",
-        DATAPATH / "example-sicd-1.4.0.xml",
-    ]
-)
-def proj_metadata_with_error(request):
-    etree = lxml.etree.parse(request.param)
-    root = etree.getroot()
-
-    elem_ns = lxml.etree.QName(root).namespace
-    em = lxml.builder.ElementMaker(namespace=elem_ns, nsmap={None: elem_ns})
-
-    if etree.findtext("{*}CollectionInfo/{*}CollectType") == "MONOSTATIC":
-        root.append(
-            em.ErrorStatistics(
-                em.AdjustableParameterOffsets(
-                    sksicd.XyzType().make_elem("ARPPosSCPCOA", [10000, 11000, 12000]),
-                    sksicd.XyzType().make_elem("ARPVel", [1500, 1600, 1700]),
-                    em.TxTimeSCPCOA("10.0"),
-                    em.RcvTimeSCPCOA("11.0"),
-                )
-            )
-        )
-    else:
-        root.append(
-            em.ErrorStatistics(
-                em.BistaticAdjustableParameterOffsets(
-                    em.TxPlatform(
-                        sksicd.XyzType().make_elem(
-                            "APCPosSCPCOA", [10000, 11000, 12000]
-                        ),
-                        sksicd.XyzType().make_elem("APCVel", [1500, 1600, 1700]),
-                        em.ClockFreqSF("10.0"),
-                        em.TimeSCPCOA("11.0"),
-                    ),
-                    em.RcvPlatform(
-                        sksicd.XyzType().make_elem(
-                            "APCPosSCPCOA", [20000, 21000, 22000]
-                        ),
-                        sksicd.XyzType().make_elem("APCVel", [2500, 2600, 2700]),
-                        em.ClockFreqSF("20.0"),
-                        em.TimeSCPCOA("21.0"),
-                    ),
-                )
-            )
-        )
-
-    meta = sicdproj.MetadataParams.from_xml(etree)
-    apos = sicdproj.AdjustableParameterOffsets.from_xml(etree)
-
-    return meta, apos
+def test_apos_from_xml():
+    all_attrs = set()
+    set_attrs = set()
+    for xml_file in (DATAPATH / "syntax_only/sicd").glob("*.xml"):
+        etree = lxml.etree.parse(xml_file)
+        if not sicdproj.AdjustableParameterOffsets.exists(etree):
+            continue
+        apos = sicdproj.AdjustableParameterOffsets.from_xml(etree)
+        apo_dict = dataclasses.asdict(apos)
+        all_attrs.update(apo_dict.keys())
+        set_attrs.update(k for k, v in apo_dict.items() if v is not None)
+    unset_attrs = all_attrs - set_attrs
+    assert not unset_attrs
 
 
-def test_apo(proj_metadata_with_error):
-    meta, apos = proj_metadata_with_error
+def test_apo_mono(example_proj_metadata):
+    meta = example_proj_metadata
+    assert meta.is_monostatic()
+    apos = sicdproj.AdjustableParameterOffsets(
+        delta_ARP_SCP_COA=np.array([10000.0, 11000.0, 12000.0]),
+        delta_VARP=np.array([1500.0, 1600.0, 1700.0]),
+        delta_tx_SCP_COA=10.0,
+        delta_tr_SCP_COA=11.0,
+    )
     proj_set = sicdproj.compute_projection_sets(meta, [0, 0])
     adjust_proj_set = sicdproj.apply_apos(meta, proj_set, apos)
 
     # Make sure things that were supposed to change did
-    if meta.is_monostatic():
-        assert adjust_proj_set.t_COA == proj_set.t_COA
-        assert np.all(
-            adjust_proj_set.ARP_COA - proj_set.ARP_COA == [10000, 11000, 12000]
-        )
-        assert np.all(
-            adjust_proj_set.VARP_COA - proj_set.VARP_COA == [1500, 1600, 1700]
-        )
-        assert adjust_proj_set.R_COA != proj_set.R_COA
-        assert adjust_proj_set.Rdot_COA == proj_set.Rdot_COA
-    else:
-        assert adjust_proj_set.t_COA == proj_set.t_COA
-        assert adjust_proj_set.tx_COA - proj_set.tx_COA == pytest.approx(11, abs=0.1)
-        assert adjust_proj_set.tr_COA - proj_set.tr_COA == pytest.approx(21, abs=0.1)
-        assert np.all(adjust_proj_set.Xmt_COA != proj_set.Xmt_COA)
-        assert np.all(
-            adjust_proj_set.VXmt_COA - proj_set.VXmt_COA == [1500, 1600, 1700]
-        )
-        assert np.all(adjust_proj_set.Rcv_COA != proj_set.Rcv_COA)
-        assert np.all(
-            adjust_proj_set.VRcv_COA - proj_set.VRcv_COA == [2500, 2600, 2700]
-        )
-        assert adjust_proj_set.R_Avg_COA != proj_set.R_Avg_COA
-        assert adjust_proj_set.Rdot_Avg_COA != proj_set.Rdot_Avg_COA
+    assert adjust_proj_set.t_COA == proj_set.t_COA
+    assert np.all(adjust_proj_set.ARP_COA - proj_set.ARP_COA == [10000, 11000, 12000])
+    assert np.all(adjust_proj_set.VARP_COA - proj_set.VARP_COA == [1500, 1600, 1700])
+    assert adjust_proj_set.R_COA != proj_set.R_COA
+    assert adjust_proj_set.Rdot_COA == proj_set.Rdot_COA
+
+
+def test_apo_bi(example_proj_metadata_bi):
+    meta = example_proj_metadata_bi
+    assert meta.is_bistatic()
+    apos = sicdproj.AdjustableParameterOffsets(
+        delta_Xmt_SCP_COA=np.array([10000.0, 11000.0, 12000.0]),
+        delta_VXmt=np.array([1500.0, 1600.0, 1700.0]),
+        f_Clk_X_SF=10.0,
+        delta_tx_SCP_COA=11.0,
+        delta_Rcv_SCP_COA=np.array([20000.0, 21000.0, 22000.0]),
+        delta_VRcv=np.array([2500.0, 2600.0, 2700.0]),
+        f_Clk_R_SF=20.0,
+        delta_tr_SCP_COA=21.0,
+    )
+    proj_set = sicdproj.compute_projection_sets(meta, [0, 0])
+    adjust_proj_set = sicdproj.compute_and_apply_offsets(meta, proj_set, apos)
+
+    # Make sure things that were supposed to change did
+    assert adjust_proj_set.t_COA == proj_set.t_COA
+    assert adjust_proj_set.tx_COA - proj_set.tx_COA == pytest.approx(11, abs=0.1)
+    assert adjust_proj_set.tr_COA - proj_set.tr_COA == pytest.approx(21, abs=0.1)
+    assert np.all(adjust_proj_set.Xmt_COA != proj_set.Xmt_COA)
+    assert np.all(adjust_proj_set.VXmt_COA - proj_set.VXmt_COA == [1500, 1600, 1700])
+    assert np.all(adjust_proj_set.Rcv_COA != proj_set.Rcv_COA)
+    assert np.all(adjust_proj_set.VRcv_COA - proj_set.VRcv_COA == [2500, 2600, 2700])
+    assert adjust_proj_set.R_Avg_COA != proj_set.R_Avg_COA
+    assert adjust_proj_set.Rdot_Avg_COA != proj_set.Rdot_Avg_COA
 
 
 def test_sensitivity_matrices(example_proj_metadata):

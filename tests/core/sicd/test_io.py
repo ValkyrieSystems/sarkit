@@ -1,11 +1,16 @@
 import pathlib
 
+import jbpy
+import jbpy.core
 import lxml.etree
 import numpy as np
 import pytest
+import smart_open
 
-import sarkit._nitf_io
 import sarkit.sicd as sksicd
+import sarkit.sicd._constants
+import sarkit.verification
+import tests.utils
 
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
 
@@ -138,11 +143,15 @@ def test_roundtrip(tmp_path, sicd_xml, pixel_type):
         },
     )
     with out_sicd.open("wb") as f:
-        with sksicd.NitfWriter(f, metadata) as writer:
+        jbp = sksicd.jbp_from_nitf_metadata(metadata)
+        jbp["FileHeader"]["UDHDL"].value = 10
+        jbp["FileHeader"]["UDHD"].append(jbpy.tre_factory("SECTGA"))
+        with sksicd.NitfWriter(f, metadata, jbp_override=jbp) as writer:
             writer.write_image(basis_array)
 
     with out_sicd.open("rb") as f, sksicd.NitfReader(f) as reader:
         read_array = reader.read_image()
+        assert reader.jbp["FileHeader"]["UDHD"][0]["CETAG"].value == "SECTGA"
 
     schema.assertValid(reader.metadata.xmltree)
     assert metadata == reader.metadata
@@ -150,7 +159,7 @@ def test_roundtrip(tmp_path, sicd_xml, pixel_type):
 
 
 def test_nitfheaderfields_from_header():
-    header = sarkit._nitf_io.FileHeader("FHDR")
+    header = jbpy.core.FileHeader("FHDR")
     header["OSTAID"].value = "ostaid"
     header["FTITLE"].value = "ftitle"
     # Data is unclassified.  These fields are filled for testing purposes only.
@@ -197,7 +206,7 @@ def test_nitfheaderfields_from_header():
 
 def test_nitfimagesegmentfields_from_header():
     comments = ["first", "second"]
-    header = sarkit._nitf_io.ImageSubHeader("name")
+    header = jbpy.core.ImageSubheader("name")
     header["ISORCE"].value = "isorce"
     header["NICOM"].value = 2
     header["ICOM1"].value = comments[0]
@@ -241,7 +250,7 @@ def test_nitfimagesegmentfields_from_header():
 
 
 def test_nitfdesegmentfields_from_header():
-    header = sarkit._nitf_io.DESubHeader("name")
+    header = jbpy.core.DataExtensionSubheader("name")
     header["DESID"].value = "XML_DATA_CONTENT"
     header["DESVER"].value = 1
     header["DESSHL"].value = 773
@@ -304,8 +313,8 @@ def test_image_sizing():
     assert xml_helper.load("./{*}ImageData/{*}PixelType") == "RE32F_IM32F"
 
     # Tweak SICD size to force three image segments
-    li_max = 9_999_999_998
-    iloc_max = 99_999
+    li_max = sarkit.sicd._constants.IS_SIZE_MAX
+    iloc_max = sarkit.sicd._constants.ILOC_MAX
     num_cols = li_max // 8 // iloc_max  # set num_cols so that row limit is iloc_max
     last_rows = 24
     num_rows = iloc_max * 2 + last_rows
@@ -370,3 +379,129 @@ def test_image_sizing():
     ]
 
     assert expected_imhdrs == imhdrs
+
+
+@pytest.mark.parametrize("disable_memmap", [False, True])
+def test_read_sub_image(tmp_path, disable_memmap, monkeypatch):
+    if disable_memmap:
+
+        def no_memmap(*args, **kwargs):
+            raise RuntimeError("no memmap for you")
+
+        monkeypatch.setattr(np, "memmap", no_memmap)
+
+    basis_etree = lxml.etree.parse(DATAPATH / "example-sicd-1.4.0.xml")
+    xml_helper = sksicd.XmlHelper(basis_etree)
+    assert xml_helper.load("./{*}ImageData/{*}PixelType") == "RE32F_IM32F"
+
+    # Tweak SICD size to force multiple image segments
+    nrows = xml_helper.load("./{*}ImageData/{*}NumRows")
+    ncols = xml_helper.load("./{*}ImageData/{*}NumCols")
+    assert nrows > 1000
+    new_is_size_max = nrows // 5 * ncols * 4
+    monkeypatch.setattr(sarkit.sicd._constants, "IS_SIZE_MAX", new_is_size_max)
+    xml_helper.set("./{*}ImageData/{*}PixelType", "RE16I_IM16I")
+
+    basis_array = np.zeros((nrows, ncols), sksicd.PIXEL_TYPES["RE16I_IM16I"]["dtype"])
+    basis_array[:]["real"] = np.arange(nrows).reshape(-1, 1)
+    basis_array[:]["imag"] = np.arange(ncols)
+
+    sicd_file = tmp_path / "indices.sicd"
+    metadata = sksicd.NitfMetadata(
+        xmltree=basis_etree,
+        file_header_part={
+            "ostaid": "ostaid",
+            "security": {
+                "clas": "U",
+            },
+        },
+        im_subheader_part={
+            "isorce": "isorce",
+            "security": {
+                "clas": "U",
+            },
+        },
+        de_subheader_part={
+            "security": {
+                "clas": "U",
+            },
+        },
+    )
+    with sicd_file.open("wb") as f:
+        with sksicd.NitfWriter(f, metadata) as writer:
+            assert len(writer._jbp["ImageSegments"]) > 3
+            writer.write_image(basis_array)
+
+    with sicd_file.open("rb") as f, sksicd.NitfReader(f) as reader:
+
+        def _check_sub_image(start_row, start_col, stop_row, stop_col):
+            kw = {}
+            if start_row is not None:
+                kw["start_row"] = start_row
+            else:
+                start_row = 0
+            if start_col is not None:
+                kw["start_col"] = start_col
+            else:
+                start_col = 0
+            if stop_row is not None:
+                kw["stop_row"] = stop_row
+            else:
+                stop_row = nrows
+            if stop_col is not None:
+                kw["stop_col"] = stop_col
+            else:
+                stop_col = ncols
+
+            sub_image, sub_xmltree = reader.read_sub_image(**kw)
+            assert np.array_equal(
+                sub_image, basis_array[start_row:stop_row, start_col:stop_col]
+            )
+            rootew = sksicd.ElementWrapper(reader.metadata.xmltree.getroot())
+            subew = sksicd.ElementWrapper(sub_xmltree.getroot())
+            assert subew["ImageData"]["NumRows"] == sub_image.shape[0]
+            assert subew["ImageData"]["NumCols"] == sub_image.shape[1]
+            assert not np.array_equal(
+                subew["GeoData"]["ImageCorners"], rootew["GeoData"]["ImageCorners"]
+            )
+            sicd_con = sarkit.verification.SicdConsistency.from_parts(sub_xmltree)
+            sicd_con.check("check_image_corners")
+            assert not sicd_con.failures()
+
+        _check_sub_image(None, None, None, None)
+        _check_sub_image(0, None, None, None)
+        _check_sub_image(None, 0, None, None)
+        _check_sub_image(None, None, nrows, None)
+        _check_sub_image(None, None, None, ncols)
+
+        _check_sub_image(10, None, -20, None)
+        _check_sub_image(None, 10, None, -20)
+        _check_sub_image(-1020, None, -1000, None)
+        _check_sub_image(None, -1020, None, -1000)
+        _check_sub_image(0, None, nrows // 2, None)
+        _check_sub_image(nrows // 2, None, nrows, None)
+        _check_sub_image(1000, None, 1010, None)
+        _check_sub_image(None, 0, None, ncols // 2)
+        _check_sub_image(None, ncols // 2, None, ncols)
+        _check_sub_image(None, 1000, None, 1010)
+
+        rows_per_segment = reader.jbp["ImageSegments"][0]["subheader"]["NROWS"].value
+        # exactly first segment
+        _check_sub_image(0, 1000, rows_per_segment, 1010)
+        # exactly second segment
+        _check_sub_image(rows_per_segment, 1000, rows_per_segment * 2, 1010)
+        # crossing segments
+        _check_sub_image(rows_per_segment - 20, 1000, rows_per_segment + 20, 1010)
+        # within segment
+        _check_sub_image(rows_per_segment + 20, 1000, (2 * rows_per_segment) - 20, 1010)
+        # multiple segments
+        _check_sub_image(20, 1000, (3 * rows_per_segment) - 20, 1010)
+
+
+def test_remote_read(example_sicd):
+    with tests.utils.static_http_server(example_sicd.parent) as server_url:
+        with smart_open.open(
+            f"{server_url}/{example_sicd.name}", mode="rb"
+        ) as file_object:
+            with sksicd.NitfReader(file_object) as r:
+                _ = r.read_image()

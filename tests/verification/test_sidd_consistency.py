@@ -1,13 +1,16 @@
 import copy
 import datetime
 import pathlib
+import unittest.mock
 
 import lxml.builder
 import pytest
 from lxml import etree
 
-import sarkit.sidd as sksidd
-from sarkit.verification._sidd_consistency import SiddConsistency, main
+import sarkit.verification._siddcheck
+import tests.utils
+from sarkit.verification._sidd_consistency import SiddConsistency
+from sarkit.verification._siddcheck import main
 
 DATAPATH = pathlib.Path(__file__).parents[2] / "data"
 
@@ -15,26 +18,9 @@ GOOD_SIDD_XML_PATH = DATAPATH / "example-sidd-3.0.0.xml"
 
 
 @pytest.fixture(scope="session")
-def example_sidd_file(tmp_path_factory):
-    sidd_etree = etree.parse(GOOD_SIDD_XML_PATH)
-    tmp_sidd = (
-        tmp_path_factory.mktemp("data") / GOOD_SIDD_XML_PATH.with_suffix(".sidd").name
-    )
-    sec = {"security": {"clas": "U"}}
-    sidd_meta = sksidd.NitfMetadata(
-        file_header_part={"ostaid": "nowhere"} | sec,
-        images=[
-            sksidd.NitfProductImageMetadata(
-                xmltree=sidd_etree,
-                im_subheader_part=sec,
-                de_subheader_part=sec,
-            )
-        ],
-    )
-    with tmp_sidd.open("wb") as f, sksidd.NitfWriter(f, sidd_meta):
-        pass  # don't currently care about the pixels
-    assert not main([str(tmp_sidd)])
-    with tmp_sidd.open("rb") as f:
+def example_sidd_file(example_sidd):
+    assert not main([str(example_sidd)])
+    with example_sidd.open("rb") as f:
         yield f
 
 
@@ -343,3 +329,15 @@ def test_check_geodata_image_corners(example_sidd_file):
 def remove_nodes(*nodes):
     for node in nodes:
         node.getparent().remove(node)
+
+
+def test_smart_open_http(example_sidd):
+    with tests.utils.static_http_server(example_sidd.parent) as server_url:
+        assert not main([f"{server_url}/{example_sidd.name}"])
+
+
+def test_smart_open_contract(example_sidd, monkeypatch):
+    mock_open = unittest.mock.MagicMock(side_effect=tests.utils.simple_open_read)
+    monkeypatch.setattr(sarkit.verification._siddcheck, "open", mock_open)
+    assert not main([str(example_sidd)])
+    mock_open.assert_called_once_with(str(example_sidd), "rb")
