@@ -41,6 +41,7 @@ dev-test = [
     "aiohttp>=3.11",
     "pytest>=7.4.4",
     "smart_open[http]>=7.1.0",
+    "scipy>=1.12.0",
 ]
 dev = [
     "sarkit[dev-test,dev-lint]",
@@ -113,3 +114,4 @@ ignore_missing_imports = true
 Documentation = "https://sarkit.readthedocs.io/"
 Repository = "https://github.com/ValkyrieSystems/sarkit.git"
 "Bug Tracker" = "https://github.com/ValkyrieSystems/sarkit/issues"
+Changelog = "https://github.com/ValkyrieSystems/sarkit/blob/main/CHANGELOG.md"

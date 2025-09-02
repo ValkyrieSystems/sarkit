@@ -9,9 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - CPHD reference geometry calculations
+- CRSD reference geometry and related computations
 
 ### Changed
 - CLIs renamed from `<>-consistency` to `<>check`
+- Rearranged CRSD reference geometry API
 
 ### Removed
 - Several incomplete / NotImplemented APIs
