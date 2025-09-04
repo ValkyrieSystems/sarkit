@@ -402,6 +402,13 @@ def test_grid_shadows_downward(sicd_con):
     assert sicd_con.failures()
 
 
+def test_check_grid_sign(sicd_con):
+    col_sgn = sicd_con.xmlhelp.load("./{*}Grid/{*}Col/{*}Sgn")
+    sicd_con.xmlhelp.set("./{*}Grid/{*}Row/{*}Sgn", -col_sgn)
+    sicd_con.check("check_grid_sign")
+    testing.assert_failures(sicd_con, "Row and Col grid signs match")
+
+
 def test_grid_uvect_orthogonal(sicd_con):
     sicd_con.xmlhelp.set(
         "./{*}Grid/{*}Row/{*}UVectECF",
@@ -437,6 +444,15 @@ class TestGridNode:
         sicd_con.check(f"check_grid_unit_vector_{direction.lower()}")
         assert sicd_con.failures()
 
+    def test_check_uniform_ipr_width(self, direction, sicd_con, em):
+        grid_node = sicd_con.sicdroot.find(f"./{{*}}Grid/{{*}}{direction}")
+        grid_node.append(em.WgtType(em.WindowName("UNIFORM")))
+        sicd_con.xmlhelp.set(f"./{{*}}Grid/{{*}}{direction}/{{*}}ImpRespWid", 1e6)
+        sicd_con.check(f"check_uniform_ipr_width_{direction.lower()}")
+        testing.assert_failures(
+            sicd_con, f"Grid/{direction} uniform weighted IPR width matches bandwidth"
+        )
+
 
 @pytest.mark.parametrize("antenna", ["Tx", "Rcv", "TwoWay"])
 class TestAntennaNode:
@@ -458,6 +474,28 @@ class TestAntennaNode:
         assert sicd_con.failures()
 
 
+def test_check_antenna_oneway_apc_tx(sicd_con):
+    assert sicd_con.sicdroot.find("./{*}Antenna/{*}Tx") is not None
+    apc_poly = sicd_con.sicdroot.find("./{*}Position/{*}TxAPCPoly")
+
+    apc_poly.getparent().remove(apc_poly)
+    sicd_con.check("check_antenna_oneway_apc")
+    testing.assert_failures(
+        sicd_con, "TxAPCPoly must be present when Antenna/Tx is present"
+    )
+
+
+def test_check_antenna_oneway_apc_rcv(sicd_con):
+    assert sicd_con.sicdroot.find("./{*}Antenna/{*}Rcv") is not None
+    apc_polys = sicd_con.sicdroot.findall("./{*}Position/{*}RcvAPC/{*}RcvAPCPoly")
+    for apc_poly in apc_polys:
+        apc_poly.getparent().remove(apc_poly)
+    sicd_con.check("check_antenna_oneway_apc")
+    testing.assert_failures(
+        sicd_con, "RcvAPCPoly must be present when Antenna/Rcv is present"
+    )
+
+
 def test_grid_polys(sicd_con):
     _invalidate_2d_poly_coefs(sicd_con.sicdroot.find("./{*}Grid/{*}TimeCOAPoly"))
     for dir in ["Row", "Col"]:
@@ -476,6 +514,86 @@ def test_timeline_polys(sicd_con):
     sicd_con.check("check_timeline_polys")
     details = sicd_con.failures()["check_timeline_polys"]["details"]
     assert np.all([det["passed"] is False for det in details])
+
+
+def test_check_segment_start_and_end(sicd_con, em):
+    rca_plane = sicd_con.sicdroot.find("./{*}RadarCollection/{*}Area/{*}Plane")
+    rca_plane.append(
+        em.SegmentList(
+            em.Segment(
+                em.StartLine(str(0)),
+                em.StartSample(str(0)),
+                em.EndLine(str(-1)),
+                em.EndSample(str(-1)),
+            ),
+        )
+    )
+
+    sicd_con.check("check_segment_start_and_end")
+    testing.assert_failures(sicd_con, "SegmentList EndLine >= StartLine")
+    testing.assert_failures(sicd_con, "SegmentList EndSample >= StartSample")
+
+
+def test_check_tx_rf_bandwidth(sicd_con):
+    max_coll = sicd_con.xmlhelp.load("./{*}RadarCollection/{*}TxFrequency/{*}Max")
+    sicd_con.xmlhelp.set(
+        "./{*}RadarCollection/{*}Waveform/{*}WFParameters/{*}TxRFBandwidth", max_coll
+    )
+    sicd_con.check("check_tx_rf_bandwidth")
+    testing.assert_failures(sicd_con, "Waveform TxBW must be within the collected BW")
+    testing.assert_failures(sicd_con, "Derived BW must be close to the TxRFBW")
+
+
+def _tx_freq_start_gt_max(xmlhelp):
+    max_freq = xmlhelp.load("./{*}RadarCollection/{*}TxFrequency/{*}Max")
+    xmlhelp.set(
+        "./{*}RadarCollection/{*}Waveform/{*}WFParameters/{*}TxFreqStart", max_freq * 2
+    )
+
+
+def _tx_freq_start_lt_min(xmlhelp):
+    min_freq = xmlhelp.load("./{*}RadarCollection/{*}TxFrequency/{*}Min")
+    xmlhelp.set(
+        "./{*}RadarCollection/{*}Waveform/{*}WFParameters/{*}TxFreqStart", min_freq / 2
+    )
+
+
+@pytest.mark.parametrize(
+    "invalidate_tx_freq_start",
+    [
+        {
+            "func": _tx_freq_start_gt_max,
+            "error": "Waveform TxFreqStart <= max collected frequency",
+        },
+        {
+            "func": _tx_freq_start_lt_min,
+            "error": "Waveform TxFreqStart >= the min collected frequency",
+        },
+    ],
+)
+def test_check_tx_freq_start(sicd_con, invalidate_tx_freq_start):
+    invalidate_tx_freq_start["func"](sicd_con.xmlhelp)
+    sicd_con.check("check_tx_freq_start")
+    testing.assert_failures(sicd_con, invalidate_tx_freq_start["error"])
+
+
+@pytest.mark.parametrize(
+    "invalidate_tx_freq_bounds",
+    [
+        {
+            "func": _tx_freq_start_gt_max,
+            "error": "Computed waveform end frequency <= max collected frequency",
+        },
+        {
+            "func": _tx_freq_start_lt_min,
+            "error": "Computed waveform end frequency >= min collected frequency",
+        },
+    ],
+)
+def test_check_tx_freq_bounds(sicd_con, invalidate_tx_freq_bounds):
+    invalidate_tx_freq_bounds["func"](sicd_con.xmlhelp)
+    sicd_con.check("check_tx_freq_bounds")
+    testing.assert_failures(sicd_con, invalidate_tx_freq_bounds["error"])
 
 
 def test_position_polys(sicd_con):
@@ -502,6 +620,38 @@ def test_radiometric_polys(sicd_con):
     sicd_con.check("check_radiometric_polys")
     details = sicd_con.failures()["check_radiometric_polys"]["details"]
     assert np.all([det["passed"] is False for det in details])
+
+
+def _mismatch_chirp(xmlhelp):
+    xmlhelp.set(
+        "./{*}RadarCollection/{*}Waveform/{*}WFParameters/{*}RcvDemodType", "CHIRP"
+    )
+
+
+def _mismatch_stretch(xmlhelp):
+    xmlhelp.set("./{*}RadarCollection/{*}Waveform/{*}WFParameters/{*}RcvFMRate", 0.0)
+
+
+@pytest.mark.parametrize(
+    "invalidate_fmrate",
+    [
+        {
+            "func": _mismatch_chirp,
+            "error": "Consistent receive FM rate for chirp/stretch demodulation types",
+        },
+        {
+            "func": _mismatch_stretch,
+            "error": "Consistent receive FM rate for chirp/stretch demodulation types",
+        },
+    ],
+)
+def test_check_rcv_fmrate(sicd_con, invalidate_fmrate):
+    sicd_con.check("check_rcv_fmrate")
+    assert not sicd_con.failures()
+
+    invalidate_fmrate["func"](sicd_con.xmlhelp)
+    sicd_con.check("check_rcv_fmrate")
+    testing.assert_failures(sicd_con, invalidate_fmrate["error"])
 
 
 def test_antenna_polys(sicd_con):
@@ -544,6 +694,40 @@ def test_rgazcomp_polys(sicd_con, em):
     assert sicd_con.failures()
 
 
+def test_check_valid_data_indices(sicd_con):
+    sicd_con.check("check_valid_data_indices")
+    assert not sicd_con.failures()
+
+    vertices = sicd_con.sicdroot.findall("./{*}ImageData/{*}ValidData/{*}Vertex")
+    vertices[0].set("index", "99")
+    sicd_con.check("check_valid_data_indices")
+    testing.assert_failures(sicd_con, "GeoData indices equal to ImageData indices")
+
+
+def test_check_waveform_params_rcvwinlen(sicd_con):
+    sicd_con.check("check_waveform_params")
+    assert not sicd_con.failures()
+
+    wf_params_node = sicd_con.sicdroot.find(
+        "./{*}RadarCollection/{*}Waveform/{*}WFParameters"
+    )
+    wf_params_node.find("./{*}RcvWindowLength").text = "0.0"
+    sicd_con.check("check_waveform_params")
+    testing.assert_failures(sicd_con, "RcvWindowLength > zero")
+
+
+def test_check_waveform_params_txfmrate(sicd_con):
+    sicd_con.check("check_waveform_params")
+    assert not sicd_con.failures()
+
+    wf_params_node = sicd_con.sicdroot.find(
+        "./{*}RadarCollection/{*}Waveform/{*}WFParameters"
+    )
+    wf_params_node.find("./{*}TxFMRate").text = "0.0"
+    sicd_con.check("check_waveform_params")
+    testing.assert_failures(sicd_con, "TxFMRate not zero")
+
+
 def test_rgazcomp_ifa(sicd_con, em):
     sicd_con.sicdroot.append(
         em.RgAzComp(
@@ -555,6 +739,135 @@ def test_rgazcomp_ifa(sicd_con, em):
     sicd_con.sicdroot.find("./{*}ImageFormation/{*}ImageFormAlgo").text = "RGAZCOMP"
     sicd_con.check("check_valid_ifa")
     assert not sicd_con.failures()
+
+
+def test_check_validdata_first_vertex(sicd_con):
+    sicd_con.check("check_validdata_first_vertex")
+    assert not sicd_con.failures()
+
+    vertices = sicd_con.xmlhelp.load("./{*}ImageData/{*}ValidData")
+    vertices[0] = [np.max(vertices[:, 0]), np.max(vertices[:, 1])]
+    sicd_con.xmlhelp.set("./{*}ImageData/{*}ValidData", vertices)
+    sicd_con.check("check_validdata_first_vertex")
+    testing.assert_failures(sicd_con, "First ValidData Vertex is min row -> min col")
+
+
+def test_check_no_validdata_presence(sicd_con):
+    id_validdata_node = sicd_con.sicdroot.find("./{*}ImageData/{*}ValidData")
+    id_validdata_node.getparent().remove(id_validdata_node)
+    gd_validdata_node = sicd_con.sicdroot.find("./{*}GeoData/{*}ValidData")
+    gd_validdata_node.getparent().remove(gd_validdata_node)
+
+    sicd_con.check("check_validdata_presence")
+    assert not sicd_con.failures()
+
+
+def _validdata_missing_from_imagedata(xml):
+    validdata_node = xml.find("./{*}ImageData/{*}ValidData")
+    validdata_node.getparent().remove(validdata_node)
+
+
+def _validdata_missing_from_geodata(xml):
+    validdata_node = xml.find("./{*}GeoData/{*}ValidData")
+    validdata_node.getparent().remove(validdata_node)
+
+
+@pytest.mark.parametrize(
+    "missing_validdata",
+    [
+        {
+            "func": _validdata_missing_from_imagedata,
+            "error": "ValidData in both GeoData and ImageData or neither",
+        },
+        {
+            "func": _validdata_missing_from_geodata,
+            "error": "ValidData in both GeoData and ImageData or neither",
+        },
+    ],
+)
+def test_check_validdata_presence(sicd_con, missing_validdata):
+    missing_validdata["func"](sicd_con.sicdroot)
+    sicd_con.check("check_validdata_presence")
+    testing.assert_failures(sicd_con, missing_validdata["error"])
+
+
+def test_check_validdata_winding(sicd_con):
+    sicd_con.check("check_validdata_winding")
+    assert not sicd_con.failures()
+
+    vertices = sicd_con.xmlhelp.load("./{*}ImageData/{*}ValidData")
+    vertices = vertices[::-1]
+    sicd_con.xmlhelp.set("./{*}ImageData/{*}ValidData", vertices)
+    sicd_con.check("check_validdata_winding")
+    testing.assert_failures(sicd_con, "Clockwise ValidData")
+
+
+def test_check_validdata_simpleness(sicd_con):
+    sicd_con.check("check_validdata_simpleness")
+    assert not sicd_con.failures()
+
+    vertices = sicd_con.xmlhelp.load("./{*}ImageData/{*}ValidData")
+    vertices[[2, 3]] = vertices[[3, 2]]
+    sicd_con.xmlhelp.set("./{*}ImageData/{*}ValidData", vertices)
+    sicd_con.check("check_validdata_simpleness")
+    testing.assert_failures(sicd_con, "Simple ValidData")
+
+
+def test_check_pfa_grid_type(sicd_con):
+    sicd_con.check("check_pfa_grid_type")
+    assert sicd_con.passes()
+
+    sicd_con.xmlhelp.set("./{*}Grid/{*}Type", "RGZERO")
+    sicd_con.check("check_pfa_grid_type")
+    testing.assert_failures(sicd_con, "PFA grid type must be RGAZIM")
+
+
+def _bad_kaz1(xmlhelp):
+    xmlhelp.set("./{*}PFA/{*}Kaz1", -10000.0)
+
+
+def _bad_kaz2(xmlhelp):
+    xmlhelp.set("./{*}PFA/{*}Kaz2", 10000.0)
+
+
+@pytest.mark.parametrize(
+    "invalidate_kaz",
+    [
+        {"func": _bad_kaz1, "error": "PFA Kaz1 within half of 1/Grid.Col.SS of KCtr"},
+        {"func": _bad_kaz2, "error": "PFA Kaz2 within half of 1/Grid.Col.SS of KCtr"},
+    ],
+)
+def test_check_pfa_spot_kaz_to_grid(sicd_con, invalidate_kaz):
+    sicd_con.check("check_pfa_spot_kaz_to_grid")
+    assert not sicd_con.failures()
+
+    invalidate_kaz["func"](sicd_con.xmlhelp)
+    sicd_con.check("check_pfa_spot_kaz_to_grid")
+    testing.assert_failures(sicd_con, invalidate_kaz["error"])
+
+
+def _bad_krg1(xmlhelp):
+    xmlhelp.set("./{*}PFA/{*}Krg1", -10000.0)
+
+
+def _bad_krg2(xmlhelp):
+    xmlhelp.set("./{*}PFA/{*}Krg2", 10000.0)
+
+
+@pytest.mark.parametrize(
+    "invalidate_krg",
+    [
+        {"func": _bad_krg1, "error": "PFA Krg1 within half of 1/Grid.Row.SS of KCtr"},
+        {"func": _bad_krg2, "error": "PFA Krg2 within half of 1/Grid.Row.SS of KCtr"},
+    ],
+)
+def test_check_pfa_krg_to_grid(sicd_con, invalidate_krg):
+    sicd_con.check("check_pfa_krg_to_grid")
+    assert not sicd_con.failures()
+
+    invalidate_krg["func"](sicd_con.xmlhelp)
+    sicd_con.check("check_pfa_krg_to_grid")
+    testing.assert_failures(sicd_con, invalidate_krg["error"])
 
 
 @pytest.mark.parametrize(
@@ -612,6 +925,58 @@ def test_pfa_stds_kcoa(sicd_con, em):
     sicd_con.check("check_pfa_stds_kcoa")
     details = sicd_con.failures()["check_pfa_stds_kcoa"]["details"]
     assert np.all([det["passed"] is False for det in details])
+
+
+def _min_proc_lt_min_coll(xmlhelp):
+    min_coll = xmlhelp.load("./{*}RadarCollection/{*}TxFrequency/{*}Min")
+    xmlhelp.set("./{*}ImageFormation/{*}TxFrequencyProc/{*}MinProc", min_coll / 2)
+
+
+def _max_proc_gt_max_coll(xmlhelp):
+    max_coll = xmlhelp.load("./{*}RadarCollection/{*}TxFrequency/{*}Max")
+    xmlhelp.set("./{*}ImageFormation/{*}TxFrequencyProc/{*}MaxProc", max_coll * 2)
+
+
+def _max_coll_lt_min_coll(xmlhelp):
+    min_coll = xmlhelp.load("./{*}RadarCollection/{*}TxFrequency/{*}Min")
+    xmlhelp.set("./{*}RadarCollection/{*}TxFrequency/{*}Max", min_coll / 2)
+
+
+def _max_proc_lt_min_proc(xmlhelp):
+    min_proc = xmlhelp.load("./{*}ImageFormation/{*}TxFrequencyProc/{*}MinProc")
+    xmlhelp.set("./{*}ImageFormation/{*}TxFrequencyProc/{*}MaxProc", min_proc / 2)
+
+
+def _zero_min(xmlhelp):
+    xmlhelp.set("./{*}RadarCollection/{*}TxFrequency/{*}Min", 0.0)
+
+
+@pytest.mark.parametrize(
+    "invalidate_proc_freq",
+    [
+        {
+            "func": _min_proc_lt_min_coll,
+            "error": "Min processed frequency >= min collected frequency",
+        },
+        {
+            "func": _max_proc_gt_max_coll,
+            "error": "Max processed frequency <= max collected frequency",
+        },
+        {
+            "func": _max_coll_lt_min_coll,
+            "error": "Max collected frequency > min collected",
+        },
+        {
+            "func": _max_proc_lt_min_proc,
+            "error": "Max processed frequency > min processed",
+        },
+        {"func": _zero_min, "error": "Min collected frequency > 0.0"},
+    ],
+)
+def test_check_proc_freq(sicd_con, invalidate_proc_freq):
+    invalidate_proc_freq["func"](sicd_con.xmlhelp)
+    sicd_con.check("check_proc_freq")
+    testing.assert_failures(sicd_con, invalidate_proc_freq["error"])
 
 
 @pytest.fixture
@@ -718,6 +1083,18 @@ def test_segment_identifier(sicd_con, em):
     assert sicd_con.passes()
 
 
+def test_check_segment_unique_ids(sicd_con, em):
+    rca_plane = sicd_con.sicdroot.find("./{*}RadarCollection/{*}Area/{*}Plane")
+    rca_plane.append(
+        em.SegmentList(
+            em.Segment(em.Identifier("seg1")),
+            em.Segment(em.Identifier("seg1")),
+        )
+    )
+    sicd_con.check("check_segment_unique_ids")
+    testing.assert_failures(sicd_con, "SegmentList segments have unique identifiers")
+
+
 def test_check_image_formation_timeline(sicd_con):
     sicd_con.xmlhelp.set(
         "./{*}ImageFormation/{*}TStartProc",
@@ -751,6 +1128,23 @@ def test_check_rcvapcindex_nopolys(sicd_con):
     rcvapcnode.getparent().remove(rcvapcnode)
     sicd_con.check("check_rcvapcindex")
     assert sicd_con.failures()
+
+
+def test_check_chanindex(sicd_con):
+    sicd_con.check("check_chanindex")
+    assert sicd_con.passes()
+
+    rcv_channels = sicd_con.sicdroot.findall("./{*}ImageFormation/{*}RcvChanProc")
+    # Change the first ChanIndex
+    rcv_channels[0].find("./{*}ChanIndex").text = "99"
+    sicd_con.check("check_chanindex")
+    testing.assert_failures(sicd_con, "ChanIndex 99 must reference a ChanParameters")
+
+
+def test_check_collection_duration(sicd_con):
+    sicd_con.xmlhelp.set("./{*}Timeline/{*}CollectDuration", 0.0)
+    sicd_con.check("check_collection_duration")
+    testing.assert_failures(sicd_con, "CollectionDuration > zero")
 
 
 def test_check_nitf_imseg(example_sicd_file, tmp_path):
@@ -842,6 +1236,80 @@ def test_check_error_components_posvel_corr(sicd_con, em):
     p1v1.text = "-1.1"
     sicd_con.check("check_error_components_posvel_corr")
     testing.assert_failures(sicd_con, "CorrCoefs P1V1 <= 1.0")
+
+
+def _bad_composite_rg(xmlhelp):
+    xmlhelp.set("./{*}ErrorStatistics/{*}CompositeSCP/{*}Rg", -1.0)
+
+
+def _bad_composite_az(xmlhelp):
+    xmlhelp.set("./{*}ErrorStatistics/{*}CompositeSCP/{*}Az", -1.0)
+
+
+def _bad_composite_rgaz(xmlhelp):
+    xmlhelp.set("./{*}ErrorStatistics/{*}CompositeSCP/{*}RgAz", 2.0)
+
+
+@pytest.mark.parametrize(
+    "invalidate_composite_scp",
+    [
+        {"func": _bad_composite_rg, "error": "CompositeSCP Rg >= 0.0"},
+        {"func": _bad_composite_az, "error": "CompositeSCP Az >= 0.0"},
+        {"func": _bad_composite_rgaz, "error": "CompositeSCP RgAz <= 1.0"},
+    ],
+)
+def test_check_error_composite(sicd_con, em, invalidate_composite_scp):
+    assert sicd_con.sicdroot.find("./{*}ErrorStatistics") is None
+    sicd_con.sicdroot.append(
+        em.ErrorStatistics(
+            em.CompositeSCP(
+                em.Rg("1.0"),
+                em.Az("2.0"),
+                em.RgAz("0.0"),
+            )
+        )
+    )
+    sicd_con.check("check_error_composite")
+    assert sicd_con.passes()
+
+    invalidate_composite_scp["func"](sicd_con.xmlhelp)
+    sicd_con.check("check_error_composite")
+    testing.assert_failures(sicd_con, invalidate_composite_scp["error"])
+
+
+def test_check_error_radarsensor_rangebias(sicd_con, em):
+    assert sicd_con.sicdroot.find("./{*}ErrorStatistics") is None
+    sicd_con.sicdroot.append(
+        em.ErrorStatistics(
+            em.Components(
+                em.RadarSensor(
+                    em.RangeBias("1.0"),
+                )
+            )
+        )
+    )
+    sicd_con.check("check_error_radarsensor_rangebias")
+    assert sicd_con.passes()
+
+    sicd_con.xmlhelp.set(
+        "./{*}ErrorStatistics/{*}Components/{*}RadarSensor/{*}RangeBias", -1.0
+    )
+    sicd_con.check("check_error_radarsensor_rangebias")
+    testing.assert_failures(sicd_con, "RangeBias >= 0.0")
+
+
+def test_check_txsequence_waveform_index(sicd_con, em):
+    assert sicd_con.sicdroot.find("./{*}RadarCollection/{*}TxSequence") is None
+    rc_node = sicd_con.sicdroot.find("./{*}RadarCollection")
+    rc_node.append(em.TxSequence(em.TxStep(em.WFIndex("1"))))
+    sicd_con.check("check_txsequence_waveform_index")
+    assert sicd_con.passes()
+
+    sicd_con.xmlhelp.set(
+        "./{*}RadarCollection/{*}TxSequence/{*}TxStep/{*}WFIndex", "100"
+    )
+    sicd_con.check("check_txsequence_waveform_index")
+    testing.assert_failures(sicd_con, "WFIndex 100 must reference a WFParameters")
 
 
 def test_smart_open_http(example_sicd):

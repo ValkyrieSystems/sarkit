@@ -1189,7 +1189,7 @@ class SicdConsistency(con.ConsistencyChecker):
                 segment_id.text
                 for segment_id in segment_list.findall("./{*}Segment/{*}Identifier")
             ]
-            with self.need("SegmentList segments have identifiers"):
+            with self.need("SegmentList segments have unique identifiers"):
                 assert len(set(segment_ids)) == len(segment_ids)
 
     def _compute_area_plane_corners_ecef(self):
@@ -1427,13 +1427,13 @@ class SicdConsistency(con.ConsistencyChecker):
                     "ADCSampleRate",
                     "RcvIFBandwidth",
                 ):
-                    node = wf_params.find(param)
+                    node = wf_params.find(f"./{{*}}{param}")
                     with self.precondition():
                         assert node is not None
                         with self.need(f"{param} > zero"):
-                            assert float(node.text) > con.Approx(0.0)
+                            assert float(node.text) > 0.0
 
-                node = wf_params.find("TxFMRate")
+                node = wf_params.find("./{*}TxFMRate")
                 with self.precondition():
                     assert node is not None
                     with self.need("TxFMRate not zero"):
@@ -1519,9 +1519,13 @@ class SicdConsistency(con.ConsistencyChecker):
                 tx_fm_rate = float(wf_parameters.findtext("./{*}TxFMRate"))
                 tx_freq_end = tx_freq_start + tx_pulse_length * tx_fm_rate
                 wf_freq_bounds.extend([tx_freq_start, tx_freq_end])
-                with self.need("Waveform TxFreqEnd <= max collected frequency"):
+                with self.need(
+                    "Computed waveform end frequency <= max collected frequency"
+                ):
                     assert tx_freq_end <= con.Approx(max_coll)
-                with self.need("Waveform TxFreqEnd >= min collected frequency"):
+                with self.need(
+                    "Computed waveform end frequency >= min collected frequency"
+                ):
                     assert tx_freq_end >= con.Approx(min_coll)
 
         with self.precondition():
@@ -1541,8 +1545,8 @@ class SicdConsistency(con.ConsistencyChecker):
         with self.precondition():
             assert waveform is not None
             for wf_params in waveform.findall("./{*}WFParameters"):
-                demod = wf_params.find("RcvDemodType")
-                fmrate = wf_params.find("RcvFMRate")
+                demod = wf_params.find("./{*}RcvDemodType")
+                fmrate = wf_params.find("./{*}RcvFMRate")
                 with self.need(
                     "Consistent receive FM rate for chirp/stretch demodulation types"
                 ):
@@ -1714,7 +1718,9 @@ class SicdConsistency(con.ConsistencyChecker):
             assert composite is not None
             for param in ("Rg", "Az"):
                 with self.need(f"CompositeSCP {param} >= 0.0"):
-                    assert float(composite.findtext(param)) >= con.Approx(0.0)
+                    assert float(composite.findtext(f"./{{*}}{param}")) >= con.Approx(
+                        0.0
+                    )
 
             with self.need("CompositeSCP RgAz <= 1.0"):
                 rg_az = abs(float(composite.findtext("./{*}RgAz")))
