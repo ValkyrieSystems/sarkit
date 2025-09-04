@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - CLIs renamed from `<>-consistency` to `<>check`
 - Rearranged CRSD reference geometry API
+- Rearranged SICD sensitivity/error propagation API
 
 ### Removed
 - Several incomplete / NotImplemented APIs
