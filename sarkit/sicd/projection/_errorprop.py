@@ -63,29 +63,25 @@ def _compute_rici_rotation_matrix(p_ecef, v_ecef):
     )
 
 
-def compute_ecef_pv_covariance(c_pv, p_ecef, v_ecef, frame):
-    """Transform the input position and velocity covariance matrix to ECEF coordinates.
+def compute_ecef_pv_transformation(p_ecef, v_ecef, frame):
+    """Return the transformation matrix from ``frame`` to ECEF.
 
     Parameters
     ----------
-    c_pv : (6, 6) array_like
-        Position and velocity covariance matrix in ``frame`` coordinates
     p_ecef, v_ecef : (3,) array_like
         Position and velocity in ECEF coordinates
     frame : {'ECF', 'RICF', 'RICI'}
-        Name of ``c_pv`` coordinate frame
+        Name of coordinate frame
 
     Returns
     -------
     (6, 6) ndarray
-        ``c_pv`` transformed into ECEF coordinates
+        transformation matrix from ``frame`` to ECEF
     """
     if frame == "ECF":
-        return np.asarray(c_pv)
+        return np.eye(6)
     if frame == "RICF":
-        t = _compute_ricf_rotation_matrix(p_ecef, v_ecef)
-        return t @ c_pv @ t.T
+        return _compute_ricf_rotation_matrix(p_ecef, v_ecef)
     if frame == "RICI":
-        t = _compute_rici_rotation_matrix(p_ecef, v_ecef)
-        return t @ c_pv @ t.T
+        return _compute_rici_rotation_matrix(p_ecef, v_ecef)
     raise ValueError(frame)

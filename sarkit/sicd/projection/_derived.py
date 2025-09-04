@@ -17,7 +17,7 @@ def _get_projsets(sicd_xmltree, image_grid_locations):
 
     if params.AdjustableParameterOffsets.exists(sicd_xmltree):
         adjust_param_offsets = params.AdjustableParameterOffsets.from_xml(sicd_xmltree)
-        projection_sets = calc.compute_and_apply_offsets(
+        projection_sets = calc.apply_apos(
             proj_metadata, projection_sets, adjust_param_offsets
         )
     return proj_metadata, projection_sets
