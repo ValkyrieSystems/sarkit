@@ -2,6 +2,7 @@ import dataclasses
 from typing import TypeAlias
 
 import numpy as np
+import numpy.polynomial.polynomial as npp
 import numpy.typing as npt
 
 import sarkit._constants
@@ -58,38 +59,44 @@ class ImageLocationSensitivityMatrices:
 
 
 @dataclasses.dataclass(kw_only=True)
-class PosVelSensitivityMatricesMono:
-    """Sensitivity matrices that relate changes in monostatic ARP position/velocity to range/range rate. (Table 11-4)"""
+class PVTSensitivityMatricesMono:
+    """Monostatic position/velocity/timing sensitivity matrices (Table 11-4)"""
 
     M_RRdot_delta_ARP: np.ndarray
     M_RRdot_delta_VARP: np.ndarray
+    M_RRdot_CLK_SF: np.ndarray  # noqa: N815
 
     def __post_init__(self):
         assert self.M_RRdot_delta_ARP.shape == (2, 3)
         assert self.M_RRdot_delta_VARP.shape == (2, 3)
+        assert self.M_RRdot_CLK_SF.shape == (2, 1)
 
 
 @dataclasses.dataclass(kw_only=True)
-class PosVelSensitivityMatricesBi:
-    """Sensitivity matrices that relate changes in bistatic APC positions/velocities to range/range rate. (Table 11-5)"""
+class PVTSensitivityMatricesBi:
+    """Bistatic position/velocity/timing sensitivity matrices (Table 11-5)"""
 
     M_RRdot_delta_Xmt: np.ndarray
     M_RRdot_delta_VXmt: np.ndarray
+    M_RRdot_XTF: np.ndarray
     M_RRdot_delta_Rcv: np.ndarray
     M_RRdot_delta_VRcv: np.ndarray
+    M_RRdot_RTF: np.ndarray
 
     def __post_init__(self):
         assert self.M_RRdot_delta_Xmt.shape == (2, 3)
         assert self.M_RRdot_delta_VXmt.shape == (2, 3)
+        assert self.M_RRdot_XTF.shape == (2, 2)
         assert self.M_RRdot_delta_Rcv.shape == (2, 3)
         assert self.M_RRdot_delta_VRcv.shape == (2, 3)
+        assert self.M_RRdot_RTF.shape == (2, 2)
 
 
 @dataclasses.dataclass(kw_only=True)
 class SensitivityMatricesMono(
     SlantPlaneSensitivityMatrices,
     ImageLocationSensitivityMatrices,
-    PosVelSensitivityMatricesMono,
+    PVTSensitivityMatricesMono,
 ):
     """Sensitivity Matrices from IPDD for a monostatic image"""
 
@@ -98,7 +105,7 @@ class SensitivityMatricesMono(
 class SensitivityMatricesBi(
     SlantPlaneSensitivityMatrices,
     ImageLocationSensitivityMatrices,
-    PosVelSensitivityMatricesBi,
+    PVTSensitivityMatricesBi,
 ):
     """Sensitivity Matrices from IPDD for a bistatic image"""
 
@@ -109,10 +116,6 @@ class ProjGeomParamsMono:
 
     uPT: np.ndarray  # noqa: N815
     uPTDot: np.ndarray  # noqa: N815
-    VM_0: float
-    cos_DCA: float  # noqa: N815
-    sin_DCA: float  # noqa: N815
-    tan_DCA: float  # noqa: N815
 
 
 def compute_proj_geom_params_mono(
@@ -137,19 +140,9 @@ def compute_proj_geom_params_mono(
     u_pt = (proj_set_0.ARP_COA - pt0) / proj_set_0.R_COA
     u_pt_dot = (proj_set_0.VARP_COA - proj_set_0.Rdot_COA * u_pt) / proj_set_0.R_COA
 
-    # (2)
-    vm0 = np.linalg.norm(proj_set_0.VARP_COA, axis=-1)
-    cos_dca = -proj_set_0.Rdot_COA / vm0
-    sin_dca = np.sqrt(1 - cos_dca**2)
-    tan_dca = sin_dca / cos_dca
-
     return ProjGeomParamsMono(
         uPT=u_pt,
         uPTDot=u_pt_dot,
-        VM_0=vm0,
-        cos_DCA=cos_dca,
-        sin_DCA=sin_dca,
-        tan_DCA=tan_dca,
     )
 
 
@@ -167,10 +160,15 @@ class ProjGeomParamsBi:
     uRcvDot: np.ndarray  # noqa: N815
     bP: np.ndarray  # noqa: N815
     bPDot: np.ndarray  # noqa: N815
+    TRTX_0: float
+    TRTXdot_0: float
 
 
 def compute_proj_geom_params_bi(
-    proj_set_0: params.ProjectionSetsBi, pt0: npt.ArrayLike
+    proj_set_0: params.ProjectionSetsBi,
+    pt0: npt.ArrayLike,
+    xmt_poly: npt.ArrayLike,
+    rcv_poly: npt.ArrayLike,
 ) -> ProjGeomParamsBi:
     """Compute set of projection geometry parameters for Collect Type = Bistatic
 
@@ -180,6 +178,8 @@ def compute_proj_geom_params_bi(
         Bistatic COA projection set for a projection pair: IL0 and PT0
     pt0 : (3,) array_like
         Scene point with ECEF (WGS 84 cartesian) X, Y, Z components in meters
+    xmt_poly, rcv_poly : array_like
+        Transmit APC and receive APC position vs time polynomial coefficients
 
     Returns
     -------
@@ -192,16 +192,30 @@ def compute_proj_geom_params_bi(
     u_xmt = (proj_set_0.Xmt_COA - pt0) / r_xmt_0coa
     rdot_xmt_0coa = np.dot(proj_set_0.VXmt_COA, u_xmt)
     u_xmtdot = (proj_set_0.VXmt_COA - rdot_xmt_0coa * u_xmt) / r_xmt_0coa
+    axmt_0coa = npp.polyval(proj_set_0.tx_COA, npp.polyder(np.asarray(xmt_poly), 2))
+    rddot_xmt_0coa = (
+        np.dot(axmt_0coa, u_xmt)
+        + (np.linalg.norm(proj_set_0.VXmt_COA) ** 2 - rdot_xmt_0coa**2) / r_xmt_0coa
+    )
 
     # (2)
     r_rcv_0coa = np.linalg.norm(proj_set_0.Rcv_COA - pt0)
     u_rcv = (proj_set_0.Rcv_COA - pt0) / r_rcv_0coa
     rdot_rcv_0coa = np.dot(proj_set_0.VRcv_COA, u_rcv)
     u_rcvdot = (proj_set_0.VRcv_COA - rdot_rcv_0coa * u_rcv) / r_rcv_0coa
+    arcv_0coa = npp.polyval(proj_set_0.tr_COA, npp.polyder(np.asarray(rcv_poly), 2))
+    rddot_rcv_0coa = (
+        np.dot(arcv_0coa, u_rcv)
+        + (np.linalg.norm(proj_set_0.VRcv_COA) ** 2 - rdot_rcv_0coa**2) / r_rcv_0coa
+    )
 
     # (3)
     bp = (u_xmt + u_rcv) / 2.0
     bpdot = (u_xmtdot + u_rcvdot) / 2.0
+
+    # (4)
+    trtx_0 = (C + rdot_xmt_0coa) / (C - rdot_rcv_0coa)
+    trtxdot_0 = (rddot_xmt_0coa + rddot_rcv_0coa) / C
 
     return ProjGeomParamsBi(
         R_Xmt_0coa=float(r_xmt_0coa),
@@ -214,6 +228,8 @@ def compute_proj_geom_params_bi(
         uRcvDot=u_rcvdot,
         bP=bp,
         bPDot=bpdot,
+        TRTX_0=float(trtx_0),
+        TRTXdot_0=float(trtxdot_0),
     )
 
 
@@ -274,7 +290,11 @@ def compute_slant_plane_sensitivity_matrices(
     if isinstance(proj_set_0, params.ProjectionSetsMono):
         geom_params = compute_proj_geom_params_mono(proj_set_0, pt0)
     else:
-        geom_params = compute_proj_geom_params_bi(proj_set_0, pt0)
+        assert proj_metadata.Xmt_Poly is not None
+        assert proj_metadata.Rcv_Poly is not None
+        geom_params = compute_proj_geom_params_bi(
+            proj_set_0, pt0, proj_metadata.Xmt_Poly, proj_metadata.Rcv_Poly
+        )
 
     # SPC & GPC Parameters
     # (1)
@@ -393,7 +413,11 @@ def compute_image_location_sensitivity_matrices(
     if isinstance(proj_set_0, params.ProjectionSetsMono):
         proj_parameters = compute_proj_geom_params_mono(proj_set_0, pt0)
     else:
-        proj_parameters = compute_proj_geom_params_bi(proj_set_0, pt0)
+        assert proj_metadata.Xmt_Poly is not None
+        assert proj_metadata.Rcv_Poly is not None
+        proj_parameters = compute_proj_geom_params_bi(
+            proj_set_0, pt0, proj_metadata.Xmt_Poly, proj_metadata.Rcv_Poly
+        )
 
     sp_mats = compute_slant_plane_sensitivity_matrices(proj_metadata, pt0, u_gpn0)
 
@@ -558,11 +582,11 @@ def compute_image_location_sensitivity_matrices(
     )
 
 
-def compute_pos_vel_sensitity_matrices_mono(
+def compute_pvt_sensitivity_matrices_mono(
     proj_metadata: params.MetadataParams,
     pt0: npt.ArrayLike | None = None,
-) -> PosVelSensitivityMatricesMono:
-    """Compute the defined monostatic position/velocity sensitivity matrices.
+) -> PVTSensitivityMatricesMono:
+    """Compute the defined monostatic position/velocity/timing sensitivity matrices.
 
     Parameters
     ----------
@@ -573,7 +597,7 @@ def compute_pos_vel_sensitity_matrices_mono(
 
     Returns
     -------
-    PosVelSensitivityMatricesMono
+    PVTSensitivityMatricesMono
     """
     pt0, _ = _get_proj_parameters(proj_metadata, pt0)
 
@@ -594,17 +618,23 @@ def compute_pos_vel_sensitity_matrices_mono(
         ]
     )
 
-    return PosVelSensitivityMatricesMono(
+    # (3)
+    crsf = -proj_set_0.R_COA
+    crdotsf = 0
+    m_rrdot_clk_sf = np.array([crsf, crdotsf]).reshape((2, 1))
+
+    return PVTSensitivityMatricesMono(
         M_RRdot_delta_ARP=m_rrdot_delta_arp,
         M_RRdot_delta_VARP=m_rrdot_delta_varp,
+        M_RRdot_CLK_SF=m_rrdot_clk_sf,
     )
 
 
-def compute_pos_vel_sensitity_matrices_bi(
+def compute_pvt_sensitivity_matrices_bi(
     proj_metadata: params.MetadataParams,
     pt0: npt.ArrayLike | None = None,
-) -> PosVelSensitivityMatricesBi:
-    """Compute the defined bistatic position/velocity sensitivity matrices.
+) -> PVTSensitivityMatricesBi:
+    """Compute the defined bistatic position/velocity/timing sensitivity matrices.
 
     Parameters
     ----------
@@ -615,14 +645,18 @@ def compute_pos_vel_sensitity_matrices_bi(
 
     Returns
     -------
-    PosVelSensitivityMatricesBi
+    PVTSensitivityMatricesBi
     """
     pt0, _ = _get_proj_parameters(proj_metadata, pt0)
 
     il0, _, _ = _calc.scene_to_image(proj_metadata, pt0)
     proj_set_0 = _calc.compute_projection_sets(proj_metadata, il0)
     assert isinstance(proj_set_0, params.ProjectionSetsBi)
-    geom_params = compute_proj_geom_params_bi(proj_set_0, pt0)
+    assert proj_metadata.Xmt_Poly is not None
+    assert proj_metadata.Rcv_Poly is not None
+    geom_params = compute_proj_geom_params_bi(
+        proj_set_0, pt0, proj_metadata.Xmt_Poly, proj_metadata.Rcv_Poly
+    )
 
     # (1)
     m_rrdot_delta_xmt = -0.5 * np.stack([geom_params.uXmt, geom_params.uXmtDot])
@@ -637,9 +671,17 @@ def compute_pos_vel_sensitity_matrices_bi(
     )
 
     # (3)
-    m_rrdot_delta_rcv = -0.5 * np.stack([geom_params.uRcv, geom_params.uRcvDot])
+    m_rrdot_xtf = (C / 2) * np.array(
+        [
+            [-geom_params.TRTX_0, proj_set_0.tx_COA - proj_metadata.t_SCP_COA],
+            [-geom_params.TRTXdot_0, 1],
+        ]
+    )
 
     # (4)
+    m_rrdot_delta_rcv = -0.5 * np.stack([geom_params.uRcv, geom_params.uRcvDot])
+
+    # (5)
     delta_tr_il0_coa = proj_set_0.tr_COA - proj_metadata.t_SCP_COA
     m_rrdot_delta_vrcv = -0.5 * np.stack(
         [
@@ -648,11 +690,18 @@ def compute_pos_vel_sensitity_matrices_bi(
         ]
     )
 
-    return PosVelSensitivityMatricesBi(
+    # (6)
+    m_rrdot_rtf = (C / 2) * np.array(
+        [[+1, -(proj_set_0.tr_COA - proj_metadata.t_SCP_COA)], [0, -1]]
+    )
+
+    return PVTSensitivityMatricesBi(
         M_RRdot_delta_Xmt=m_rrdot_delta_xmt,
         M_RRdot_delta_VXmt=m_rrdot_delta_vxmt,
+        M_RRdot_XTF=m_rrdot_xtf,
         M_RRdot_delta_Rcv=m_rrdot_delta_rcv,
         M_RRdot_delta_VRcv=m_rrdot_delta_vrcv,
+        M_RRdot_RTF=m_rrdot_rtf,
     )
 
 
@@ -688,15 +737,15 @@ def compute_sensitivity_matrices(
     il_mats = compute_image_location_sensitivity_matrices(
         proj_metadata, pt0, u_gpn0, delta_xrow, delta_ycol
     )
-    pv_mats: PosVelSensitivityMatricesMono | PosVelSensitivityMatricesBi
+    pv_mats: PVTSensitivityMatricesMono | PVTSensitivityMatricesBi
     if proj_metadata.is_monostatic():
-        pv_mats = compute_pos_vel_sensitity_matrices_mono(proj_metadata, pt0)
+        pv_mats = compute_pvt_sensitivity_matrices_mono(proj_metadata, pt0)
         return SensitivityMatricesMono(
             **dataclasses.asdict(sp_mats),
             **dataclasses.asdict(il_mats),
             **dataclasses.asdict(pv_mats),
         )
-    pv_mats = compute_pos_vel_sensitity_matrices_bi(proj_metadata, pt0)
+    pv_mats = compute_pvt_sensitivity_matrices_bi(proj_metadata, pt0)
     return SensitivityMatricesBi(
         **dataclasses.asdict(sp_mats),
         **dataclasses.asdict(il_mats),

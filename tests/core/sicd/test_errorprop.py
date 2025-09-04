@@ -112,7 +112,6 @@ def test_compute_composite_error_no_apo_bi():
         proj_set_0,
         sens_mat,
         sicdproj.ErrorStatParams(),
-        projmeta.t_SCP_COA,
     )
     assert c_rgaz is None
 
@@ -123,7 +122,6 @@ def test_compute_composite_error_no_apo_bi():
         sicdproj.ErrorStatParams(
             C_SCP_RRdot=np.eye(2),
         ),
-        projmeta.t_SCP_COA,
     )
     assert c_rgaz is not None
 
@@ -143,7 +141,6 @@ def test_compute_composite_error_no_apo_bi():
             ),
             C_UI=np.eye(2),
         ),
-        projmeta.t_SCP_COA,
     )
     assert c_rgaz is not None
 
@@ -152,37 +149,30 @@ def test_compute_composite_error_apo_bi():
     sicd_xmltree = lxml.etree.parse(DATAPATH / "example-sicd-1.4.0.xml")
     projmeta = sicdproj.MetadataParams.from_xml(sicd_xmltree)
     assert projmeta.is_bistatic()
-    proj_set_0 = sicdproj.compute_projection_sets(projmeta, [0, 0])
     sens_mat = sicdproj.compute_sensitivity_matrices(projmeta)
 
     # No error stats
     c_rgaz = sicdproj.compute_composite_error_apo_bi(
-        proj_set_0,
         sens_mat,
         sicdproj.ApoErrorParams(),
-        projmeta.t_SCP_COA,
     )
     assert c_rgaz is None
 
     # No component
     c_rgaz = sicdproj.compute_composite_error_apo_bi(
-        proj_set_0,
         sens_mat,
         sicdproj.ApoErrorParams(
             C_SCPAPO_RRdot=np.eye(2),
         ),
-        projmeta.t_SCP_COA,
     )
     assert c_rgaz is not None
 
     # Component
     c_rgaz = sicdproj.compute_composite_error_apo_bi(
-        proj_set_0,
         sens_mat,
         sicdproj.ApoErrorParams(
             C_APOXR=np.eye(16),
         ),
-        projmeta.t_SCP_COA,
     )
     assert c_rgaz is not None
 

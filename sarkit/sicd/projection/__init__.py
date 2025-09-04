@@ -31,8 +31,8 @@ dataclasses with attributes named as similar as feasible to the IPDD.
    ProjGeomParamsBi
    SlantPlaneSensitivityMatrices
    ImageLocationSensitivityMatrices
-   PosVelSensitivityMatricesMono
-   PosVelSensitivityMatricesBi
+   PVTSensitivityMatricesMono
+   PVTSensitivityMatricesBi
    SensitivityMatricesMono
    SensitivityMatricesBi
 
@@ -144,8 +144,8 @@ Projection Sensitivity Parameters
    compute_proj_geom_params_bi
    compute_slant_plane_sensitivity_matrices
    compute_image_location_sensitivity_matrices
-   compute_pos_vel_sensitity_matrices_mono
-   compute_pos_vel_sensitity_matrices_bi
+   compute_pvt_sensitivity_matrices_mono
+   compute_pvt_sensitivity_matrices_bi
    compute_sensitivity_matrices
 
 Projection Error Propagation
@@ -208,19 +208,19 @@ from ._params import (
 )
 from ._sensitivity import (
     ImageLocationSensitivityMatrices,
-    PosVelSensitivityMatricesBi,
-    PosVelSensitivityMatricesMono,
     ProjGeomParamsBi,
     ProjGeomParamsMono,
+    PVTSensitivityMatricesBi,
+    PVTSensitivityMatricesMono,
     SensitivityMatricesBi,
     SensitivityMatricesLike,
     SensitivityMatricesMono,
     SlantPlaneSensitivityMatrices,
     compute_image_location_sensitivity_matrices,
-    compute_pos_vel_sensitity_matrices_bi,
-    compute_pos_vel_sensitity_matrices_mono,
     compute_proj_geom_params_bi,
     compute_proj_geom_params_mono,
+    compute_pvt_sensitivity_matrices_bi,
+    compute_pvt_sensitivity_matrices_mono,
     compute_sensitivity_matrices,
     compute_slant_plane_sensitivity_matrices,
 )
@@ -236,8 +236,8 @@ __all__ = [
     "ErrorStatParams",
     "ImageLocationSensitivityMatrices",
     "MetadataParams",
-    "PosVelSensitivityMatricesBi",
-    "PosVelSensitivityMatricesMono",
+    "PVTSensitivityMatricesBi",
+    "PVTSensitivityMatricesMono",
     "ProjGeomParamsBi",
     "ProjGeomParamsMono",
     "ProjectionSetsBi",
@@ -261,12 +261,12 @@ __all__ = [
     "compute_gp_xy_parameters",
     "compute_i2s_error",
     "compute_image_location_sensitivity_matrices",
-    "compute_pos_vel_sensitity_matrices_bi",
-    "compute_pos_vel_sensitity_matrices_mono",
     "compute_proj_geom_params_bi",
     "compute_proj_geom_params_mono",
     "compute_projection_sets",
     "compute_pt_r_rdot_parameters",
+    "compute_pvt_sensitivity_matrices_bi",
+    "compute_pvt_sensitivity_matrices_mono",
     "compute_ric_basis_vectors",
     "compute_s2i_error",
     "compute_scp_coa_r_rdot",

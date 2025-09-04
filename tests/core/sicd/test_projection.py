@@ -7,9 +7,12 @@ import lxml.etree
 import numpy as np
 import pytest
 
+import sarkit._constants
 import sarkit.sicd as sksicd
 import sarkit.sicd.projection as sicdproj
 import sarkit.wgs84
+
+C = sarkit._constants.speed_of_light
 
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
 
@@ -892,3 +895,69 @@ def test_bistatic_posvel_matrices(param, matrix):
     assert np.allclose(rrdot1 - rrdot0, sens_mat[:, 0], atol=2e-2)
     assert np.allclose(rrdot2 - rrdot0, sens_mat[:, 1], atol=2e-2)
     assert np.allclose(rrdot3 - rrdot0, sens_mat[:, 2], atol=2e-2)
+
+
+def test_m_rrdot_xtf_rtf():
+    """Difficult to test XTF/RTF in isolation as model used for APOs differs slightly from that used for error
+    propagation (see note in 12.4.4 (1))."""
+    xmltree = lxml.etree.parse(DATAPATH / "example-sicd-1.4.0.xml")
+    proj_metadata = sicdproj.MetadataParams.from_xml(xmltree)
+    pt0 = proj_metadata.SCP + 1000 * np.array([0.6, -0.7, 0.8])
+    u_gpn0 = pt0 / np.linalg.norm(pt0)
+    mats = sicdproj.compute_sensitivity_matrices(proj_metadata, pt0, u_gpn0)
+    il0, _, success = sksicd.scene_to_image(xmltree, pt0)
+    assert success
+    projset0 = sicdproj.compute_projection_sets(proj_metadata, il0)
+
+    def delta_param_to_delta_gpp(delta_param):
+        kwargs = {
+            "delta_tx_SCP_COA": 0.0,
+            "delta_tr_SCP_COA": 0.0,
+            "delta_Xmt_SCP_COA": np.zeros(3),
+            "delta_VXmt": np.zeros(3),
+            "f_Clk_X_SF": 0.0,
+            "delta_Rcv_SCP_COA": np.zeros(3),
+            "delta_VRcv": np.zeros(3),
+            "f_Clk_R_SF": 0.0,
+        } | delta_param
+        apos = sicdproj.AdjustableParameterOffsets(**kwargs)
+        adjusted_projset = sicdproj.apply_apos(proj_metadata, projset0, apos)
+        gpp, _, success = sicdproj.r_rdot_to_ground_plane_bi(
+            proj_metadata.LOOK, proj_metadata.SCP, adjusted_projset, pt0, u_gpn0
+        )
+        assert success
+        return gpp - pt0
+
+    # M_RRdot_XTR/RTF does not apportion sensitivity to tx/tr evenly, so tx+tr effects need to be examined together
+    tscale_tx = 1e-4 - 2e-6
+    tscale_tr = 1e-4 + 3e-6
+    delta_gpp_time_proj = delta_param_to_delta_gpp(
+        {"delta_tx_SCP_COA": tscale_tx, "delta_tr_SCP_COA": tscale_tr}
+    )
+    delta_gpp_time_model = (
+        mats.M_PT_GPXY
+        @ mats.M_GPXY_SPXY
+        @ mats.M_SPXY_RRdot
+        @ (mats.M_RRdot_XTF[:, 0] * tscale_tx + mats.M_RRdot_RTF[:, 0] * tscale_tr)
+    )
+    relative_diff_time = np.linalg.norm(
+        delta_gpp_time_model - delta_gpp_time_proj
+    ) / np.linalg.norm(delta_gpp_time_proj)
+    assert relative_diff_time < 1e-3
+
+    fscale = 1e-8
+    for param, sens_mat in (
+        ("f_Clk_X_SF", mats.M_RRdot_XTF),
+        ("f_Clk_R_SF", mats.M_RRdot_RTF),
+    ):
+        delta_gpp_freq_proj = delta_param_to_delta_gpp({param: fscale})
+        delta_gpp_freq_model = (
+            mats.M_PT_GPXY
+            @ mats.M_GPXY_SPXY
+            @ mats.M_SPXY_RRdot
+            @ (sens_mat[:, 1] * fscale)
+        )
+        relative_diff_freq = np.linalg.norm(
+            delta_gpp_freq_model - delta_gpp_freq_proj
+        ) / np.linalg.norm(delta_gpp_freq_proj)
+        assert relative_diff_freq < 1e-3

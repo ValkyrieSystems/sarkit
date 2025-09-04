@@ -143,13 +143,8 @@ def compute_composite_error_no_apo_mono(
     c_rb_rrdot = np.array([[comps.VAR_RB, 0], [0, 0]])
 
     # (3)
-    crsf = -proj_set_0.R_COA
-    crdotsf = -proj_set_0.Rdot_COA
-    c_clk_sf_rrdot = comps.VAR_CLK_SF * np.array(
-        [
-            [crsf**2, crsf * crdotsf],
-            [crsf * crdotsf, crdotsf**2],
-        ]
+    c_clk_sf_rrdot = (
+        sens_mat.M_RRdot_CLK_SF @ sens_mat.M_RRdot_CLK_SF.T * comps.VAR_CLK_SF
     )
 
     # (4)
@@ -223,7 +218,7 @@ def compute_composite_error_apo_mono(
     return None
 
 
-def _proj_sens_params_bi(proj_set_0, sens_mat, t_scp_coa):
+def _proj_sens_params_bi(sens_mat):
     """Relevant portions of 12.2 for bistatic"""
     m_rgaz_rrdot = -sens_mat.M_SPXY_RRdot  # 12.2.1 (3)
 
@@ -237,19 +232,13 @@ def _proj_sens_params_bi(proj_set_0, sens_mat, t_scp_coa):
     m_rrdot_rpv = np.concatenate(
         (sens_mat.M_RRdot_delta_Rcv, sens_mat.M_RRdot_delta_VRcv), axis=1
     )
-
-    # 12.2.3
-    # (5)
-    m_rrdot_xtf = (C / 2) * np.array([[-1, proj_set_0.tx_COA - t_scp_coa], [0, 1]])
-    m_rrdot_rtf = (C / 2) * np.array([[+1, -(proj_set_0.tr_COA - t_scp_coa)], [0, -1]])
-    return m_rgaz_rrdot, m_rrdot_xpv, m_rrdot_rpv, m_rrdot_xtf, m_rrdot_rtf
+    return m_rgaz_rrdot, m_rrdot_xpv, m_rrdot_rpv
 
 
 def compute_composite_error_no_apo_bi(
     proj_set_0: params.ProjectionSetsBi,
     sens_mat: _sensitivity.SensitivityMatricesBi,
     errorstat_params: params.ErrorStatParams,
-    t_scp_coa: float,
 ) -> np.ndarray | None:
     """Compute composite COA slant plane error covariance for bistatic with no APOs.
 
@@ -261,21 +250,13 @@ def compute_composite_error_no_apo_bi(
         Bistatic sensitivity matrices for projection pair: IL0 and PT0
     errorstat_params : ErrorStatParams
         IPDD Error Statistics Parameters
-    t_scp_coa : float
-        SCP pixel center of aperture time in seconds since CollectStart
 
     Returns
     -------
     ndarray or None
         2x2 composite COA slant plane error covariance matrix if ErrorStatistics are provided, otherwise ``None``.
     """
-    m_rgaz_rrdot, m_rrdot_xpv, m_rrdot_rpv, m_rrdot_xtf, m_rrdot_rtf = (
-        _proj_sens_params_bi(
-            proj_set_0,
-            sens_mat,
-            t_scp_coa,
-        )
-    )
+    m_rgaz_rrdot, m_rrdot_xpv, m_rrdot_rpv = _proj_sens_params_bi(sens_mat)
     comps = errorstat_params.component_bi
     if comps is None and errorstat_params.C_SCP_RRdot is None:
         return None
@@ -322,11 +303,11 @@ def compute_composite_error_no_apo_bi(
 
     # (7) - no op
     # (8)
-    m_rrdot_xrtf = np.concatenate((m_rrdot_xtf, m_rrdot_rtf), axis=1)
+    m_rrdot_xrtf = np.concatenate((sens_mat.M_RRdot_XTF, sens_mat.M_RRdot_RTF), axis=1)
     c_xrtf_rrdot = m_rrdot_xrtf @ comps.C_XRTF @ m_rrdot_xrtf.T
 
     # (9)
-    m_rrdot_atm = (C / 2) * np.array([[1, 1], [0, 0]])  # 12.2.3 (6)
+    m_rrdot_atm = (C / 2) * np.array([[-1, -1], [0, 0]])  # 12.2.3 (6)
     c_atm_rrdot = m_rrdot_atm @ comps.C_ATM @ m_rrdot_atm.T
 
     # (10)
@@ -342,36 +323,24 @@ def compute_composite_error_no_apo_bi(
 
 
 def compute_composite_error_apo_bi(
-    proj_set_0: params.ProjectionSetsBi,
     sens_mat: _sensitivity.SensitivityMatricesBi,
     apoerrors: params.ApoErrorParams,
-    t_scp_coa: float,
 ):
     """Compute composite COA slant plane error covariance for bistatic with APOs.
 
     Parameters
     ----------
-    proj_set_0 : ProjectionSetsBi
-        Bistatic COA projection set for a projection pair: IL0 and PT0 that do have APOs applied
     sens_mat : SensitivityMatricesBi
         Bistatic sensitivity matrices for projection pair: IL0 and PT0
     apoerrors : ApoErrorParams
         IPDD APO Error Parameters
-    t_scp_coa : float
-        SCP pixel center of aperture time in seconds since CollectStart
 
     Returns
     -------
     ndarray or None
         2x2 composite COA slant plane error covariance matrix if APO ErrorStatistics are provided, otherwise ``None``.
     """
-    m_rgaz_rrdot, m_rrdot_xpv, m_rrdot_rpv, m_rrdot_xtf, m_rrdot_rtf = (
-        _proj_sens_params_bi(
-            proj_set_0,
-            sens_mat,
-            t_scp_coa,
-        )
-    )
+    m_rgaz_rrdot, m_rrdot_xpv, m_rrdot_rpv = _proj_sens_params_bi(sens_mat)
     has_components = apoerrors.C_APOXR is not None
     if apoerrors.C_SCPAPO_RRdot is not None and not has_components:
         # 12.4.3
@@ -382,7 +351,8 @@ def compute_composite_error_apo_bi(
         # 12.4.4
         # (1)
         m_rrdot_apoxr = np.concatenate(
-            [m_rrdot_xpv, m_rrdot_xtf, m_rrdot_rpv, m_rrdot_rtf], axis=1
+            [m_rrdot_xpv, sens_mat.M_RRdot_XTF, m_rrdot_rpv, sens_mat.M_RRdot_RTF],
+            axis=1,
         )
 
         # (2)
