@@ -943,6 +943,126 @@
       </xs:sequence>
    </xs:complexType>
 
+   <xs:complexType name="ComponentsErrorType">
+      <xs:sequence>
+         <xs:element name="PosVelErr">
+            <xs:complexType>
+               <xs:sequence>
+                  <xs:element name="Frame" type="FrameType"/>
+                  <xs:element name="P1" type="NonNegativeDoubleType"/>
+                  <xs:element name="P2" type="NonNegativeDoubleType"/>
+                  <xs:element name="P3" type="NonNegativeDoubleType"/>
+                  <xs:element name="V1" type="NonNegativeDoubleType"/>
+                  <xs:element name="V2" type="NonNegativeDoubleType"/>
+                  <xs:element name="V3" type="NonNegativeDoubleType"/>
+                  <xs:element name="CorrCoefs" minOccurs="0">
+                     <xs:complexType>
+                        <xs:sequence>
+                           <xs:element name="P1P2" type="NegOneToOneType"/>
+                           <xs:element name="P1P3" type="NegOneToOneType"/>
+                           <xs:element name="P1V1" type="NegOneToOneType"/>
+                           <xs:element name="P1V2" type="NegOneToOneType"/>
+                           <xs:element name="P1V3" type="NegOneToOneType"/>
+                           <xs:element name="P2P3" type="NegOneToOneType"/>
+                           <xs:element name="P2V1" type="NegOneToOneType"/>
+                           <xs:element name="P2V2" type="NegOneToOneType"/>
+                           <xs:element name="P2V3" type="NegOneToOneType"/>
+                           <xs:element name="P3V1" type="NegOneToOneType"/>
+                           <xs:element name="P3V2" type="NegOneToOneType"/>
+                           <xs:element name="P3V3" type="NegOneToOneType"/>
+                           <xs:element name="V1V2" type="NegOneToOneType"/>
+                           <xs:element name="V1V3" type="NegOneToOneType"/>
+                           <xs:element name="V2V3" type="NegOneToOneType"/>
+                        </xs:sequence>
+                     </xs:complexType>
+                  </xs:element>
+                  <xs:element name="PositionDecorr" type="ErrorDecorrFuncType" minOccurs="0"/>
+               </xs:sequence>
+            </xs:complexType>
+         </xs:element>
+         <xs:element name="RadarSensor">
+            <xs:complexType>
+               <xs:sequence>
+                  <xs:element name="RangeBias" type="NonNegativeDoubleType"/>
+                  <xs:element name="ClockFreqSF" type="NonNegativeDoubleType" minOccurs="0"/>
+                  <xs:element name="TransmitFreqSF" type="NonNegativeDoubleType" minOccurs="0"/>
+                  <xs:element name="RangeBiasDecorr" type="ErrorDecorrFuncType" minOccurs="0"/>
+               </xs:sequence>
+            </xs:complexType>
+         </xs:element>
+         <xs:element name="TropoError" minOccurs="0">
+            <xs:complexType>
+               <xs:sequence>
+                  <xs:element name="TropoRangeVertical" type="NonNegativeDoubleType" minOccurs="0"/>
+                  <xs:element name="TropoRangeSlant" type="NonNegativeDoubleType" minOccurs="0"/>
+                  <xs:element name="TropoRangeDecorr" type="ErrorDecorrFuncType" minOccurs="0"/>
+               </xs:sequence>
+            </xs:complexType>
+         </xs:element>
+         <xs:element name="IonoError" minOccurs="0">
+            <xs:complexType>
+               <xs:sequence>
+                  <xs:element name="IonoRangeVertical" type="NonNegativeDoubleType" minOccurs="0"/>
+                  <xs:element name="IonoRangeRateVertical" type="NonNegativeDoubleType" minOccurs="0"/>
+                  <xs:element name="IonoRgRgRateCC" type="NegOneToOneType"/>
+                  <xs:element name="IonoRangeVertDecorr" type="ErrorDecorrFuncType" minOccurs="0"/>
+               </xs:sequence>
+            </xs:complexType>
+         </xs:element>
+      </xs:sequence>
+   </xs:complexType>
+
+   <xs:complexType name="BistaticComponentsErrorType">
+      <xs:sequence>
+         <xs:element name="PosVelErr">
+            <xs:complexType>
+               <xs:sequence>
+                  <xs:element name="TxFrame" type="FrameType"/>
+                  <xs:element name="TxPVCov" type="Matrix6x6Type"/>
+                  <xs:element name="RcvFrame" type="FrameType"/>
+                  <xs:element name="RcvPVCov" type="Matrix6x6Type"/>
+                  <xs:element name="TxRcvPVXCov" type="Matrix6x6Type"/>
+               </xs:sequence>
+            </xs:complexType>
+         </xs:element>
+         <xs:element name="RadarSensor">
+            <xs:complexType>
+               <xs:sequence>
+                  <xs:element name="TxRcvTimeFreq">
+                     <xs:complexType>
+                        <xs:complexContent>
+                           <xs:extension base="Matrix2DType">
+                              <xs:attribute name="size1" type="xs:int" fixed="4" use="required"/>
+                              <xs:attribute name="size2" type="xs:int" fixed="4" use="required"/>
+                           </xs:extension>
+                        </xs:complexContent>
+                     </xs:complexType>
+                  </xs:element>
+                  <xs:element name="TxRcvTimeFreqDecorr" minOccurs="0">
+                     <xs:complexType>
+                        <xs:sequence>
+                           <xs:element name="TxTimeDecorr" type="ErrorDecorrFuncType"/>
+                           <xs:element name="TxClockFreqDecorr" type="ErrorDecorrFuncType"/>
+                           <xs:element name="RcvTimeDecorr" type="ErrorDecorrFuncType"/>
+                           <xs:element name="RcvClockFreqDecorr" type="ErrorDecorrFuncType"/>
+                        </xs:sequence>
+                     </xs:complexType>
+                  </xs:element>
+               </xs:sequence>
+            </xs:complexType>
+         </xs:element>
+         <xs:element name="AtmosphericError">
+            <xs:complexType>
+               <xs:sequence>
+                  <xs:element name="TxSCP" type="NonNegativeDoubleType"/>
+                  <xs:element name="RcvSCP" type="NonNegativeDoubleType"/>
+                  <xs:element name="TxRcvCC" type="NegOneToOneType"/>
+               </xs:sequence>
+            </xs:complexType>
+         </xs:element>
+      </xs:sequence>
+   </xs:complexType>
+
    <xs:simpleType name="FrameType">
       <xs:restriction base="xs:string">
          <xs:enumeration value="ECF"/>
@@ -951,6 +1071,22 @@
       </xs:restriction>
    </xs:simpleType>
 
+   <xs:complexType name="UnmodeledType">
+      <xs:sequence>
+         <xs:element name="Xrow" type="NonNegativeDoubleType"/>
+         <xs:element name="Ycol" type="NonNegativeDoubleType"/>
+         <xs:element name="XrowYcol" type="NegOneToOneType"/>
+         <xs:element name="UnmodeledDecorr" minOccurs="0">
+            <xs:complexType>
+               <xs:sequence>
+                  <xs:element name="Xrow" type="ErrorDecorrFuncType"/>
+                  <xs:element name="Ycol" type="ErrorDecorrFuncType"/>
+               </xs:sequence>
+            </xs:complexType>
+         </xs:element>
+      </xs:sequence>
+   </xs:complexType>
+
    <xs:complexType name="BistaticAdjustableParametersType">
       <xs:sequence>
          <xs:element name="APCPosSCPCOA" type="XYZType"/>
@@ -958,155 +1094,26 @@
          <xs:element name="TimeSCPCOA" type="xs:double"/>
          <xs:element name="ClockFreqSF" type="xs:double"/>
       </xs:sequence>
-  </xs:complexType>
+   </xs:complexType>
 
    <xs:complexType name="ErrorStatisticsType">
       <xs:sequence>
-         <xs:choice minOccurs="0">
-            <xs:element name="CompositeSCP" type="CompositeErrorType"/>
-            <xs:element name="BistaticCompositeSCP" type="BistaticCompositeErrorType"/>
-        </xs:choice>
-         <xs:choice minOccurs="0">
-            <xs:element name="Components">
-               <xs:complexType>
-                  <xs:sequence>
-                     <xs:element name="PosVelErr">
-                        <xs:complexType>
-                           <xs:sequence>
-                              <xs:element name="Frame" type="FrameType"/>
-                              <xs:element name="P1" type="NonNegativeDoubleType"/>
-                              <xs:element name="P2" type="NonNegativeDoubleType"/>
-                              <xs:element name="P3" type="NonNegativeDoubleType"/>
-                              <xs:element name="V1" type="NonNegativeDoubleType"/>
-                              <xs:element name="V2" type="NonNegativeDoubleType"/>
-                              <xs:element name="V3" type="NonNegativeDoubleType"/>
-                              <xs:element name="CorrCoefs" minOccurs="0">
-                                 <xs:complexType>
-                                    <xs:sequence>
-                                       <xs:element name="P1P2" type="NegOneToOneType"/>
-                                       <xs:element name="P1P3" type="NegOneToOneType"/>
-                                       <xs:element name="P1V1" type="NegOneToOneType"/>
-                                       <xs:element name="P1V2" type="NegOneToOneType"/>
-                                       <xs:element name="P1V3" type="NegOneToOneType"/>
-                                       <xs:element name="P2P3" type="NegOneToOneType"/>
-                                       <xs:element name="P2V1" type="NegOneToOneType"/>
-                                       <xs:element name="P2V2" type="NegOneToOneType"/>
-                                       <xs:element name="P2V3" type="NegOneToOneType"/>
-                                       <xs:element name="P3V1" type="NegOneToOneType"/>
-                                       <xs:element name="P3V2" type="NegOneToOneType"/>
-                                       <xs:element name="P3V3" type="NegOneToOneType"/>
-                                       <xs:element name="V1V2" type="NegOneToOneType"/>
-                                       <xs:element name="V1V3" type="NegOneToOneType"/>
-                                       <xs:element name="V2V3" type="NegOneToOneType"/>
-                                    </xs:sequence>
-                                 </xs:complexType>
-                              </xs:element>
-                              <xs:element name="PositionDecorr" type="ErrorDecorrFuncType" minOccurs="0"/>
-                           </xs:sequence>
-                        </xs:complexType>
-                     </xs:element>
-                     <xs:element name="RadarSensor">
-                        <xs:complexType>
-                           <xs:sequence>
-                              <xs:element name="RangeBias" type="NonNegativeDoubleType"/>
-                              <xs:element name="ClockFreqSF" type="NonNegativeDoubleType" minOccurs="0"/>
-                              <xs:element name="TransmitFreqSF" type="NonNegativeDoubleType" minOccurs="0"/>
-                              <xs:element name="RangeBiasDecorr" type="ErrorDecorrFuncType" minOccurs="0"/>
-                           </xs:sequence>
-                        </xs:complexType>
-                     </xs:element>
-                     <xs:element name="TropoError" minOccurs="0">
-                        <xs:complexType>
-                           <xs:sequence>
-                              <xs:element name="TropoRangeVertical" type="NonNegativeDoubleType" minOccurs="0"/>
-                              <xs:element name="TropoRangeSlant" type="NonNegativeDoubleType" minOccurs="0"/>
-                              <xs:element name="TropoRangeDecorr" type="ErrorDecorrFuncType" minOccurs="0"/>
-                           </xs:sequence>
-                        </xs:complexType>
-                     </xs:element>
-                     <xs:element name="IonoError" minOccurs="0">
-                        <xs:complexType>
-                           <xs:sequence>
-                              <xs:element name="IonoRangeVertical" type="NonNegativeDoubleType" minOccurs="0"/>
-                              <xs:element name="IonoRangeRateVertical" type="NonNegativeDoubleType" minOccurs="0"/>
-                              <xs:element name="IonoRgRgRateCC" type="NegOneToOneType"/>
-                              <xs:element name="IonoRangeVertDecorr" type="ErrorDecorrFuncType" minOccurs="0"/>
-                           </xs:sequence>
-                        </xs:complexType>
-                     </xs:element>
-                  </xs:sequence>
-               </xs:complexType>
-            </xs:element>
-            <xs:element name="BistaticComponents">
-               <xs:complexType>
-                  <xs:sequence>
-                     <xs:element name="PosVelErr">
-                        <xs:complexType>
-                           <xs:sequence>
-                              <xs:element name="TxFrame" type="FrameType"/>
-                              <xs:element name="TxPVCov" type="Matrix6x6Type"/>
-                              <xs:element name="RcvFrame" type="FrameType"/>
-                              <xs:element name="RcvPVCov" type="Matrix6x6Type"/>
-                              <xs:element name="TxRcvPVXCov" type="Matrix6x6Type"/>
-                           </xs:sequence>
-                        </xs:complexType>
-                     </xs:element>
-                     <xs:element name="RadarSensor">
-                        <xs:complexType>
-                           <xs:sequence>
-                              <xs:element name="TxRcvTimeFreq">
-                                 <xs:complexType>
-                                    <xs:complexContent>
-                                       <xs:extension base="Matrix2DType">
-                                          <xs:attribute name="size1" type="xs:int" fixed="4" use="required"/>
-                                          <xs:attribute name="size2" type="xs:int" fixed="4" use="required"/>
-                                       </xs:extension>
-                                    </xs:complexContent>
-                                 </xs:complexType>
-                              </xs:element>
-                              <xs:element name="TxRcvTimeFreqDecorr" minOccurs="0">
-                                 <xs:complexType>
-                                    <xs:sequence>
-                                       <xs:element name="TxTimeDecorr" type="ErrorDecorrFuncType"/>
-                                       <xs:element name="TxClockFreqDecorr" type="ErrorDecorrFuncType"/>
-                                       <xs:element name="RcvTimeDecorr" type="ErrorDecorrFuncType"/>
-                                       <xs:element name="RcvClockFreqDecorr" type="ErrorDecorrFuncType"/>
-                                    </xs:sequence>
-                                 </xs:complexType>
-                              </xs:element>
-                           </xs:sequence>
-                        </xs:complexType>
-                     </xs:element>
-                     <xs:element name="AtmosphericError">
-                        <xs:complexType>
-                           <xs:sequence>
-                              <xs:element name="TxSCP" type="NonNegativeDoubleType"/>
-                              <xs:element name="RcvSCP" type="NonNegativeDoubleType"/>
-                              <xs:element name="TxRcvCC" type="NegOneToOneType"/>
-                           </xs:sequence>
-                        </xs:complexType>
-                     </xs:element>
-                  </xs:sequence>
-               </xs:complexType>
-            </xs:element>
-         </xs:choice>
-         <xs:element name="Unmodeled" minOccurs="0">
-            <xs:complexType>
-               <xs:sequence>
-                  <xs:element name="Xrow" type="NonNegativeDoubleType"/>
-                  <xs:element name="Ycol" type="NonNegativeDoubleType"/>
-                  <xs:element name="XrowYcol" type="NegOneToOneType"/>
-                  <xs:element name="UnmodeledDecorr" minOccurs="0">
-                     <xs:complexType>
-                        <xs:sequence>
-                           <xs:element name="Xrow" type="ErrorDecorrFuncType"/>
-                           <xs:element name="Ycol" type="ErrorDecorrFuncType"/>
-                        </xs:sequence>
-                     </xs:complexType>
-                  </xs:element>
+         <xs:choice minOccurs="0">  <!-- This choice must be consistent with the following choice -->
+            <xs:sequence>
+               <xs:element name="CompositeSCP" type="CompositeErrorType" minOccurs="0"/>
+               <xs:sequence minOccurs="0">
+                  <xs:element name="Components" type="ComponentsErrorType"/>
+                  <xs:element name="Unmodeled" type="UnmodeledType" minOccurs="0"/>
                </xs:sequence>
-            </xs:complexType>
-         </xs:element>
+            </xs:sequence>
+            <xs:sequence>
+               <xs:element name="BistaticCompositeSCP" type="BistaticCompositeErrorType" minOccurs="0"/>
+               <xs:sequence minOccurs="0">
+                  <xs:element name="BistaticComponents" type="BistaticComponentsErrorType"/>
+                  <xs:element name="Unmodeled" type="UnmodeledType" minOccurs="0"/>
+               </xs:sequence>
+            </xs:sequence>
+         </xs:choice>
          <xs:element name="AdditionalParms" minOccurs="0">
             <xs:complexType>
                <xs:sequence>
@@ -1114,7 +1121,7 @@
                </xs:sequence>
             </xs:complexType>
          </xs:element>
-         <xs:choice>
+         <xs:choice minOccurs="0">  <!-- This choice must be consistent with the previous choice -->
             <xs:element name="AdjustableParameterOffsets">
                <xs:complexType>
                   <xs:sequence>
