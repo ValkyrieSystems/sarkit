@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+## [1.0.1] - 2025-09-09
+
 ### Fixed
 - Use most recent SICD v1.4.0 XML schema (dated 2024-05-01)
 
