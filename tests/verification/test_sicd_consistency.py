@@ -95,6 +95,105 @@ def _change_node(node, path, updated_val):
     return node
 
 
+def test_check_nitf_imseg_size_xtra_imseg(example_sicd_file):
+    sicdcon = SicdConsistency.from_file(example_sicd_file)
+    imsegs = sicdcon.ntf["ImageSegments"]
+    imsegs._append(imsegs[0])
+    sicdcon.check("check_nitf_imseg_size")
+    testing.assert_failures(sicdcon, "Consistent number of image segments")
+
+
+def test_check_nitf_imseg_size_mismatch_iloc(example_sicd_file):
+    sicdcon = SicdConsistency.from_file(example_sicd_file)
+    imsegs = sicdcon.ntf["ImageSegments"]
+    imsegs[0]["subheader"]["ILOC"].value = (10000, 10000)
+    sicdcon.check("check_nitf_imseg_size")
+    testing.assert_failures(sicdcon, "ILOC matches expected")
+
+
+@pytest.mark.parametrize("dim", ["NROWS", "NCOLS"])
+def test_check_nitf_imseg_size_mismatch_dir(example_sicd_file, dim):
+    sicdcon = SicdConsistency.from_file(example_sicd_file)
+    imsegs = sicdcon.ntf["ImageSegments"]
+    imsegs[0]["subheader"][f"{dim}"].value = 10000
+    sicdcon.check("check_nitf_imseg_size")
+    testing.assert_failures(sicdcon, f"Matching {dim}")
+
+
+def test_check_nitf_imseg_lvls_idlvl(example_sicd_file):
+    sicdcon = SicdConsistency.from_file(example_sicd_file)
+    imsegs = sicdcon.ntf["ImageSegments"]
+    imsegs[0]["subheader"]["IDLVL"].value = 99
+    sicdcon.check("check_nitf_imseg_lvls")
+    testing.assert_failures(
+        sicdcon, "Consistent NITF inter-Image Subheaders Display levels"
+    )
+
+
+def test_check_nitf_imseg_lvls_ialvl(example_sicd_file):
+    sicdcon = SicdConsistency.from_file(example_sicd_file)
+    imsegs = sicdcon.ntf["ImageSegments"]
+    imsegs[0]["subheader"]["IALVL"].value = 99
+    sicdcon.check("check_nitf_imseg_lvls")
+    testing.assert_failures(
+        sicdcon, "Consistent NITF inter-Image Subheaders Attachment levels"
+    )
+
+
+def test_check_des_subheader_desid(example_sicd_file):
+    sicdcon = SicdConsistency.from_file(example_sicd_file)
+    des_header = sicdcon.ntf["DataExtensionSegments"][0]["subheader"]
+    des_header["DESID"].value = "CONTENT_DATA_XML"
+
+    sicdcon.check("check_des_subheader")
+    testing.assert_failures(sicdcon, "DESID == XML_DATA_CONTENT")
+
+
+def test_check_des_subheader_desshft(example_sicd_file):
+    sicdcon = SicdConsistency.from_file(example_sicd_file)
+    des_header = sicdcon.ntf["DataExtensionSegments"][0]["subheader"]
+    des_header["DESSHF"]["DESSHFT"].value = "LXM"
+
+    sicdcon.check("check_des_subheader")
+    testing.assert_failures(sicdcon, "DESSHFT == XML")
+
+
+def test_check_des_subheader_desshsi(example_sicd_file):
+    sicdcon = SicdConsistency.from_file(example_sicd_file)
+    des_header = sicdcon.ntf["DataExtensionSegments"][0]["subheader"]
+    des_header["DESSHF"]["DESSHSI"].value = "SICD Volume 20"
+
+    sicdcon.check("check_des_subheader")
+    testing.assert_failures(sicdcon, "DESSHSI == SICD Volume 1...")
+
+
+def test_check_des_subheader_desshtn(example_sicd_file):
+    sicdcon = SicdConsistency.from_file(example_sicd_file)
+    des_header = sicdcon.ntf["DataExtensionSegments"][0]["subheader"]
+    des_header["DESSHF"]["DESSHTN"].value = "urn:SICD:10.20.10"
+
+    sicdcon.check("check_des_subheader")
+    testing.assert_failures(sicdcon, "Consistent namespace")
+
+
+def test_check_des_subheader_desshlpg(example_sicd_file):
+    sicdcon = SicdConsistency.from_file(example_sicd_file)
+    des_header = sicdcon.ntf["DataExtensionSegments"][0]["subheader"]
+    des_header["DESSHF"]["DESSHLPG"].value = "badcorners"
+
+    sicdcon.check("check_des_subheader")
+    testing.assert_failures(sicdcon, "DESSHLPG consistent with image corners")
+
+
+def test_check_nitf_igeolo(example_sicd_file):
+    sicdcon = SicdConsistency.from_file(example_sicd_file)
+    corners = sicdcon.xmlhelp.load("./{*}GeoData/{*}ImageCorners")
+    corners[0] = [0, 0]
+    sicdcon.xmlhelp.set("./{*}GeoData/{*}ImageCorners", corners)
+    sicdcon.check("check_nitf_igeolo")
+    testing.assert_failures(sicdcon, "IGEOLO close to ICP Lon/Lat")
+
+
 def _invalidate_1d_poly_coefs(node):
     # append a duplicate entry. will fail checks:
     #    Exponents are unique
@@ -434,6 +533,88 @@ class TestGridNode:
         sicd_con.check(f"check_deltakpoly_{direction.lower()}")
         assert sicd_con.failures()
 
+    def test_deltak1_mismatch_with_ss(self, direction, sicd_con):
+        dk1 = sicd_con.xmlhelp.load(f"./{{*}}Grid/{{*}}{direction}/{{*}}DeltaK1")
+        _change_node(
+            sicd_con.sicdroot, f"./{{*}}Grid/{{*}}{direction}/{{*}}DeltaK1", dk1 * 2
+        )
+        sicd_con.check(f"check_deltak_wrt_ss_{direction.lower()}")
+        testing.assert_failures(sicd_con, f"{direction} DeltaKs must agree with SS")
+
+    def test_deltak2_mismatch_with_ss(self, direction, sicd_con):
+        _change_node(
+            sicd_con.sicdroot, f"./{{*}}Grid/{{*}}{direction}/{{*}}DeltaK2", 10000
+        )
+        sicd_con.check(f"check_deltak_wrt_ss_{direction.lower()}")
+        testing.assert_failures(sicd_con, f"{direction} DeltaKs must agree with SS")
+
+    def test_deltak1_mismatch_with_deltak2(self, direction, sicd_con):
+        dk1 = sicd_con.xmlhelp.load(f"./{{*}}Grid/{{*}}{direction}/{{*}}DeltaK1")
+        dk2 = sicd_con.xmlhelp.load(f"./{{*}}Grid/{{*}}{direction}/{{*}}DeltaK2")
+        _change_node(
+            sicd_con.sicdroot, f"./{{*}}Grid/{{*}}{direction}/{{*}}DeltaK1", dk2
+        )
+        _change_node(
+            sicd_con.sicdroot, f"./{{*}}Grid/{{*}}{direction}/{{*}}DeltaK2", dk1
+        )
+        sicd_con.check(f"check_deltak_wrt_ss_{direction.lower()}")
+        testing.assert_failures(sicd_con, f"{direction} DeltaK2 >= DeltaK1")
+
+    def test_check_iprbw_to_deltak(self, direction, sicd_con):
+        sicd_con.xmlhelp.set(f"./{{*}}Grid/{{*}}{direction}/{{*}}ImpRespBW", 1e6)
+        sicd_con.check(f"check_iprbw_to_deltak_{direction.lower()}")
+        testing.assert_failures(sicd_con, f"{direction} ImpRespBW <= DeltaK2 - DeltaK1")
+
+    def test_check_iprbw_to_ss(self, direction, sicd_con):
+        sicd_con.xmlhelp.set(f"./{{*}}Grid/{{*}}{direction}/{{*}}ImpRespBW", 1e6)
+        sicd_con.check(f"check_iprbw_to_ss_{direction.lower()}")
+        testing.assert_failures(
+            sicd_con, f"{direction} Impulse Response BW is supported by sample spacing"
+        )
+
+    def test_check_iprbw_to_ss_osr_too_small(self, direction, sicd_con):
+        sicd_con.xmlhelp.set(f"./{{*}}Grid/{{*}}{direction}/{{*}}ImpRespBW", 1e6)
+        sicd_con.check(f"check_iprbw_to_ss_osr_{direction.lower()}")
+        testing.assert_failures(sicd_con, f"{direction} OSR >= 1.1")
+
+    def test_check_iprbw_to_ss_osr_too_large(self, direction, sicd_con):
+        sicd_con.xmlhelp.set(f"./{{*}}Grid/{{*}}{direction}/{{*}}ImpRespBW", 1e-6)
+        sicd_con.check(f"check_iprbw_to_ss_osr_{direction.lower()}")
+        testing.assert_failures(sicd_con, f"{direction} OSR <= 2.2")
+
+    def test_check_pfa_ipr_bw(self, direction, sicd_con):
+        sicd_con.xmlhelp.set(f"./{{*}}Grid/{{*}}{direction}/{{*}}ImpRespBW", 1e6)
+        sicd_con.check(f"check_pfa_ipr_bw_{direction.lower()}")
+        testing.assert_failures(sicd_con, f"{direction} IPR bandwidth supported by")
+
+    def test_check_wgtfunct_indices_bad_index(self, direction, sicd_con, em):
+        grid_node = sicd_con.sicdroot.find(f"./{{*}}Grid/{{*}}{direction}")
+        grid_node.append(
+            em.WgtFunct(
+                em.Wgt("0", index="10"),
+                em.Wgt("1", index="2"),
+                em.Wgt("2", index="3"),
+                em.Wgt("3", index="4"),
+                size="4",
+            ),
+        )
+        sicd_con.check(f"check_wgtfunct_indices_{direction.lower()}")
+        testing.assert_failures(sicd_con, "Wgt elements are present")
+
+    def test_check_wgtfunct_indices_bad_size(self, direction, sicd_con, em):
+        grid_node = sicd_con.sicdroot.find(f"./{{*}}Grid/{{*}}{direction}")
+        grid_node.append(
+            em.WgtFunct(
+                em.Wgt("0", index="10"),
+                em.Wgt("1", index="2"),
+                em.Wgt("2", index="3"),
+                em.Wgt("3", index="4"),
+                size="10",
+            ),
+        )
+        sicd_con.check(f"check_wgtfunct_indices_{direction.lower()}")
+        testing.assert_failures(sicd_con, "WgtFunct size attribute matches number")
+
     def test_grid_unit_vectors(self, direction, sicd_con):
         z_val = sicd_con.xmlhelp.load(
             f"./{{*}}Grid/{{*}}{direction}/{{*}}UVectECF/{{*}}Z"
@@ -702,6 +883,146 @@ def test_check_valid_data_indices(sicd_con):
     vertices[0].set("index", "99")
     sicd_con.check("check_valid_data_indices")
     testing.assert_failures(sicd_con, "GeoData indices equal to ImageData indices")
+
+
+def test_check_icp_indices(sicd_con):
+    sicd_con.check("check_icp_indices")
+    assert not sicd_con.failures()
+
+    icp_0 = sicd_con.sicdroot.find("./{*}GeoData/{*}ImageCorners/{*}ICP")
+    icp_0.set("index", "10:FRFR")
+    sicd_con.check("check_icp_indices")
+    testing.assert_failures(sicd_con, "GeoData ICPs indexed correctly")
+
+
+@pytest.mark.parametrize(
+    "seglist_failures",
+    [
+        {
+            "index": "10",
+            "size": "1",
+            "error": "Segment elements are present",
+        },
+        {
+            "index": "1",
+            "size": "10",
+            "error": "SegmentList size attribute matches number",
+        },
+    ],
+)
+def test_check_segmentlist_indices(sicd_con, seglist_failures, em):
+    plane_node = sicd_con.sicdroot.find("./{*}RadarCollection/{*}Area/{*}Plane")
+    plane_node.append(
+        em.SegmentList(
+            em.Segment(
+                em.StartLine("0"),
+                em.StartSample("0"),
+                em.EndLine("100"),
+                em.EndSample("100"),
+                em.Identifier("1"),
+                index=seglist_failures["index"],
+            ),
+            size=seglist_failures["size"],
+        ),
+    )
+    sicd_con.check("check_segmentlist_indices")
+    testing.assert_failures(sicd_con, seglist_failures["error"])
+
+
+@pytest.mark.parametrize(
+    "txsequence_failures",
+    [
+        {
+            "index": "10",
+            "size": "1",
+            "error": "TxStep elements are present",
+        },
+        {
+            "index": "1",
+            "size": "10",
+            "error": "TxSequence size attribute matches number",
+        },
+    ],
+)
+def test_check_txsequence_indices(sicd_con, txsequence_failures, em):
+    rc_node = sicd_con.sicdroot.find("./{*}RadarCollection")
+    rc_node.append(
+        em.TxSequence(
+            em.TxStep("25", index=txsequence_failures["index"]),
+            size=txsequence_failures["size"],
+        ),
+    )
+    sicd_con.check("check_txsequence_indices")
+    testing.assert_failures(sicd_con, txsequence_failures["error"])
+
+
+@pytest.mark.parametrize(
+    "other_index_failures",
+    [
+        {
+            "check": "check_waveform_params_indices",
+            "node": "./{*}RadarCollection/{*}Waveform/{*}WFParameters",
+            "error": "WFParameters elements are present",
+        },
+        {
+            "check": "check_ipp_set_indices",
+            "node": "./{*}Timeline/{*}IPP/{*}Set",
+            "error": "Set elements are present",
+        },
+        {
+            "check": "check_rcv_channel_indices",
+            "node": "./{*}RadarCollection/{*}RcvChannels/{*}ChanParameters",
+            "error": "ChanParameters elements are present",
+        },
+        {
+            "check": "check_rcvapc_indices",
+            "node": "./{*}Position/{*}RcvAPC/{*}RcvAPCPoly",
+            "error": "RcvAPCPoly elements are present",
+        },
+    ],
+)
+def test_check_indices_bad_index(sicd_con, other_index_failures):
+    sicd_con.check(other_index_failures["check"])
+    assert not sicd_con.failures()
+
+    index_0 = sicd_con.sicdroot.find(other_index_failures["node"])
+    index_0.set("index", "10")
+    sicd_con.check(other_index_failures["check"])
+    testing.assert_failures(sicd_con, other_index_failures["error"])
+
+
+@pytest.mark.parametrize(
+    "size_failures",
+    [
+        {
+            "check": "check_waveform_params_indices",
+            "node": "./{*}RadarCollection/{*}Waveform",
+            "error": "Waveform size attribute matches number",
+        },
+        {
+            "check": "check_ipp_set_indices",
+            "node": "./{*}Timeline/{*}IPP",
+            "error": "IPP size attribute matches number",
+        },
+        {
+            "check": "check_rcv_channel_indices",
+            "node": "./{*}RadarCollection/{*}RcvChannels",
+            "error": "RcvChannels size attribute matches number",
+        },
+        {
+            "check": "check_rcvapc_indices",
+            "node": "./{*}Position/{*}RcvAPC",
+            "error": "RcvAPC size attribute matches number",
+        },
+    ],
+)
+def test_check_indices_bad_size(sicd_con, size_failures):
+    sicd_con.check(size_failures["check"])
+    assert not sicd_con.failures()
+
+    sicd_con.sicdroot.find(size_failures["node"]).set("size", "20")
+    sicd_con.check(size_failures["check"])
+    testing.assert_failures(sicd_con, size_failures["error"])
 
 
 def test_check_waveform_params_rcvwinlen(sicd_con):

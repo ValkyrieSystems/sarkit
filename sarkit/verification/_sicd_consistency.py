@@ -504,7 +504,7 @@ class SicdConsistency(con.ConsistencyChecker):
                     with self.need("Matching NROWS"):
                         assert imseg["subheader"]["NROWS"].value == num_rows_is[imidx]
                     expected_iloc_rows = 0 if imidx == 0 else num_rows_is[imidx - 1]
-                    with self.need("ILOC matches expected "):
+                    with self.need("ILOC matches expected"):
                         assert (
                             int(imseg["subheader"]["ILOC"].value[0])
                             == expected_iloc_rows
@@ -591,6 +591,10 @@ class SicdConsistency(con.ConsistencyChecker):
 
             with self.need("DESSHFT == XML"):
                 assert des_header["DESSHF"]["DESSHFT"].value.rstrip() == "XML"
+
+            with self.need(
+                "DESSHSI == SICD Volume 1 Design & Implementation Description Document"
+            ):
                 assert (
                     des_header["DESSHF"]["DESSHSI"].value.rstrip()
                     == "SICD Volume 1 Design & Implementation Description Document"
@@ -725,32 +729,29 @@ class SicdConsistency(con.ConsistencyChecker):
         are consistent with their parent's ``'size'``.
         """
         parent = self.sicdroot.find(path_to_parent)
-        indices = None
-        if parent is not None:
-            indices = [
-                int(node.get("index")) for node in parent.findall(rel_path_to_child)
-            ]
-            with self.need(f"All {rel_path_to_child} elements are present"):
-                assert not set(indices).symmetric_difference(range(1, len(indices) + 1))
-            with self.need(
-                f"{path_to_parent} size attribute matches number of {rel_path_to_child}"
-            ):
-                assert int(parent.attrib["size"]) == len(indices)
+        indices = [int(node.get("index")) for node in parent.findall(rel_path_to_child)]
+        with self.need(f"All {rel_path_to_child} elements are present"):
+            assert not set(indices).symmetric_difference(range(1, len(indices) + 1))
+        with self.need(
+            f"{path_to_parent} size attribute matches number of {rel_path_to_child}"
+        ):
+            assert int(parent.attrib["size"]) == len(indices)
 
         return indices
 
     @per_grid_dim
     def check_wgtfunct_indices(self, grid_dim) -> None:
         """Checks consistency of the indices in the WgtFunct elements."""
-        wgt_indices = self._compare_size_and_index(
-            f"./{{*}}Grid/{{*}}{grid_dim}/{{*}}WgtFunct", "./{*}Wgt"
-        )
         with self.precondition():
-            assert wgt_indices is not None
-            with self.need(
-                f"{grid_dim} WgtFunct elements have size attribute and Wgt children have index attribute"
-            ):
-                assert wgt_indices
+            assert (
+                self.sicdroot.find(
+                    f"./{{*}}Grid/{{*}}{grid_dim}/{{*}}WgtFunct/{{*}}Wgt"
+                )
+                is not None
+            )
+            self._compare_size_and_index(
+                f"./{{*}}Grid/{{*}}{grid_dim}/{{*}}WgtFunct", "./{*}Wgt"
+            )
 
     def check_valid_ifa(self) -> None:
         """ImageFormationAlgo must be paired with appropriate block."""
@@ -1168,15 +1169,16 @@ class SicdConsistency(con.ConsistencyChecker):
 
     def check_segmentlist_indices(self) -> None:
         """Checks that SegmentList has a size attribute and segments have the index attribute."""
-        segment_indices = self._compare_size_and_index(
-            "./{*}RadarCollection/{*}Area/{*}Plane/{*}SegmentList", "./{*}Segment"
-        )
         with self.precondition():
-            assert segment_indices is not None
-            with self.need(
-                "SegmentList has size attribute and segments have index attribute"
-            ):
-                assert segment_indices
+            assert (
+                self.sicdroot.find(
+                    "./{*}RadarCollection/{*}Area/{*}Plane/{*}SegmentList"
+                )
+                is not None
+            )
+            self._compare_size_and_index(
+                "./{*}RadarCollection/{*}Area/{*}Plane/{*}SegmentList", "./{*}Segment"
+            )
 
     def check_segment_unique_ids(self) -> None:
         """Checks that identifiers in SegmentList are unique."""
@@ -1392,27 +1394,20 @@ class SicdConsistency(con.ConsistencyChecker):
 
     def check_ipp_set_indices(self) -> None:
         """Checks consistency of the indices in the Timeline IPP elements."""
-        ipp_set_indices = self._compare_size_and_index(
-            "./{*}Timeline/{*}IPP", "./{*}Set"
-        )
         with self.precondition():
-            assert ipp_set_indices is not None
-            with self.need(
-                "Timeline IPP elements have size attribute and sets have index attribute"
-            ):
-                assert ipp_set_indices
+            assert self.sicdroot.find("./{*}Timeline/{*}IPP/{*}Set") is not None
+            self._compare_size_and_index("./{*}Timeline/{*}IPP", "./{*}Set")
 
     def check_waveform_params_indices(self) -> None:
         """Checks consistency of the indices in the RadarCollection Waveform Parameter elements."""
-        waveform_indices = self._compare_size_and_index(
-            "./{*}RadarCollection/{*}Waveform", "./{*}WFParameters"
-        )
         with self.precondition():
-            assert waveform_indices is not None
-            with self.need(
-                "Waveform elements have size attribute and WFParameters have index attribute"
-            ):
-                assert waveform_indices
+            assert (
+                self.sicdroot.find("./{*}RadarCollection/{*}Waveform/{*}WFParameters")
+                is not None
+            )
+            self._compare_size_and_index(
+                "./{*}RadarCollection/{*}Waveform", "./{*}WFParameters"
+            )
 
     def check_waveform_params(self) -> None:
         """Checks consistency of the values in the RadarCollection Waveform Parameter elements."""
@@ -1558,15 +1553,9 @@ class SicdConsistency(con.ConsistencyChecker):
 
     def check_rcv_channel_indices(self) -> None:
         """Checks consistency of the values in the RadarCollection RcvChannels elements."""
-        rcvchan_indices = self._compare_size_and_index(
+        self._compare_size_and_index(
             "./{*}RadarCollection/{*}RcvChannels", "./{*}ChanParameters"
         )
-        with self.precondition():
-            assert rcvchan_indices is not None
-            with self.need(
-                "RcvChannels elements have size attribute and segments have index attribute"
-            ):
-                assert rcvchan_indices
 
     def check_segment_start_and_end(self) -> None:
         """Checks consistency of the values in the SegmentList StartLine and EndLine elements."""
@@ -1776,15 +1765,14 @@ class SicdConsistency(con.ConsistencyChecker):
 
     def check_txsequence_indices(self) -> None:
         """Checks consistency of the TxSequence/TxStep indexing."""
-        tx_seq_indices = self._compare_size_and_index(
-            "./{*}RadarCollection/{*}TxSequence", "./{*}TxStep"
-        )
         with self.precondition():
-            assert tx_seq_indices is not None
-            with self.need(
-                "TxSequence elements have size attribute and TxStep have index attribute"
-            ):
-                assert tx_seq_indices
+            assert (
+                self.sicdroot.find("./{*}RadarCollection/{*}TxSequence/{*}TxStep")
+                is not None
+            )
+            self._compare_size_and_index(
+                "./{*}RadarCollection/{*}TxSequence", "./{*}TxStep"
+            )
 
     def check_txsequence_waveform_index(self) -> None:
         """Checks consistency of WFIndex"""
@@ -1811,15 +1799,11 @@ class SicdConsistency(con.ConsistencyChecker):
 
     def check_rcvapc_indices(self) -> None:
         """Checks consistency of the RcvAPC indexing."""
-        rcv_apc_indices = self._compare_size_and_index(
-            "./{*}Position/{*}RcvAPC", "./{*}RcvAPCPoly"
-        )
         with self.precondition():
-            assert rcv_apc_indices is not None
-            with self.need(
-                "RcvAPCPoly elements have size attribute and RcvAPCPoly have index attribute"
-            ):
-                assert rcv_apc_indices
+            assert (
+                self.sicdroot.find("./{*}Position/{*}RcvAPC/{*}RcvAPCPoly") is not None
+            )
+            self._compare_size_and_index("./{*}Position/{*}RcvAPC", "./{*}RcvAPCPoly")
 
     def check_rcvapcindex(self) -> None:
         """Checks consistency of RcvAPCIndex."""
