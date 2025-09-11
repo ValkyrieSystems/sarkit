@@ -254,7 +254,7 @@ class XsdHelper(skxml.XsdHelper):
             "<UNNAMED>-{urn:SICD:1.4.0}ErrorStatisticsType/{urn:SICD:1.4.0}BistaticAdjustableParameterOffsets/{urn:SICD:1.4.0}APOError": MtxType(
                 (16, 16)
             ),
-            "<UNNAMED>-{urn:SICD:1.4.0}ErrorStatisticsType/{urn:SICD:1.4.0}BistaticComponents/{urn:SICD:1.4.0}RadarSensor/{urn:SICD:1.4.0}TxRcvTimeFreq": MtxType(
+            "<UNNAMED>-{urn:SICD:1.4.0}BistaticComponentsErrorType/{urn:SICD:1.4.0}RadarSensor/{urn:SICD:1.4.0}TxRcvTimeFreq": MtxType(
                 (4, 4)
             ),
             "{urn:SICD:1.4.0}Matrix6x6Type": MtxType((6, 6)),

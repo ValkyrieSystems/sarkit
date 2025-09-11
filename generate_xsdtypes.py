@@ -76,12 +76,6 @@ def make_typedef(typeobj: xmlschema.XsdType):
 def main(args=None):
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "output_dir",
-        nargs="?",
-        type=pathlib.Path,
-        default=pathlib.Path(__file__).parent,
-    )
-    parser.add_argument(
         "--check",
         action="store_true",
         help="Don't write the files, just return the status. Return code 0 means nothing would change.",
