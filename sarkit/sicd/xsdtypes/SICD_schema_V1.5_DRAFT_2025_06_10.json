@@ -1,0 +1,3000 @@
+{
+  "/": {
+    "{urn:SICD:1.5-DRAFT-2025_06_10}SICD": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}SICD"
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}AntParamType/{urn:SICD:1.5-DRAFT-2025_06_10}EB": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}DCXPoly",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Poly1DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}DCYPoly",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Poly1DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}BistaticComponentsErrorType/{urn:SICD:1.5-DRAFT-2025_06_10}AtmosphericError": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TxSCP",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RcvSCP",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TxRcvCC",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NegOneToOneType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}BistaticComponentsErrorType/{urn:SICD:1.5-DRAFT-2025_06_10}PosVelErr": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TxFrame",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}FrameType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TxPVCov",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Matrix6x6Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RcvFrame",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}FrameType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RcvPVCov",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Matrix6x6Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TxRcvPVXCov",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Matrix6x6Type"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}BistaticComponentsErrorType/{urn:SICD:1.5-DRAFT-2025_06_10}RadarSensor": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TxRcvTimeFreq",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}BistaticComponentsErrorType/{urn:SICD:1.5-DRAFT-2025_06_10}RadarSensor/{urn:SICD:1.5-DRAFT-2025_06_10}TxRcvTimeFreq"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TxRcvTimeFreqDecorr",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}BistaticComponentsErrorType/{urn:SICD:1.5-DRAFT-2025_06_10}RadarSensor/{urn:SICD:1.5-DRAFT-2025_06_10}TxRcvTimeFreqDecorr"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}BistaticComponentsErrorType/{urn:SICD:1.5-DRAFT-2025_06_10}RadarSensor/{urn:SICD:1.5-DRAFT-2025_06_10}TxRcvTimeFreq": {
+    "attributes": [
+      "size1",
+      "size2"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Entry",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}MatrixEntry2DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}BistaticComponentsErrorType/{urn:SICD:1.5-DRAFT-2025_06_10}RadarSensor/{urn:SICD:1.5-DRAFT-2025_06_10}TxRcvTimeFreqDecorr": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TxTimeDecorr",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ErrorDecorrFuncType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TxClockFreqDecorr",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ErrorDecorrFuncType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RcvTimeDecorr",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ErrorDecorrFuncType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RcvClockFreqDecorr",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ErrorDecorrFuncType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}CollectionInfoType/{urn:SICD:1.5-DRAFT-2025_06_10}CollectType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}CollectionInfoType/{urn:SICD:1.5-DRAFT-2025_06_10}RadarMode": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}ModeType",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}CollectionInfoType/{urn:SICD:1.5-DRAFT-2025_06_10}RadarMode/{urn:SICD:1.5-DRAFT-2025_06_10}ModeType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}ModeID",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}CollectionInfoType/{urn:SICD:1.5-DRAFT-2025_06_10}RadarMode/{urn:SICD:1.5-DRAFT-2025_06_10}ModeType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ComponentsErrorType/{urn:SICD:1.5-DRAFT-2025_06_10}IonoError": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}IonoRangeVertical",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}IonoRangeRateVertical",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}IonoRgRgRateCC",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}IonoRangeVertDecorr",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ErrorDecorrFuncType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ComponentsErrorType/{urn:SICD:1.5-DRAFT-2025_06_10}PosVelErr": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Frame",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}FrameType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}P1",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}P2",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}P3",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}V1",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}V2",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}V3",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}CorrCoefs",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ComponentsErrorType/{urn:SICD:1.5-DRAFT-2025_06_10}PosVelErr/{urn:SICD:1.5-DRAFT-2025_06_10}CorrCoefs"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}PositionDecorr",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ErrorDecorrFuncType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ComponentsErrorType/{urn:SICD:1.5-DRAFT-2025_06_10}PosVelErr/{urn:SICD:1.5-DRAFT-2025_06_10}CorrCoefs": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}P1P2",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}P1P3",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}P1V1",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}P1V2",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}P1V3",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}P2P3",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}P2V1",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}P2V2",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}P2V3",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}P3V1",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}P3V2",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}P3V3",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}V1V2",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}V1V3",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}V2V3",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NegOneToOneType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ComponentsErrorType/{urn:SICD:1.5-DRAFT-2025_06_10}RadarSensor": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RangeBias",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}ClockFreqSF",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TransmitFreqSF",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RangeBiasDecorr",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ErrorDecorrFuncType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ComponentsErrorType/{urn:SICD:1.5-DRAFT-2025_06_10}TropoError": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TropoRangeVertical",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TropoRangeSlant",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TropoRangeDecorr",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ErrorDecorrFuncType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}DirParamType/{urn:SICD:1.5-DRAFT-2025_06_10}Sgn": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}int"
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}DirParamType/{urn:SICD:1.5-DRAFT-2025_06_10}WgtFunct": {
+    "attributes": [
+      "size"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Wgt",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}DirParamType/{urn:SICD:1.5-DRAFT-2025_06_10}WgtFunct/{urn:SICD:1.5-DRAFT-2025_06_10}Wgt"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}DirParamType/{urn:SICD:1.5-DRAFT-2025_06_10}WgtFunct/{urn:SICD:1.5-DRAFT-2025_06_10}Wgt": {
+    "attributes": [
+      "index"
+    ],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}DirParamType/{urn:SICD:1.5-DRAFT-2025_06_10}WgtType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}WindowName",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Parameter",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ParameterType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ErrorStatisticsType/{urn:SICD:1.5-DRAFT-2025_06_10}AdditionalParms": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Parameter",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ParameterType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ErrorStatisticsType/{urn:SICD:1.5-DRAFT-2025_06_10}AdjustableParameterOffsets": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}ARPPosSCPCOA",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}ARPVel",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TxTimeSCPCOA",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RcvTimeSCPCOA",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}APOError",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ErrorStatisticsType/{urn:SICD:1.5-DRAFT-2025_06_10}AdjustableParameterOffsets/{urn:SICD:1.5-DRAFT-2025_06_10}APOError"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}CompositeSCP",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}CompositeErrorType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ErrorStatisticsType/{urn:SICD:1.5-DRAFT-2025_06_10}AdjustableParameterOffsets/{urn:SICD:1.5-DRAFT-2025_06_10}APOError": {
+    "attributes": [
+      "size1",
+      "size2"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Entry",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}MatrixEntry2DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ErrorStatisticsType/{urn:SICD:1.5-DRAFT-2025_06_10}BistaticAdjustableParameterOffsets": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TxPlatform",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}BistaticAdjustableParametersType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RcvPlatform",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}BistaticAdjustableParametersType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}APOError",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ErrorStatisticsType/{urn:SICD:1.5-DRAFT-2025_06_10}BistaticAdjustableParameterOffsets/{urn:SICD:1.5-DRAFT-2025_06_10}APOError"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}BistaticCompositeSCP",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}BistaticCompositeErrorType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ErrorStatisticsType/{urn:SICD:1.5-DRAFT-2025_06_10}BistaticAdjustableParameterOffsets/{urn:SICD:1.5-DRAFT-2025_06_10}APOError": {
+    "attributes": [
+      "size1",
+      "size2"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Entry",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}MatrixEntry2DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}GeoDataType/{urn:SICD:1.5-DRAFT-2025_06_10}EarthModel": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}GeoDataType/{urn:SICD:1.5-DRAFT-2025_06_10}ImageCorners": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}ICP",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}LatLonCornerStringType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}GeoDataType/{urn:SICD:1.5-DRAFT-2025_06_10}SCP": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}ECF",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}LLH",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}LatLonHAERestrictionType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}GridType/{urn:SICD:1.5-DRAFT-2025_06_10}ImagePlane": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}GridType/{urn:SICD:1.5-DRAFT-2025_06_10}Type": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ImageDataType/{urn:SICD:1.5-DRAFT-2025_06_10}AmpTable": {
+    "attributes": [
+      "size"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Amplitude",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ImageDataType/{urn:SICD:1.5-DRAFT-2025_06_10}AmpTable/{urn:SICD:1.5-DRAFT-2025_06_10}Amplitude"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ImageDataType/{urn:SICD:1.5-DRAFT-2025_06_10}AmpTable/{urn:SICD:1.5-DRAFT-2025_06_10}Amplitude": {
+    "attributes": [
+      "index"
+    ],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ImageDataType/{urn:SICD:1.5-DRAFT-2025_06_10}FullImage": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}NumRows",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}NumCols",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ImageDataType/{urn:SICD:1.5-DRAFT-2025_06_10}PixelType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ImageDataType/{urn:SICD:1.5-DRAFT-2025_06_10}ValidData": {
+    "attributes": [
+      "size"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Vertex",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}RowColvertexType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ImageFormationType/{urn:SICD:1.5-DRAFT-2025_06_10}AzAutofocus": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ImageFormationType/{urn:SICD:1.5-DRAFT-2025_06_10}ImageBeamComp": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ImageFormationType/{urn:SICD:1.5-DRAFT-2025_06_10}ImageFormAlgo": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ImageFormationType/{urn:SICD:1.5-DRAFT-2025_06_10}PolarizationCalibration": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}DistortCorrectionApplied",
+        "typename": "{http://www.w3.org/2001/XMLSchema}boolean"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Distortion",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ImageFormationType/{urn:SICD:1.5-DRAFT-2025_06_10}PolarizationCalibration/{urn:SICD:1.5-DRAFT-2025_06_10}Distortion"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ImageFormationType/{urn:SICD:1.5-DRAFT-2025_06_10}PolarizationCalibration/{urn:SICD:1.5-DRAFT-2025_06_10}Distortion": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}CalibrationDate",
+        "typename": "{http://www.w3.org/2001/XMLSchema}dateTime"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}A",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}F1",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ComplexType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Q1",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ComplexType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Q2",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ComplexType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}F2",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ComplexType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Q3",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ComplexType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Q4",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ComplexType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}GainErrorA",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}GainErrorF1",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}GainErrorF2",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}PhaseErrorF1",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}PhaseErrorF2",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ImageFormationType/{urn:SICD:1.5-DRAFT-2025_06_10}Processing": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Type",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Applied",
+        "typename": "{http://www.w3.org/2001/XMLSchema}boolean"
+      },
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Parameter",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ParameterType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ImageFormationType/{urn:SICD:1.5-DRAFT-2025_06_10}RcvChanProc": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}NumChanProc",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}PRFScaleFactor",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}ChanIndex",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ImageFormationType/{urn:SICD:1.5-DRAFT-2025_06_10}RgAutofocus": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ImageFormationType/{urn:SICD:1.5-DRAFT-2025_06_10}STBeamComp": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ImageFormationType/{urn:SICD:1.5-DRAFT-2025_06_10}TxFrequencyProc": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}MinProc",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}MaxProc",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}LineType/{urn:SICD:1.5-DRAFT-2025_06_10}Endpoint": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Lat",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Lon",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}MatchInfoType/{urn:SICD:1.5-DRAFT-2025_06_10}MatchType": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TypeID",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}CurrentIndex",
+        "typename": "{http://www.w3.org/2001/XMLSchema}int"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}NumMatchCollections",
+        "typename": "{http://www.w3.org/2001/XMLSchema}int"
+      },
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}MatchCollection",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}MatchInfoType/{urn:SICD:1.5-DRAFT-2025_06_10}MatchType/{urn:SICD:1.5-DRAFT-2025_06_10}MatchCollection"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}MatchInfoType/{urn:SICD:1.5-DRAFT-2025_06_10}MatchType/{urn:SICD:1.5-DRAFT-2025_06_10}MatchCollection": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}CoreName",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}MatchIndex",
+        "typename": "{http://www.w3.org/2001/XMLSchema}int"
+      },
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Parameter",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ParameterType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}PFAType/{urn:SICD:1.5-DRAFT-2025_06_10}STDeskew": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Applied",
+        "typename": "{http://www.w3.org/2001/XMLSchema}boolean"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}STDSPhasePoly",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Poly2DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}PolygonType/{urn:SICD:1.5-DRAFT-2025_06_10}Vertex": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Lat",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Neg90To90Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Lon",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Neg180To180Type"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}PositionType/{urn:SICD:1.5-DRAFT-2025_06_10}RcvAPC": {
+    "attributes": [
+      "size"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RcvAPCPoly",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}XYZPolyAttributeType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RMAType/{urn:SICD:1.5-DRAFT-2025_06_10}INCA": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TimeCAPoly",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Poly1DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}R_CA_SCP",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}FreqZero",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}DRateSFPoly",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Poly2DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}DopCentroidPoly",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Poly2DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}DopCentroidCOA",
+        "typename": "{http://www.w3.org/2001/XMLSchema}boolean"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RMAType/{urn:SICD:1.5-DRAFT-2025_06_10}ImageType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RMAType/{urn:SICD:1.5-DRAFT-2025_06_10}RMAT": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}PosRef",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}VelRef",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}DopConeAngRef",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RMAType/{urn:SICD:1.5-DRAFT-2025_06_10}RMAlgoType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RMAType/{urn:SICD:1.5-DRAFT-2025_06_10}RMCR": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}PosRef",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}VelRef",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}DopConeAngRef",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}Area": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Corner",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}Area/{urn:SICD:1.5-DRAFT-2025_06_10}Corner"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Plane",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}Area/{urn:SICD:1.5-DRAFT-2025_06_10}Plane"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}Area/{urn:SICD:1.5-DRAFT-2025_06_10}Corner": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}ACP",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}LatLonHAECornerRestrictType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}Area/{urn:SICD:1.5-DRAFT-2025_06_10}Plane": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RefPt",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}Area/{urn:SICD:1.5-DRAFT-2025_06_10}Plane/{urn:SICD:1.5-DRAFT-2025_06_10}RefPt"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}XDir",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}Area/{urn:SICD:1.5-DRAFT-2025_06_10}Plane/{urn:SICD:1.5-DRAFT-2025_06_10}XDir"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}YDir",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}Area/{urn:SICD:1.5-DRAFT-2025_06_10}Plane/{urn:SICD:1.5-DRAFT-2025_06_10}YDir"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}SegmentList",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}Area/{urn:SICD:1.5-DRAFT-2025_06_10}Plane/{urn:SICD:1.5-DRAFT-2025_06_10}SegmentList"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Orientation",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}OrientationType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Polygon",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}Area/{urn:SICD:1.5-DRAFT-2025_06_10}Plane/{urn:SICD:1.5-DRAFT-2025_06_10}Polygon"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}Area/{urn:SICD:1.5-DRAFT-2025_06_10}Plane/{urn:SICD:1.5-DRAFT-2025_06_10}Polygon": {
+    "attributes": [
+      "size"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Vertex",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}LSVertexType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}Area/{urn:SICD:1.5-DRAFT-2025_06_10}Plane/{urn:SICD:1.5-DRAFT-2025_06_10}RefPt": {
+    "attributes": [
+      "name"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}ECF",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Line",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Sample",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}Area/{urn:SICD:1.5-DRAFT-2025_06_10}Plane/{urn:SICD:1.5-DRAFT-2025_06_10}SegmentList": {
+    "attributes": [
+      "size"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Segment",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}Area/{urn:SICD:1.5-DRAFT-2025_06_10}Plane/{urn:SICD:1.5-DRAFT-2025_06_10}SegmentList/{urn:SICD:1.5-DRAFT-2025_06_10}Segment"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}Area/{urn:SICD:1.5-DRAFT-2025_06_10}Plane/{urn:SICD:1.5-DRAFT-2025_06_10}SegmentList/{urn:SICD:1.5-DRAFT-2025_06_10}Segment": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}StartLine",
+        "typename": "{http://www.w3.org/2001/XMLSchema}integer"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}StartSample",
+        "typename": "{http://www.w3.org/2001/XMLSchema}integer"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}EndLine",
+        "typename": "{http://www.w3.org/2001/XMLSchema}integer"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}EndSample",
+        "typename": "{http://www.w3.org/2001/XMLSchema}integer"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Identifier",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}SegmentPolygon",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}Area/{urn:SICD:1.5-DRAFT-2025_06_10}Plane/{urn:SICD:1.5-DRAFT-2025_06_10}SegmentList/{urn:SICD:1.5-DRAFT-2025_06_10}Segment/{urn:SICD:1.5-DRAFT-2025_06_10}SegmentPolygon"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}Area/{urn:SICD:1.5-DRAFT-2025_06_10}Plane/{urn:SICD:1.5-DRAFT-2025_06_10}SegmentList/{urn:SICD:1.5-DRAFT-2025_06_10}Segment/{urn:SICD:1.5-DRAFT-2025_06_10}SegmentPolygon": {
+    "attributes": [
+      "size"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}SV",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}LSVertexType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}Area/{urn:SICD:1.5-DRAFT-2025_06_10}Plane/{urn:SICD:1.5-DRAFT-2025_06_10}XDir": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}UVectECF",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}LineSpacing",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}NumLines",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}FirstLine",
+        "typename": "{http://www.w3.org/2001/XMLSchema}integer"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}Area/{urn:SICD:1.5-DRAFT-2025_06_10}Plane/{urn:SICD:1.5-DRAFT-2025_06_10}YDir": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}UVectECF",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}SampleSpacing",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}NumSamples",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}FirstSample",
+        "typename": "{http://www.w3.org/2001/XMLSchema}integer"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}RcvChannels": {
+    "attributes": [
+      "size"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}ChanParameters",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}RcvChannels/{urn:SICD:1.5-DRAFT-2025_06_10}ChanParameters"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}RcvChannels/{urn:SICD:1.5-DRAFT-2025_06_10}ChanParameters": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TxRcvPolarization",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}DualPolarizationType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RcvAPCIndex",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}TxFrequency": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Min",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Max",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}TxSequence": {
+    "attributes": [
+      "size"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TxStep",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}TxSequence/{urn:SICD:1.5-DRAFT-2025_06_10}TxStep"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}TxSequence/{urn:SICD:1.5-DRAFT-2025_06_10}TxStep": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}WFIndex",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TxPolarization",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Polarization2Type"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}Waveform": {
+    "attributes": [
+      "size"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}WFParameters",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}Waveform/{urn:SICD:1.5-DRAFT-2025_06_10}WFParameters"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}Waveform/{urn:SICD:1.5-DRAFT-2025_06_10}WFParameters": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TxPulseLength",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TxRFBandwidth",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TxFreqStart",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TxFMRate",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RcvDemodType",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}Waveform/{urn:SICD:1.5-DRAFT-2025_06_10}WFParameters/{urn:SICD:1.5-DRAFT-2025_06_10}RcvDemodType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RcvWindowLength",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}ADCSampleRate",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RcvIFBandwidth",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RcvFreqStart",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RcvFMRate",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}Waveform/{urn:SICD:1.5-DRAFT-2025_06_10}WFParameters/{urn:SICD:1.5-DRAFT-2025_06_10}RcvDemodType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadiometricType/{urn:SICD:1.5-DRAFT-2025_06_10}NoiseLevel": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}NoiseLevelType",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadiometricType/{urn:SICD:1.5-DRAFT-2025_06_10}NoiseLevel/{urn:SICD:1.5-DRAFT-2025_06_10}NoiseLevelType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}NoisePoly",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Poly2DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadiometricType/{urn:SICD:1.5-DRAFT-2025_06_10}NoiseLevel/{urn:SICD:1.5-DRAFT-2025_06_10}NoiseLevelType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}SCPCOACore/{urn:SICD:1.5-DRAFT-2025_06_10}SideOfTrack": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}SCPCOAType/{urn:SICD:1.5-DRAFT-2025_06_10}Bistatic": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}BistaticAng",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ZeroTo180Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}BistaticAngRate",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TxPlatform",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}SCPCOABistaticPlatformType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RcvPlatform",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}SCPCOABistaticPlatformType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}SICD": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}CollectionInfo",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}CollectionInfoType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}ImageCreation",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ImageCreationType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}ImageData",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ImageDataType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}GeoData",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}GeoDataType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Grid",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}GridType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Timeline",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}TimelineType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Position",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}PositionType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollection",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}ImageFormation",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ImageFormationType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}SCPCOA",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}SCPCOAType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Radiometric",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}RadiometricType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Antenna",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}AntennaType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}ErrorStatistics",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ErrorStatisticsType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}MatchInfo",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}MatchInfoType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RgAzComp",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}RgAzCompType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}PFA",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}PFAType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RMA",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}RMAType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}TimelineType/{urn:SICD:1.5-DRAFT-2025_06_10}IPP": {
+    "attributes": [
+      "size"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Set",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}TimelineType/{urn:SICD:1.5-DRAFT-2025_06_10}IPP/{urn:SICD:1.5-DRAFT-2025_06_10}Set"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}TimelineType/{urn:SICD:1.5-DRAFT-2025_06_10}IPP/{urn:SICD:1.5-DRAFT-2025_06_10}Set": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TStart",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TEnd",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}IPPStart",
+        "typename": "{http://www.w3.org/2001/XMLSchema}integer"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}IPPEnd",
+        "typename": "{http://www.w3.org/2001/XMLSchema}integer"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}IPPPoly",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Poly1DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}UnmodeledType/{urn:SICD:1.5-DRAFT-2025_06_10}UnmodeledDecorr": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Xrow",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ErrorDecorrFuncType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Ycol",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ErrorDecorrFuncType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://www.w3.org/2001/XMLSchema}boolean": {
+    "attributes": [],
+    "children": [],
+    "text_typename": null
+  },
+  "{http://www.w3.org/2001/XMLSchema}dateTime": {
+    "attributes": [],
+    "children": [],
+    "text_typename": null
+  },
+  "{http://www.w3.org/2001/XMLSchema}decimal": {
+    "attributes": [],
+    "children": [],
+    "text_typename": null
+  },
+  "{http://www.w3.org/2001/XMLSchema}double": {
+    "attributes": [],
+    "children": [],
+    "text_typename": null
+  },
+  "{http://www.w3.org/2001/XMLSchema}int": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}long"
+  },
+  "{http://www.w3.org/2001/XMLSchema}integer": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}decimal"
+  },
+  "{http://www.w3.org/2001/XMLSchema}nonNegativeInteger": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}integer"
+  },
+  "{http://www.w3.org/2001/XMLSchema}positiveInteger": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}nonNegativeInteger"
+  },
+  "{http://www.w3.org/2001/XMLSchema}string": {
+    "attributes": [],
+    "children": [],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}AntParamType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}XAxisPoly",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}XYZPolyType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}YAxisPoly",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}XYZPolyType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}FreqZero",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}EB",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}AntParamType/{urn:SICD:1.5-DRAFT-2025_06_10}EB"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Array",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}GainPhasePolyType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Elem",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}GainPhasePolyType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}GainBSPoly",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Poly1DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}EBFreqShift",
+        "typename": "{http://www.w3.org/2001/XMLSchema}boolean"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}MLFreqDilation",
+        "typename": "{http://www.w3.org/2001/XMLSchema}boolean"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}AntennaType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Tx",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}AntParamType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Rcv",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}AntParamType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TwoWay",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}AntParamType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}BistaticAdjustableParametersType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}APCPosSCPCOA",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}APCVel",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TimeSCPCOA",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}ClockFreqSF",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}BistaticComponentsErrorType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}PosVelErr",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}BistaticComponentsErrorType/{urn:SICD:1.5-DRAFT-2025_06_10}PosVelErr"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RadarSensor",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}BistaticComponentsErrorType/{urn:SICD:1.5-DRAFT-2025_06_10}RadarSensor"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}AtmosphericError",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}BistaticComponentsErrorType/{urn:SICD:1.5-DRAFT-2025_06_10}AtmosphericError"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}BistaticCompositeErrorType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RAvg",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RdotAvg",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RAvgRdotAvg",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NegOneToOneType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}CollectionInfoType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}CollectorName",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}IlluminatorName",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}CoreName",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}CollectType",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}CollectionInfoType/{urn:SICD:1.5-DRAFT-2025_06_10}CollectType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RadarMode",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}CollectionInfoType/{urn:SICD:1.5-DRAFT-2025_06_10}RadarMode"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Classification",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}InformationSecurityMarking",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}CountryCode",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Parameter",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ParameterType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}ComplexType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Real",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Imag",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}ComponentsErrorType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}PosVelErr",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ComponentsErrorType/{urn:SICD:1.5-DRAFT-2025_06_10}PosVelErr"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RadarSensor",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ComponentsErrorType/{urn:SICD:1.5-DRAFT-2025_06_10}RadarSensor"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TropoError",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ComponentsErrorType/{urn:SICD:1.5-DRAFT-2025_06_10}TropoError"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}IonoError",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ComponentsErrorType/{urn:SICD:1.5-DRAFT-2025_06_10}IonoError"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}CompositeErrorType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Rg",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Az",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RgAz",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NegOneToOneType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}DirParamType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}UVectECF",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}SS",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}ImpRespWid",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Sgn",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}DirParamType/{urn:SICD:1.5-DRAFT-2025_06_10}Sgn"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}ImpRespBW",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}KCtr",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}DeltaK1",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}DeltaK2",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}DeltaKCOAPoly",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Poly2DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}WgtType",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}DirParamType/{urn:SICD:1.5-DRAFT-2025_06_10}WgtType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}WgtFunct",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}DirParamType/{urn:SICD:1.5-DRAFT-2025_06_10}WgtFunct"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}DualPolarizationType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}ErrorDecorrFuncType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}CorrCoefZero",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}DecorrRate",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}ErrorStatisticsType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}CompositeSCP",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}CompositeErrorType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Components",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ComponentsErrorType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Unmodeled",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}UnmodeledType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}BistaticCompositeSCP",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}BistaticCompositeErrorType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}BistaticComponents",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}BistaticComponentsErrorType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Unmodeled",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}UnmodeledType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}AdditionalParms",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ErrorStatisticsType/{urn:SICD:1.5-DRAFT-2025_06_10}AdditionalParms"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}AdjustableParameterOffsets",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ErrorStatisticsType/{urn:SICD:1.5-DRAFT-2025_06_10}AdjustableParameterOffsets"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}BistaticAdjustableParameterOffsets",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ErrorStatisticsType/{urn:SICD:1.5-DRAFT-2025_06_10}BistaticAdjustableParameterOffsets"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}FrameType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}GainPhasePolyType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}GainPoly",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Poly2DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}PhasePoly",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Poly2DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}GeoDataType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}EarthModel",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}GeoDataType/{urn:SICD:1.5-DRAFT-2025_06_10}EarthModel"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}SCP",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}GeoDataType/{urn:SICD:1.5-DRAFT-2025_06_10}SCP"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}ImageCorners",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}GeoDataType/{urn:SICD:1.5-DRAFT-2025_06_10}ImageCorners"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}ValidData",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}PolygonType"
+      },
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}GeoInfo",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}GeoInfoType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}GeoInfoType": {
+    "attributes": [
+      "name"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Desc",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ParameterType"
+      },
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Point",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}LatLonRestrictionType"
+      },
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Line",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}LineType"
+      },
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Polygon",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}PolygonType"
+      },
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}GeoInfo",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}GeoInfoType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}GridType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}ImagePlane",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}GridType/{urn:SICD:1.5-DRAFT-2025_06_10}ImagePlane"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Type",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}GridType/{urn:SICD:1.5-DRAFT-2025_06_10}Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TimeCOAPoly",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Poly2DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Row",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}DirParamType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Col",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}DirParamType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}ImageCreationType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Application",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}DateTime",
+        "typename": "{http://www.w3.org/2001/XMLSchema}dateTime"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Site",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Profile",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}ImageDataType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}PixelType",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ImageDataType/{urn:SICD:1.5-DRAFT-2025_06_10}PixelType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}AmpTable",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ImageDataType/{urn:SICD:1.5-DRAFT-2025_06_10}AmpTable"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}NumRows",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}NumCols",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}FirstRow",
+        "typename": "{http://www.w3.org/2001/XMLSchema}nonNegativeInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}FirstCol",
+        "typename": "{http://www.w3.org/2001/XMLSchema}nonNegativeInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}FullImage",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ImageDataType/{urn:SICD:1.5-DRAFT-2025_06_10}FullImage"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}SCPPixel",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}RowColType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}ValidData",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ImageDataType/{urn:SICD:1.5-DRAFT-2025_06_10}ValidData"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}ImageFormationType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RcvChanProc",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ImageFormationType/{urn:SICD:1.5-DRAFT-2025_06_10}RcvChanProc"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TxRcvPolarizationProc",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}DualPolarizationType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TStartProc",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TEndProc",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TxFrequencyProc",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ImageFormationType/{urn:SICD:1.5-DRAFT-2025_06_10}TxFrequencyProc"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}SegmentIdentifier",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}ImageFormAlgo",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ImageFormationType/{urn:SICD:1.5-DRAFT-2025_06_10}ImageFormAlgo"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}STBeamComp",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ImageFormationType/{urn:SICD:1.5-DRAFT-2025_06_10}STBeamComp"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}ImageBeamComp",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ImageFormationType/{urn:SICD:1.5-DRAFT-2025_06_10}ImageBeamComp"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}AzAutofocus",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ImageFormationType/{urn:SICD:1.5-DRAFT-2025_06_10}AzAutofocus"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RgAutofocus",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ImageFormationType/{urn:SICD:1.5-DRAFT-2025_06_10}RgAutofocus"
+      },
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Processing",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ImageFormationType/{urn:SICD:1.5-DRAFT-2025_06_10}Processing"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}PolarizationCalibration",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}ImageFormationType/{urn:SICD:1.5-DRAFT-2025_06_10}PolarizationCalibration"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}LSVertexType": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Line",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Sample",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}LatLonCornerStringType": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Lat",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Lon",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}LatLonHAECornerRestrictType": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Lat",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Neg90To90Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Lon",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Neg180To180Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}HAE",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}LatLonHAERestrictionType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Lat",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Neg90To90Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Lon",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Neg180To180Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}HAE",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}LatLonRestrictionType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Lat",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Neg90To90Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Lon",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Neg180To180Type"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}LineType": {
+    "attributes": [
+      "size"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Endpoint",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}LineType/{urn:SICD:1.5-DRAFT-2025_06_10}Endpoint"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}MatchInfoType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}NumMatchTypes",
+        "typename": "{http://www.w3.org/2001/XMLSchema}int"
+      },
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}MatchType",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}MatchInfoType/{urn:SICD:1.5-DRAFT-2025_06_10}MatchType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}Matrix6x6Type": {
+    "attributes": [
+      "size1",
+      "size2"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Entry",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}MatrixEntry2DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}MatrixEntry2DType": {
+    "attributes": [
+      "index1",
+      "index2"
+    ],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}Neg180To180Type": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}Neg90To90Type": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}NegOneToOneType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}NonNegativeDoubleType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}OrientationType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}PFAType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}FPN",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}IPN",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}PolarAngRefTime",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}PolarAngPoly",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Poly1DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}SpatialFreqSFPoly",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Poly1DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Krg1",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Krg2",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Kaz1",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Kaz2",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}STDeskew",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}PFAType/{urn:SICD:1.5-DRAFT-2025_06_10}STDeskew"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}ParameterType": {
+    "attributes": [
+      "name"
+    ],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}Polarization1Type": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}Polarization2Type": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}Poly1DType": {
+    "attributes": [
+      "order1"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Coef",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}PolyCoef1DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}Poly2DType": {
+    "attributes": [
+      "order1",
+      "order2"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Coef",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}PolyCoef2DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}PolyCoef1DType": {
+    "attributes": [
+      "exponent1"
+    ],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}PolyCoef2DType": {
+    "attributes": [
+      "exponent1",
+      "exponent2"
+    ],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}PolygonType": {
+    "attributes": [
+      "size"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Vertex",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}PolygonType/{urn:SICD:1.5-DRAFT-2025_06_10}Vertex"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}PositionType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}ARPPoly",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}XYZPolyType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}GRPPoly",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}XYZPolyType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TxAPCPoly",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}XYZPolyType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RcvAPC",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}PositionType/{urn:SICD:1.5-DRAFT-2025_06_10}RcvAPC"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}PositiveDoubleType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}RMAType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RMAlgoType",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RMAType/{urn:SICD:1.5-DRAFT-2025_06_10}RMAlgoType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}ImageType",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RMAType/{urn:SICD:1.5-DRAFT-2025_06_10}ImageType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RMAT",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RMAType/{urn:SICD:1.5-DRAFT-2025_06_10}RMAT"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RMCR",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RMAType/{urn:SICD:1.5-DRAFT-2025_06_10}RMCR"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}INCA",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RMAType/{urn:SICD:1.5-DRAFT-2025_06_10}INCA"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TxFrequency",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}TxFrequency"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RefFreqIndex",
+        "typename": "{http://www.w3.org/2001/XMLSchema}int"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Waveform",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}Waveform"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TxPolarization",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Polarization1Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TxSequence",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}TxSequence"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RcvChannels",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}RcvChannels"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Area",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType/{urn:SICD:1.5-DRAFT-2025_06_10}Area"
+      },
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Parameter",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ParameterType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}RadiometricType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}NoiseLevel",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadiometricType/{urn:SICD:1.5-DRAFT-2025_06_10}NoiseLevel"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}RCSSFPoly",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Poly2DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}SigmaZeroSFPoly",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Poly2DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}BetaZeroSFPoly",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Poly2DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}GammaZeroSFPoly",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Poly2DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}RgAzCompType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}AzSF",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}KazPoly",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Poly1DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}RowColType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Row",
+        "typename": "{http://www.w3.org/2001/XMLSchema}integer"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Col",
+        "typename": "{http://www.w3.org/2001/XMLSchema}integer"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}RowColvertexType": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Row",
+        "typename": "{http://www.w3.org/2001/XMLSchema}integer"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Col",
+        "typename": "{http://www.w3.org/2001/XMLSchema}integer"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}SCPCOABistaticPlatformType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Time",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Pos",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Vel",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Acc",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}SideOfTrack",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}SCPCOACore/{urn:SICD:1.5-DRAFT-2025_06_10}SideOfTrack"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}SlantRange",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}GroundRange",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}DopplerConeAng",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ZeroTo180Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}GrazeAng",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Neg90To90Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}IncidenceAng",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ZeroTo180Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}AzimAng",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ZeroTo360Type"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}SCPCOAType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}SCPTime",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}ARPPos",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}ARPVel",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}ARPAcc",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}SideOfTrack",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}SCPCOACore/{urn:SICD:1.5-DRAFT-2025_06_10}SideOfTrack"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}SlantRange",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}GroundRange",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}DopplerConeAng",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ZeroTo180Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}GrazeAng",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Neg90To90Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}IncidenceAng",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ZeroTo180Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}TwistAng",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Neg90To90Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}SlopeAng",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ZeroTo90Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}AzimAng",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ZeroTo360Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}LayoverAng",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}ZeroTo360Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Bistatic",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}SCPCOAType/{urn:SICD:1.5-DRAFT-2025_06_10}Bistatic"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}TimelineType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}CollectStart",
+        "typename": "{http://www.w3.org/2001/XMLSchema}dateTime"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}CollectDuration",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}IPP",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}TimelineType/{urn:SICD:1.5-DRAFT-2025_06_10}IPP"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}UnmodeledType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Xrow",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Ycol",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}XrowYcol",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}UnmodeledDecorr",
+        "typename": "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}UnmodeledType/{urn:SICD:1.5-DRAFT-2025_06_10}UnmodeledDecorr"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}XYZPolyAttributeType": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}X",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Poly1DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Y",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Poly1DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Z",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Poly1DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}XYZPolyType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}X",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Poly1DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Y",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Poly1DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Z",
+        "typename": "{urn:SICD:1.5-DRAFT-2025_06_10}Poly1DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}XYZType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}X",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Y",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5-DRAFT-2025_06_10}Z",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}ZeroTo180Type": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}ZeroTo360Type": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "{urn:SICD:1.5-DRAFT-2025_06_10}ZeroTo90Type": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  }
+}

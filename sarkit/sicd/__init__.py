@@ -13,6 +13,7 @@ Supported Versions
 * `SICD 1.2.1`_
 * `SICD 1.3.0`_
 * `SICD 1.4.0`_
+* `SICD:1.5-DRAFT-2025_06_10`_
 
 Data Structure & File Format
 ============================
@@ -48,6 +49,7 @@ XML Metadata
    XdtType
    RowColType
    CmplxType
+   LineSampType
    XyzType
    LatLonHaeType
    LatLonType
@@ -181,6 +183,12 @@ SICD 1.4.0
 .. [SICD_schema_V1.4.0.xsd] National Center for Geospatial Intelligence Standards,
    "Sensor Independent Complex Data (SICD) XML Schema, Version 1.4.0", 2024.
    https://nsgreg.nga.mil/doc/view?i=5538
+
+SICD:1.5-DRAFT-2025_06_10
+-------------------------
+
+.. WARNING:: DRAFT support is temporary and will be replaced upon NTB approval
+
 """
 
 from ._constants import (
@@ -211,6 +219,7 @@ from ._xml import (
     IntType,
     LatLonHaeType,
     LatLonType,
+    LineSampType,
     MtxType,
     ParameterType,
     Poly2dType,
@@ -245,6 +254,7 @@ __all__ = [
     "IntType",
     "LatLonHaeType",
     "LatLonType",
+    "LineSampType",
     "MtxType",
     "NitfDeSubheaderPart",
     "NitfFileHeaderPart",

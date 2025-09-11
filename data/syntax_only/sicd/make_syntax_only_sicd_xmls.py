@@ -1,10 +1,13 @@
 import argparse
 import contextlib
+import copy
 import filecmp
 import functools
 import pathlib
+import sys
 import tempfile
 
+import lxml.builder
 import lxml.etree
 
 import sarkit.sicd as sksicd
@@ -75,12 +78,43 @@ def update_1_1_0_to_1_4_0(etree):
         elem.tag = f"{{urn:SICD:1.4.0}}{lxml.etree.QName(elem).localname}"
 
 
+def update_1_1_0_to_1_5(etree):
+    update_1_1_0_to_1_4_0(etree)
+
+    ns = "urn:SICD:1.5-DRAFT-2025_06_10"
+
+    for elem in etree.iter():
+        elem.tag = f"{{{ns}}}{lxml.etree.QName(elem).localname}"
+
+    # GeoInfo can now contain Point & Line & Polygon (instead of choice)
+    em = lxml.builder.ElementMaker(namespace=ns, nsmap={None: ns})
+    new_geoinfo = em.GeoInfo(
+        copy.deepcopy(etree.find(".//{*}GeoInfo/{*}Point")),
+        copy.deepcopy(etree.find(".//{*}GeoInfo/{*}Line")),
+        copy.deepcopy(etree.find(".//{*}GeoInfo/{*}Polygon")),
+        name="sicd-1.5-allows-point-line-polygon",
+    )
+    etree.find(".//{*}GeoInfo").append(new_geoinfo)
+
+    seg_polygon = em.SegmentPolygon(
+        *[em.SV(em.Line("0.0"), em.Sample("1.1"), index=str(n + 1)) for n in range(3)],
+        size="3",
+    )
+    outer_polygon = copy.deepcopy(seg_polygon)
+    outer_polygon.tag = outer_polygon.tag.replace("SegmentPolygon", "Polygon")
+    for n in outer_polygon:
+        n.tag = n.tag.replace("SV", "Vertex")
+    etree.find(".//{*}SegmentList/{*}Segment").append(seg_polygon)
+    etree.find(".//{*}Area/{*}Plane").append(outer_polygon)
+
+
 def update_version(etree, urn):
     converter = {
         "urn:SICD:1.1.0": lambda x: x,
         "urn:SICD:1.2.1": update_1_1_0_to_1_2_1,
         "urn:SICD:1.3.0": update_1_1_0_to_1_3_0,
         "urn:SICD:1.4.0": update_1_1_0_to_1_4_0,
+        "urn:SICD:1.5-DRAFT-2025_06_10": update_1_1_0_to_1_5,
     }[urn]
     return converter(etree)
 
@@ -158,7 +192,9 @@ def main(args=None):
                     set_version_ifa, urn="urn:SICD:1.3.0", ifa_label="RMA-RMAT"
                 ),
                 functools.partial(
-                    set_version_ifa, urn="urn:SICD:1.1.0", ifa_label="RMA-RMCR"
+                    set_version_ifa,
+                    urn="urn:SICD:1.5-DRAFT-2025_06_10",
+                    ifa_label="RMA-RMCR",
                 ),
                 functools.partial(
                     set_version_ifa, urn="urn:SICD:1.2.1", ifa_label="RMA-INCA"
@@ -206,4 +242,4 @@ def main(args=None):
 
 
 if __name__ == "__main__":
-    exit(main())
+    sys.exit(main())
