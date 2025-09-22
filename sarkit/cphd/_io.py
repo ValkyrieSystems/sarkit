@@ -421,40 +421,87 @@ class Reader:
             return int(self._kvp_list["SUPPORT_BLOCK_SIZE"])
         return None
 
-    def read_signal(self, channel_identifier: str) -> npt.NDArray:
+    def read_signal(
+        self,
+        channel_identifier: str,
+        *,
+        start_vector: int | None = None,
+        stop_vector: int | None = None,
+    ) -> npt.NDArray:
         """Read signal data from a CPHD file
 
         Parameters
         ----------
         channel_identifier : str
             Channel unique identifier
+        start_vector : int or None, optional
+            Lowest vector index to retrieve (inclusive). If None, defaults to first vector.
+        stop_vector : int or None, optional
+            Highest vector index to retrieve (exclusive). If None, defaults to one after last vector.
 
         Returns
         -------
         ndarray
             Signal array identified by ``channel_identifier``
 
-            When standard, shape=(NumVectors, NumSamples), dtype determined by SignalArrayFormat.
+            When standard, shape=(``stop_vector`` - ``start_vector``, NumSamples), dtype determined by SignalArrayFormat.
 
             When compressed, shape=(CompressedSignalSize,), dtype= `numpy.uint8`
+
+        Notes
+        -----
+        ``start_vector`` and ``stop_vector`` are not supported when signal data is compressed
         """
+        signal_shape, dtype = _describe_signal(
+            self.metadata.xmltree, channel_identifier
+        )
+        dtype = dtype.newbyteorder(">")
+        out_shape: tuple[int, ...]
+        if len(signal_shape) == 1:  # compressed
+            if start_vector is not None or stop_vector is not None:
+                raise ValueError(
+                    "start_vector and stop_vector not supported for compressed signals"
+                )
+            out_shape = signal_shape
+            slice_offset = 0
+        else:
+            # Convert None and negative values to absolute indices
+            start_vector, stop_vector, _ = slice(start_vector, stop_vector).indices(
+                signal_shape[0]
+            )
+            out_shape = (max(stop_vector - start_vector, 0), signal_shape[1])
+            slice_offset = dtype.itemsize * start_vector * signal_shape[1]
+
         signal_offset = int(
             self.metadata.xmltree.findtext(
                 f"{{*}}Data/{{*}}Channel[{{*}}Identifier='{channel_identifier}']/{{*}}SignalArrayByteOffset"
             )
         )
-        self._file_object.seek(signal_offset + self._signal_block_byte_offset)
-        shape, dtype = _describe_signal(self.metadata.xmltree, channel_identifier)
-        dtype = dtype.newbyteorder(">")
-        return _iohelp.fromfile(self._file_object, dtype, np.prod(shape)).reshape(shape)
+        self._file_object.seek(
+            slice_offset + signal_offset + self._signal_block_byte_offset
+        )
+        out = _iohelp.fromfile(
+            self._file_object, dtype, count=np.prod(out_shape)
+        ).reshape(out_shape)
+        return out
 
-    def read_pvps(self, channel_identifier: str) -> npt.NDArray:
+    def read_pvps(
+        self,
+        channel_identifier: str,
+        *,
+        start_vector: int | None = None,
+        stop_vector: int | None = None,
+    ) -> npt.NDArray:
         """Read pvp data from a CPHD file
 
         Parameters
         ----------
         channel_identifier : str
             Channel unique identifier
+        start_vector : int or None, optional
+            Lowest vector index to retrieve (inclusive). If None, defaults to first vector.
+        stop_vector : int or None, optional
+            Highest vector index to retrieve (exclusive). If None, defaults to one after last vector.
 
         Returns
         -------
@@ -467,19 +514,36 @@ class Reader:
         )
         num_vect = int(channel_info.find("./{*}NumVectors").text)
 
-        pvp_offset = int(channel_info.find("./{*}PVPArrayByteOffset").text)
-        self._file_object.seek(pvp_offset + self._pvp_block_byte_offset)
+        # Convert None and negative values to absolute indices
+        start_vector, stop_vector, _ = slice(start_vector, stop_vector).indices(
+            num_vect
+        )
+        count = max(stop_vector - start_vector, 0)
 
         pvp_dtype = get_pvp_dtype(self.metadata.xmltree).newbyteorder("B")
-        return _iohelp.fromfile(self._file_object, pvp_dtype, num_vect)
+        slice_offset = pvp_dtype.itemsize * start_vector
+        pvp_offset = int(channel_info.find("./{*}PVPArrayByteOffset").text)
+        self._file_object.seek(slice_offset + pvp_offset + self._pvp_block_byte_offset)
+        out = _iohelp.fromfile(self._file_object, dtype=pvp_dtype, count=count)
+        return out
 
-    def read_channel(self, channel_identifier: str) -> tuple[npt.NDArray, npt.NDArray]:
+    def read_channel(
+        self,
+        channel_identifier: str,
+        *,
+        start_vector: int | None = None,
+        stop_vector: int | None = None,
+    ) -> tuple[npt.NDArray, npt.NDArray]:
         """Read signal and pvp data from a CPHD file channel
 
         Parameters
         ----------
         channel_identifier : str
             Channel unique identifier
+        start_vector : int or None, optional
+            Lowest vector index to retrieve (inclusive). If None, defaults to first vector.
+        stop_vector : int or None, optional
+            Highest vector index to retrieve (exclusive). If None, defaults to one after last vector.
 
         Returns
         -------
@@ -489,7 +553,14 @@ class Reader:
             PVP array for channel = channel_identifier
 
         """
-        return self.read_signal(channel_identifier), self.read_pvps(channel_identifier)
+        signal = self.read_signal(
+            channel_identifier, start_vector=start_vector, stop_vector=stop_vector
+        )
+        pvp = self.read_pvps(
+            channel_identifier, start_vector=start_vector, stop_vector=stop_vector
+        )
+
+        return signal, pvp
 
     def _read_support_array(self, sa_identifier):
         elem_format = self.metadata.xmltree.find(
