@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- `ElementWrapper.__contains__` now raises `KeyError` for impossible keys
 
 ## [1.0.1] - 2025-09-09
 
