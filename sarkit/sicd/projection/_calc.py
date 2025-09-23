@@ -524,7 +524,7 @@ def r_rdot_from_plane(
     )
 
 
-def compute_and_apply_offsets(
+def apply_apos(
     proj_metadata: params.MetadataParams,
     init_proj_set: params.ProjectionSetsLike,
     apo_input_set: params.AdjustableParameterOffsets,
@@ -1112,7 +1112,7 @@ def scene_to_image(
         )
 
         if adjust_param_offsets is not None:
-            projection_sets = compute_and_apply_offsets(
+            projection_sets = apply_apos(
                 proj_metadata, projection_sets, adjust_param_offsets
             )
 

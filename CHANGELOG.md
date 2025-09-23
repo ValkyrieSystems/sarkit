@@ -7,11 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+## [1.0.1] - 2025-09-09
+
+### Fixed
+- Use most recent SICD v1.4.0 XML schema (dated 2024-05-01)
+
+
+## [1.0.0] - 2025-09-04
+
 ### Added
 - CPHD reference geometry calculations
+- CRSD reference geometry and related computations
 
 ### Changed
 - CLIs renamed from `<>-consistency` to `<>check`
+- Rearranged CRSD reference geometry API
+- Rearranged SICD sensitivity/error propagation API
 
 ### Removed
 - Several incomplete / NotImplemented APIs
@@ -42,18 +54,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.10.0] - 2025-07-16
 
-## Added
+### Added
 - ElementWrapper classes for interacting with SAR XML
 - Improved handling of Compressed CRSD
 - Support for using `smart_open` to open remote files
 
-# Fixed
+### Fixed
 - SICD consistency checker's SegmentList checks
 
 
 ## [0.9.0] - 2025-07-01
 
-## Changed
+### Changed
 - Replaced built in NITF parsing with `jbpy`
 
 
@@ -80,7 +92,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for python 3.13
 - SICD segmentation check to consistency checker
 
-## Fixed
+### Fixed
 - Writing CPHDs without support arrays
 - SICD projection to a DEM surface not iterating enough
 

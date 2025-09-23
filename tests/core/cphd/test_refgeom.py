@@ -4,6 +4,7 @@ import sarkit.cphd as skcphd
 
 
 def _replace_refgeom(cphd_xmltree, pvps):
+    cphd_xmltree.find("{*}ReferenceGeometry").clear()
     refgeom = skcphd.compute_reference_geometry(cphd_xmltree, pvps)
     cphd_xmltree.getroot().replace(cphd_xmltree.find("{*}ReferenceGeometry"), refgeom)
     basis_version = lxml.etree.QName(cphd_xmltree.getroot()).namespace

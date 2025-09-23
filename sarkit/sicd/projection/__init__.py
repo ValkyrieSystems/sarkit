@@ -23,7 +23,6 @@ dataclasses with attributes named as similar as feasible to the IPDD.
    ProjectionSetsBi
    ScenePointRRdotParams
    ScenePointGpXyParams
-   SensitivityMatrices
 
 Type Aliases
 ------------
@@ -100,7 +99,7 @@ Adjustable Parameters
 .. autosummary::
    :toctree: generated/
 
-   compute_and_apply_offsets
+   apply_apos
 
 Precise R/Rdot to Constant HAE Surface Projection
 =================================================
@@ -121,21 +120,18 @@ Precise R/Rdot to DEM Surface Projection
 
 Projection Sensitivity Parameters
 =================================
-.. autosummary::
-   :toctree: generated/
-
-   compute_sensitivity_matrices
+Coming soon...
 
 Projection Error Propagation
 ============================
 .. autosummary::
    :toctree: generated/
 
-   compute_ecef_pv_covariance
+   compute_ecef_pv_transformation
 """
 
 from ._calc import (
-    compute_and_apply_offsets,
+    apply_apos,
     compute_coa_pos_vel,
     compute_coa_r_rdot,
     compute_coa_time,
@@ -153,7 +149,7 @@ from ._calc import (
     scene_to_image,
 )
 from ._errorprop import (
-    compute_ecef_pv_covariance,
+    compute_ecef_pv_transformation,
     compute_ric_basis_vectors,
 )
 from ._params import (
@@ -168,10 +164,6 @@ from ._params import (
     ScenePointGpXyParams,
     ScenePointRRdotParams,
 )
-from ._sensitivity import (
-    SensitivityMatrices,
-    compute_sensitivity_matrices,
-)
 
 __all__ = [
     "AdjustableParameterOffsets",
@@ -184,19 +176,17 @@ __all__ = [
     "ProjectionSetsMono",
     "ScenePointGpXyParams",
     "ScenePointRRdotParams",
-    "SensitivityMatrices",
-    "compute_and_apply_offsets",
+    "apply_apos",
     "compute_coa_pos_vel",
     "compute_coa_r_rdot",
     "compute_coa_time",
-    "compute_ecef_pv_covariance",
+    "compute_ecef_pv_transformation",
     "compute_gp_xy_parameters",
     "compute_projection_sets",
     "compute_pt_r_rdot_parameters",
     "compute_ric_basis_vectors",
     "compute_scp_coa_r_rdot",
     "compute_scp_coa_slant_plane_normal",
-    "compute_sensitivity_matrices",
     "image_grid_to_image_plane_point",
     "image_plane_point_to_image_grid",
     "r_rdot_to_constant_hae_surface",

@@ -3,12 +3,12 @@ import dataclasses
 import functools
 import pathlib
 
-import lxml.builder
 import lxml.etree
 import numpy as np
 import pytest
 
 import sarkit.sicd.projection as sicdproj
+import sarkit.sicd.projection._sensitivity
 import sarkit.wgs84
 
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
@@ -443,7 +443,7 @@ def test_apo_mono(example_proj_metadata):
         delta_tr_SCP_COA=11.0,
     )
     proj_set = sicdproj.compute_projection_sets(meta, [0, 0])
-    adjust_proj_set = sicdproj.compute_and_apply_offsets(meta, proj_set, apos)
+    adjust_proj_set = sicdproj.apply_apos(meta, proj_set, apos)
 
     # Make sure things that were supposed to change did
     assert adjust_proj_set.t_COA == proj_set.t_COA
@@ -467,7 +467,7 @@ def test_apo_bi(example_proj_metadata_bi):
         delta_tr_SCP_COA=21.0,
     )
     proj_set = sicdproj.compute_projection_sets(meta, [0, 0])
-    adjust_proj_set = sicdproj.compute_and_apply_offsets(meta, proj_set, apos)
+    adjust_proj_set = sicdproj.apply_apos(meta, proj_set, apos)
 
     # Make sure things that were supposed to change did
     assert adjust_proj_set.t_COA == proj_set.t_COA
@@ -482,7 +482,9 @@ def test_apo_bi(example_proj_metadata_bi):
 
 
 def test_sensitivity_matrices(example_proj_metadata):
-    mats = sicdproj.compute_sensitivity_matrices(example_proj_metadata)
+    mats = sarkit.sicd.projection._sensitivity.compute_sensitivity_matrices(
+        example_proj_metadata
+    )
 
     # sensitivity when image plane is already slant should be nearly -identity due to relative orientation of slant and
     # image plane vectors

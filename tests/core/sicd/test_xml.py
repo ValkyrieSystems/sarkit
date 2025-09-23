@@ -82,6 +82,7 @@ def test_elementwrapper_tofromdict(xmlpath):
 
 
 def _replace_scpcoa(sicd_xmltree):
+    sicd_xmltree.find(".//{*}SCPCOA").clear()
     scpcoa = sksicd.compute_scp_coa(sicd_xmltree)
     sicd_xmltree.getroot().replace(sicd_xmltree.find(".//{*}SCPCOA"), scpcoa)
     basis_version = lxml.etree.QName(sicd_xmltree.getroot()).namespace
