@@ -875,6 +875,117 @@ def test_rgazcomp_polys(sicd_con, em):
     assert sicd_con.failures()
 
 
+def test_check_match_type(sicd_con, em):
+    sicd_con.sicdroot.append(
+        em.MatchInfo(
+            em.NumMatchTypes("2"),
+            em.MatchType(
+                em.TypeID("BOGUS"),
+                em.NumMatchCollections("0"),
+                index="1",
+            ),
+        )
+    )
+    sicd_con.check("check_match_type")
+    testing.assert_failures(sicd_con, "Number of MatchType nodes matches NumMatchTypes")
+
+
+def test_check_match_type_indices(sicd_con, em):
+    sicd_con.sicdroot.append(
+        em.MatchInfo(
+            em.NumMatchTypes("2"),
+            em.MatchType(
+                em.TypeID("BOGUS1"),
+                em.NumMatchCollections("0"),
+                index="1",
+            ),
+            em.MatchType(
+                em.TypeID("BOGUS2"),
+                em.NumMatchCollections("0"),
+                index="10",
+            ),
+        )
+    )
+    sicd_con.check("check_match_type")
+    testing.assert_failures(sicd_con, "MatchType indexed 1 to NumMatchTypes")
+
+
+def test_check_no_match_collections(sicd_con, em):
+    sicd_con.sicdroot.append(
+        em.MatchInfo(
+            em.NumMatchTypes("1"),
+            em.MatchType(
+                em.TypeID("BOGUS1"),
+                em.NumMatchCollections("24"),
+            ),
+        )
+    )
+    sicd_con.check("check_match_collection")
+    testing.assert_failures(
+        sicd_con, "Number of MatchCollection nodes matches NumMatchCollections"
+    )
+
+
+def test_check_match_collection(sicd_con, em):
+    sicd_con.sicdroot.append(
+        em.MatchInfo(
+            em.NumMatchTypes("2"),
+            em.MatchType(
+                em.TypeID("BOGUS1"),
+                em.NumMatchCollections("1"),
+                em.MatchCollection(
+                    em.CoreName("CORENAME"),
+                    index="1",
+                ),
+            ),
+            em.MatchType(
+                em.TypeID("BOGUS2"),
+                em.NumMatchCollections("2"),
+                em.MatchCollection(
+                    em.CoreName("CORENAME"),
+                    index="1",
+                ),
+            ),
+        )
+    )
+    sicd_con.check("check_match_collection")
+    testing.assert_failures(
+        sicd_con, "Number of MatchCollection nodes matches NumMatchCollections"
+    )
+
+
+def test_check_match_collection_indices(sicd_con, em):
+    sicd_con.sicdroot.append(
+        em.MatchInfo(
+            em.NumMatchTypes("2"),
+            em.MatchType(
+                em.TypeID("BOGUS1"),
+                em.NumMatchCollections("1"),
+                em.MatchCollection(
+                    em.CoreName("CORENAME"),
+                    index="1",
+                ),
+            ),
+            em.MatchType(
+                em.TypeID("BOGUS2"),
+                em.NumMatchCollections("2"),
+                em.MatchCollection(
+                    em.CoreName("CORENAME1"),
+                    index="1",
+                ),
+                em.MatchCollection(
+                    em.CoreName("CORENAME2"),
+                    index="10",
+                ),
+            ),
+        )
+    )
+    sicd_con.check("check_match_collection")
+    testing.assert_failures(
+        sicd_con, "MatchCollection indexed 1 to NumMatchCollections"
+    )
+
+
 def test_check_valid_data_indices(sicd_con):
     sicd_con.check("check_valid_data_indices")
     assert not sicd_con.failures()
@@ -1071,6 +1182,165 @@ def test_check_validdata_first_vertex(sicd_con):
     sicd_con.xmlhelp.set("./{*}ImageData/{*}ValidData", vertices)
     sicd_con.check("check_validdata_first_vertex")
     testing.assert_failures(sicd_con, "First ValidData Vertex is min row -> min col")
+
+
+def test_check_amptable_bad_index(sicd_con, em):
+    img_data_node = sicd_con.sicdroot.find("./{*}ImageData")
+    img_data_node.append(
+        em.AmpTable(
+            em.Amplitude("1", index="256"),
+            em.Amplitude("2", index="1"),
+            em.Amplitude("3", index="2"),
+            em.Amplitude("4", index="3"),
+            size="256",
+        )
+    )
+    sicd_con.check("check_amptable")
+    testing.assert_failures(sicd_con, "AmpTable indexed 0 to 255")
+
+
+def test_check_multiple_geoinfo_lines(sicd_con, em):
+    geo_data_node = sicd_con.sicdroot.find("./{*}GeoData")
+    geo_data_node.append(
+        em.GeoInfo(
+            em.Line(
+                em.Endpoint(
+                    em.Lat("60.0"),
+                    em.Lon("120.0"),
+                    index="10",
+                ),
+                em.Endpoint(
+                    em.Lat("70.0"),
+                    em.Lon("130.0"),
+                    index="2",
+                ),
+                size="2",
+            ),
+        )
+    )
+    geo_data_node.append(
+        em.GeoInfo(
+            em.Line(
+                em.Endpoint(
+                    em.Lat("65.0"),
+                    em.Lon("125.0"),
+                    index="1",
+                ),
+                em.Endpoint(
+                    em.Lat("75.0"),
+                    em.Lon("135.0"),
+                    index="2",
+                ),
+                size="2",
+            ),
+        )
+    )
+    sicd_con.check("check_geoinfo_line")
+    testing.assert_failures(sicd_con, "Endpoint elements are present")
+
+
+def test_check_nested_geoinfo_lines(sicd_con, em):
+    geo_data_node = sicd_con.sicdroot.find("./{*}GeoData")
+    geo_data_node.append(
+        em.GeoInfo(
+            em.Line(
+                em.Endpoint(
+                    em.Lat("60.0"),
+                    em.Lon("120.0"),
+                    index="10",
+                ),
+                em.Endpoint(
+                    em.Lat("70.0"),
+                    em.Lon("130.0"),
+                    index="2",
+                ),
+                size="2",
+            ),
+            em.GeoInfo(
+                em.Line(
+                    em.Endpoint(
+                        em.Lat("65.0"),
+                        em.Lon("125.0"),
+                        index="1",
+                    ),
+                    em.Endpoint(
+                        em.Lat("75.0"),
+                        em.Lon("135.0"),
+                        index="2",
+                    ),
+                    size="2",
+                ),
+            ),
+        )
+    )
+    sicd_con.check("check_geoinfo_line")
+    testing.assert_failures(sicd_con, "Endpoint elements are present")
+
+
+def test_check_multiple_geoinfo_polygons(sicd_con, em):
+    geo_data_node = sicd_con.sicdroot.find("./{*}GeoData")
+    geo_data_node.append(
+        em.GeoInfo(
+            em.Polygon(
+                em.Vertex(em.Lat("60.0"), em.Lon("120.0"), index="10"),
+                em.Vertex(em.Lat("70.0"), em.Lon("130.0"), index="2"),
+                em.Vertex(em.Lat("80.0"), em.Lon("140'0"), index="3"),
+                size="3",
+            ),
+        )
+    )
+    geo_data_node.append(
+        em.GeoInfo(
+            em.Polygon(
+                em.Vertex(em.Lat("65.0"), em.Lon("125.0"), index="10"),
+                em.Vertex(em.Lat("75.0"), em.Lon("135.0"), index="2"),
+                em.Vertex(em.Lat("85.0"), em.Lon("145'0"), index="3"),
+                size="3",
+            ),
+        )
+    )
+    sicd_con.check("check_geoinfo_polygon")
+    testing.assert_failures(sicd_con, "Vertex elements are present")
+
+
+def test_check_nested_geoinfo_polygons(sicd_con, em):
+    geo_data_node = sicd_con.sicdroot.find("./{*}GeoData")
+    geo_data_node.append(
+        em.GeoInfo(
+            em.Polygon(
+                em.Vertex(em.Lat("65.0"), em.Lon("125.0"), index="10"),
+                em.Vertex(em.Lat("75.0"), em.Lon("135.0"), index="2"),
+                em.Vertex(em.Lat("85.0"), em.Lon("145'0"), index="3"),
+                size="3",
+            ),
+            em.GeoInfo(
+                em.Polygon(
+                    em.Vertex(em.Lat("65.0"), em.Lon("125.0"), index="1"),
+                    em.Vertex(em.Lat("75.0"), em.Lon("135.0"), index="2"),
+                    em.Vertex(em.Lat("85.0"), em.Lon("145'0"), index="3"),
+                    size="3",
+                ),
+            ),
+        )
+    )
+    sicd_con.check("check_geoinfo_polygon")
+    testing.assert_failures(sicd_con, "Vertex elements are present")
+
+
+def test_check_geoinfo_polygon_bad_size(sicd_con, em):
+    geo_data_node = sicd_con.sicdroot.find("./{*}GeoData")
+    geo_data_node.append(
+        em.GeoInfo(
+            em.Polygon(
+                em.Vertex(em.Lat("60.0"), em.Lon("120.0"), index="1"),
+                em.Vertex(em.Lat("70.0"), em.Lon("130.0"), index="2"),
+                em.Vertex(em.Lat("80.0"), em.Lon("140'0"), index="3"),
+                size="4",
+            ),
+        )
+    )
+    sicd_con.check("check_geoinfo_polygon")
+    testing.assert_failures(sicd_con, "Polygon size attribute matches number")
 
 
 def test_check_no_validdata_presence(sicd_con):

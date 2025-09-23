@@ -925,6 +925,57 @@ class SicdConsistency(con.ConsistencyChecker):
                     npl.norm(icp_converted_ecf - icp_computed_ecf)
                 )
 
+    def check_amptable(self) -> None:
+        """AmpTable of correct size with accurate Amplitude indices."""
+        with self.precondition():
+            assert self.sicdroot.find("./{*}ImageData/{*}AmpTable") is not None
+            # Though checked by the schema in v1.4.0 and later, added here for pre v1.4.0 completeness
+            with self.need("AmpTable size is 256"):
+                assert (
+                    self.sicdroot.find("./{*}ImageData/{*}AmpTable").get("size")
+                    == "256"
+                )
+
+            amp_indices = [
+                int(amp.get("index"))
+                for amp in self.sicdroot.findall(
+                    "./{*}ImageData/{*}AmpTable/{*}Amplitude"
+                )
+            ]
+
+            with self.need("AmpTable indexed 0 to 255"):
+                assert np.array_equal(np.sort(amp_indices), np.arange(256))
+
+    def check_geoinfo_line(self) -> None:
+        """Checks that GeoInfo/Line has a size attribute and segments have the index attribute."""
+        geoinfo_lines = self.sicdroot.findall(".//{*}GeoInfo/{*}Line")
+        with self.precondition():
+            assert geoinfo_lines
+            for elem in geoinfo_lines:
+                self._compare_size_and_index(
+                    elem.getroottree().getelementpath(elem), "./{*}Endpoint"
+                )
+
+                # Though checked by the schema in v1.4.0 and later, added here for pre v1.4.0 completeness
+                num_endpoints = len(elem.findall("{*}Endpoint"))
+                with self.need("Number of Endpoints >= 2"):
+                    assert num_endpoints >= 2
+
+    def check_geoinfo_polygon(self) -> None:
+        """Checks that GeoInfo/Polygon has a size attribute and segments have the index attribute."""
+        geoinfo_polygons = self.sicdroot.findall(".//{*}GeoInfo/{*}Polygon")
+        with self.precondition():
+            assert geoinfo_polygons
+            for elem in geoinfo_polygons:
+                self._compare_size_and_index(
+                    elem.getroottree().getelementpath(elem), "./{*}Vertex"
+                )
+
+                # Though checked by the schema in v1.4.0 and later, added here for pre v1.4.0 completeness
+                num_vertices = len(elem.findall("{*}Vertex"))
+                with self.need("Number of vertices >= 3"):
+                    assert num_vertices >= 3
+
     def check_validdata_presence(self) -> None:
         """ValidData should be in both GeoData and ImageData or neither."""
         in_geodata = self.sicdroot.find("./{*}GeoData/{*}ValidData") is not None
@@ -1930,6 +1981,54 @@ class SicdConsistency(con.ConsistencyChecker):
         with self.precondition():
             assert poly_node is not None
             self._assert_poly_1d(poly_node, "RgAzComp/{*}KazPoly")
+
+    def check_match_type(self) -> None:
+        """Checks MatchType consistent with NumMatchTypes."""
+        with self.precondition():
+            assert self.sicdroot.find("./{*}MatchInfo") is not None
+            num_match_types = self.xmlhelp.load("./{*}MatchInfo/{*}NumMatchTypes")
+            num_matchtype_nodes = len(
+                self.sicdroot.findall("./{*}MatchInfo/{*}MatchType")
+            )
+            with self.need("Number of MatchType nodes matches NumMatchTypes"):
+                assert num_match_types == num_matchtype_nodes
+
+            mt_indices = [
+                int(mt.get("index"))
+                for mt in self.sicdroot.findall("./{*}MatchInfo/{*}MatchType")
+            ]
+
+            with self.need("MatchType indexed 1 to NumMatchTypes"):
+                assert np.array_equal(
+                    np.sort(mt_indices), np.arange(1, num_matchtype_nodes + 1)
+                )
+
+    def check_match_collection(self) -> None:
+        """Checks MatchCollection consistent with NumMatchCollections."""
+        with self.precondition():
+            assert self.sicdroot.find("./{*}MatchInfo/{*}MatchType") is not None
+            for match_type in self.sicdroot.findall("./{*}MatchInfo/{*}MatchType"):
+                num_match_collections = self.xmlhelp.load_elem(
+                    match_type.find("./{*}NumMatchCollections")
+                )
+                num_matchcollection_nodes = len(
+                    match_type.findall("./{*}MatchCollection")
+                )
+                with self.need(
+                    "Number of MatchCollection nodes matches NumMatchCollections"
+                ):
+                    assert num_match_collections == num_matchcollection_nodes
+
+                mtc_indices = [
+                    int(mtc.get("index"))
+                    for mtc in match_type.findall("./{*}MatchCollection")
+                ]
+
+                with self.need("MatchCollection indexed 1 to NumMatchCollections"):
+                    assert np.array_equal(
+                        np.sort(mtc_indices),
+                        np.arange(1, num_matchcollection_nodes + 1),
+                    )
 
     def check_pfa_polys(self) -> None:
         """Checks consistency of all PFA polynomials."""
