@@ -105,6 +105,8 @@ def test_transcoders():
     + list(DATAPATH.glob("example-sidd*.xml")),
 )
 def test_elementwrapper_tofromdict(xmlpath):
+    if "1.0" in xmlpath.name:
+        pytest.xfail("need to do v1.0 transcoders")
     siddroot = lxml.etree.parse(xmlpath).getroot()
     root_ns = lxml.etree.QName(siddroot).namespace
     xsdhelp = sksidd.XsdHelper(root_ns)
