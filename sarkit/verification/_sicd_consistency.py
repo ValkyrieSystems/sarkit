@@ -504,7 +504,7 @@ class SicdConsistency(con.ConsistencyChecker):
                     with self.need("Matching NROWS"):
                         assert imseg["subheader"]["NROWS"].value == num_rows_is[imidx]
                     expected_iloc_rows = 0 if imidx == 0 else num_rows_is[imidx - 1]
-                    with self.need("ILOC matches expected "):
+                    with self.need("ILOC matches expected"):
                         assert (
                             int(imseg["subheader"]["ILOC"].value[0])
                             == expected_iloc_rows
@@ -591,6 +591,10 @@ class SicdConsistency(con.ConsistencyChecker):
 
             with self.need("DESSHFT == XML"):
                 assert des_header["DESSHF"]["DESSHFT"].value.rstrip() == "XML"
+
+            with self.need(
+                "DESSHSI == SICD Volume 1 Design & Implementation Description Document"
+            ):
                 assert (
                     des_header["DESSHF"]["DESSHSI"].value.rstrip()
                     == "SICD Volume 1 Design & Implementation Description Document"
@@ -725,32 +729,29 @@ class SicdConsistency(con.ConsistencyChecker):
         are consistent with their parent's ``'size'``.
         """
         parent = self.sicdroot.find(path_to_parent)
-        indices = None
-        if parent is not None:
-            indices = [
-                int(node.get("index")) for node in parent.findall(rel_path_to_child)
-            ]
-            with self.need(f"All {rel_path_to_child} elements are present"):
-                assert not set(indices).symmetric_difference(range(1, len(indices) + 1))
-            with self.need(
-                f"{path_to_parent} size attribute matches number of {rel_path_to_child}"
-            ):
-                assert int(parent.attrib["size"]) == len(indices)
+        indices = [int(node.get("index")) for node in parent.findall(rel_path_to_child)]
+        with self.need(f"All {rel_path_to_child} elements are present"):
+            assert not set(indices).symmetric_difference(range(1, len(indices) + 1))
+        with self.need(
+            f"{path_to_parent} size attribute matches number of {rel_path_to_child}"
+        ):
+            assert int(parent.attrib["size"]) == len(indices)
 
         return indices
 
     @per_grid_dim
     def check_wgtfunct_indices(self, grid_dim) -> None:
         """Checks consistency of the indices in the WgtFunct elements."""
-        wgt_indices = self._compare_size_and_index(
-            f"./{{*}}Grid/{{*}}{grid_dim}/{{*}}WgtFunct", "./{*}Wgt"
-        )
         with self.precondition():
-            assert wgt_indices is not None
-            with self.need(
-                f"{grid_dim} WgtFunct elements have size attribute and Wgt children have index attribute"
-            ):
-                assert wgt_indices
+            assert (
+                self.sicdroot.find(
+                    f"./{{*}}Grid/{{*}}{grid_dim}/{{*}}WgtFunct/{{*}}Wgt"
+                )
+                is not None
+            )
+            self._compare_size_and_index(
+                f"./{{*}}Grid/{{*}}{grid_dim}/{{*}}WgtFunct", "./{*}Wgt"
+            )
 
     def check_valid_ifa(self) -> None:
         """ImageFormationAlgo must be paired with appropriate block."""
@@ -923,6 +924,57 @@ class SicdConsistency(con.ConsistencyChecker):
                 assert 0.1 * scp_dist > con.Approx(
                     npl.norm(icp_converted_ecf - icp_computed_ecf)
                 )
+
+    def check_amptable(self) -> None:
+        """AmpTable of correct size with accurate Amplitude indices."""
+        with self.precondition():
+            assert self.sicdroot.find("./{*}ImageData/{*}AmpTable") is not None
+            # Though checked by the schema in v1.4.0 and later, added here for pre v1.4.0 completeness
+            with self.need("AmpTable size is 256"):
+                assert (
+                    self.sicdroot.find("./{*}ImageData/{*}AmpTable").get("size")
+                    == "256"
+                )
+
+            amp_indices = [
+                int(amp.get("index"))
+                for amp in self.sicdroot.findall(
+                    "./{*}ImageData/{*}AmpTable/{*}Amplitude"
+                )
+            ]
+
+            with self.need("AmpTable indexed 0 to 255"):
+                assert np.array_equal(np.sort(amp_indices), np.arange(256))
+
+    def check_geoinfo_line(self) -> None:
+        """Checks that GeoInfo/Line has a size attribute and segments have the index attribute."""
+        geoinfo_lines = self.sicdroot.findall(".//{*}GeoInfo/{*}Line")
+        with self.precondition():
+            assert geoinfo_lines
+            for elem in geoinfo_lines:
+                self._compare_size_and_index(
+                    elem.getroottree().getelementpath(elem), "./{*}Endpoint"
+                )
+
+                # Though checked by the schema in v1.4.0 and later, added here for pre v1.4.0 completeness
+                num_endpoints = len(elem.findall("{*}Endpoint"))
+                with self.need("Number of Endpoints >= 2"):
+                    assert num_endpoints >= 2
+
+    def check_geoinfo_polygon(self) -> None:
+        """Checks that GeoInfo/Polygon has a size attribute and segments have the index attribute."""
+        geoinfo_polygons = self.sicdroot.findall(".//{*}GeoInfo/{*}Polygon")
+        with self.precondition():
+            assert geoinfo_polygons
+            for elem in geoinfo_polygons:
+                self._compare_size_and_index(
+                    elem.getroottree().getelementpath(elem), "./{*}Vertex"
+                )
+
+                # Though checked by the schema in v1.4.0 and later, added here for pre v1.4.0 completeness
+                num_vertices = len(elem.findall("{*}Vertex"))
+                with self.need("Number of vertices >= 3"):
+                    assert num_vertices >= 3
 
     def check_validdata_presence(self) -> None:
         """ValidData should be in both GeoData and ImageData or neither."""
@@ -1168,15 +1220,16 @@ class SicdConsistency(con.ConsistencyChecker):
 
     def check_segmentlist_indices(self) -> None:
         """Checks that SegmentList has a size attribute and segments have the index attribute."""
-        segment_indices = self._compare_size_and_index(
-            "./{*}RadarCollection/{*}Area/{*}Plane/{*}SegmentList", "./{*}Segment"
-        )
         with self.precondition():
-            assert segment_indices is not None
-            with self.need(
-                "SegmentList has size attribute and segments have index attribute"
-            ):
-                assert segment_indices
+            assert (
+                self.sicdroot.find(
+                    "./{*}RadarCollection/{*}Area/{*}Plane/{*}SegmentList"
+                )
+                is not None
+            )
+            self._compare_size_and_index(
+                "./{*}RadarCollection/{*}Area/{*}Plane/{*}SegmentList", "./{*}Segment"
+            )
 
     def check_segment_unique_ids(self) -> None:
         """Checks that identifiers in SegmentList are unique."""
@@ -1189,7 +1242,7 @@ class SicdConsistency(con.ConsistencyChecker):
                 segment_id.text
                 for segment_id in segment_list.findall("./{*}Segment/{*}Identifier")
             ]
-            with self.need("SegmentList segments have identifiers"):
+            with self.need("SegmentList segments have unique identifiers"):
                 assert len(set(segment_ids)) == len(segment_ids)
 
     def _compute_area_plane_corners_ecef(self):
@@ -1392,27 +1445,20 @@ class SicdConsistency(con.ConsistencyChecker):
 
     def check_ipp_set_indices(self) -> None:
         """Checks consistency of the indices in the Timeline IPP elements."""
-        ipp_set_indices = self._compare_size_and_index(
-            "./{*}Timeline/{*}IPP", "./{*}Set"
-        )
         with self.precondition():
-            assert ipp_set_indices is not None
-            with self.need(
-                "Timeline IPP elements have size attribute and sets have index attribute"
-            ):
-                assert ipp_set_indices
+            assert self.sicdroot.find("./{*}Timeline/{*}IPP/{*}Set") is not None
+            self._compare_size_and_index("./{*}Timeline/{*}IPP", "./{*}Set")
 
     def check_waveform_params_indices(self) -> None:
         """Checks consistency of the indices in the RadarCollection Waveform Parameter elements."""
-        waveform_indices = self._compare_size_and_index(
-            "./{*}RadarCollection/{*}Waveform", "./{*}WFParameters"
-        )
         with self.precondition():
-            assert waveform_indices is not None
-            with self.need(
-                "Waveform elements have size attribute and WFParameters have index attribute"
-            ):
-                assert waveform_indices
+            assert (
+                self.sicdroot.find("./{*}RadarCollection/{*}Waveform/{*}WFParameters")
+                is not None
+            )
+            self._compare_size_and_index(
+                "./{*}RadarCollection/{*}Waveform", "./{*}WFParameters"
+            )
 
     def check_waveform_params(self) -> None:
         """Checks consistency of the values in the RadarCollection Waveform Parameter elements."""
@@ -1427,13 +1473,13 @@ class SicdConsistency(con.ConsistencyChecker):
                     "ADCSampleRate",
                     "RcvIFBandwidth",
                 ):
-                    node = wf_params.find(param)
+                    node = wf_params.find(f"./{{*}}{param}")
                     with self.precondition():
                         assert node is not None
                         with self.need(f"{param} > zero"):
-                            assert float(node.text) > con.Approx(0.0)
+                            assert float(node.text) > 0.0
 
-                node = wf_params.find("TxFMRate")
+                node = wf_params.find("./{*}TxFMRate")
                 with self.precondition():
                     assert node is not None
                     with self.need("TxFMRate not zero"):
@@ -1519,9 +1565,13 @@ class SicdConsistency(con.ConsistencyChecker):
                 tx_fm_rate = float(wf_parameters.findtext("./{*}TxFMRate"))
                 tx_freq_end = tx_freq_start + tx_pulse_length * tx_fm_rate
                 wf_freq_bounds.extend([tx_freq_start, tx_freq_end])
-                with self.need("Waveform TxFreqEnd <= max collected frequency"):
+                with self.need(
+                    "Computed waveform end frequency <= max collected frequency"
+                ):
                     assert tx_freq_end <= con.Approx(max_coll)
-                with self.need("Waveform TxFreqEnd >= min collected frequency"):
+                with self.need(
+                    "Computed waveform end frequency >= min collected frequency"
+                ):
                     assert tx_freq_end >= con.Approx(min_coll)
 
         with self.precondition():
@@ -1541,8 +1591,8 @@ class SicdConsistency(con.ConsistencyChecker):
         with self.precondition():
             assert waveform is not None
             for wf_params in waveform.findall("./{*}WFParameters"):
-                demod = wf_params.find("RcvDemodType")
-                fmrate = wf_params.find("RcvFMRate")
+                demod = wf_params.find("./{*}RcvDemodType")
+                fmrate = wf_params.find("./{*}RcvFMRate")
                 with self.need(
                     "Consistent receive FM rate for chirp/stretch demodulation types"
                 ):
@@ -1554,15 +1604,9 @@ class SicdConsistency(con.ConsistencyChecker):
 
     def check_rcv_channel_indices(self) -> None:
         """Checks consistency of the values in the RadarCollection RcvChannels elements."""
-        rcvchan_indices = self._compare_size_and_index(
+        self._compare_size_and_index(
             "./{*}RadarCollection/{*}RcvChannels", "./{*}ChanParameters"
         )
-        with self.precondition():
-            assert rcvchan_indices is not None
-            with self.need(
-                "RcvChannels elements have size attribute and segments have index attribute"
-            ):
-                assert rcvchan_indices
 
     def check_segment_start_and_end(self) -> None:
         """Checks consistency of the values in the SegmentList StartLine and EndLine elements."""
@@ -1714,7 +1758,9 @@ class SicdConsistency(con.ConsistencyChecker):
             assert composite is not None
             for param in ("Rg", "Az"):
                 with self.need(f"CompositeSCP {param} >= 0.0"):
-                    assert float(composite.findtext(param)) >= con.Approx(0.0)
+                    assert float(composite.findtext(f"./{{*}}{param}")) >= con.Approx(
+                        0.0
+                    )
 
             with self.need("CompositeSCP RgAz <= 1.0"):
                 rg_az = abs(float(composite.findtext("./{*}RgAz")))
@@ -1770,15 +1816,14 @@ class SicdConsistency(con.ConsistencyChecker):
 
     def check_txsequence_indices(self) -> None:
         """Checks consistency of the TxSequence/TxStep indexing."""
-        tx_seq_indices = self._compare_size_and_index(
-            "./{*}RadarCollection/{*}TxSequence", "./{*}TxStep"
-        )
         with self.precondition():
-            assert tx_seq_indices is not None
-            with self.need(
-                "TxSequence elements have size attribute and TxStep have index attribute"
-            ):
-                assert tx_seq_indices
+            assert (
+                self.sicdroot.find("./{*}RadarCollection/{*}TxSequence/{*}TxStep")
+                is not None
+            )
+            self._compare_size_and_index(
+                "./{*}RadarCollection/{*}TxSequence", "./{*}TxStep"
+            )
 
     def check_txsequence_waveform_index(self) -> None:
         """Checks consistency of WFIndex"""
@@ -1805,15 +1850,11 @@ class SicdConsistency(con.ConsistencyChecker):
 
     def check_rcvapc_indices(self) -> None:
         """Checks consistency of the RcvAPC indexing."""
-        rcv_apc_indices = self._compare_size_and_index(
-            "./{*}Position/{*}RcvAPC", "./{*}RcvAPCPoly"
-        )
         with self.precondition():
-            assert rcv_apc_indices is not None
-            with self.need(
-                "RcvAPCPoly elements have size attribute and RcvAPCPoly have index attribute"
-            ):
-                assert rcv_apc_indices
+            assert (
+                self.sicdroot.find("./{*}Position/{*}RcvAPC/{*}RcvAPCPoly") is not None
+            )
+            self._compare_size_and_index("./{*}Position/{*}RcvAPC", "./{*}RcvAPCPoly")
 
     def check_rcvapcindex(self) -> None:
         """Checks consistency of RcvAPCIndex."""
@@ -1940,6 +1981,54 @@ class SicdConsistency(con.ConsistencyChecker):
         with self.precondition():
             assert poly_node is not None
             self._assert_poly_1d(poly_node, "RgAzComp/{*}KazPoly")
+
+    def check_match_type(self) -> None:
+        """Checks MatchType consistent with NumMatchTypes."""
+        with self.precondition():
+            assert self.sicdroot.find("./{*}MatchInfo") is not None
+            num_match_types = self.xmlhelp.load("./{*}MatchInfo/{*}NumMatchTypes")
+            num_matchtype_nodes = len(
+                self.sicdroot.findall("./{*}MatchInfo/{*}MatchType")
+            )
+            with self.need("Number of MatchType nodes matches NumMatchTypes"):
+                assert num_match_types == num_matchtype_nodes
+
+            mt_indices = [
+                int(mt.get("index"))
+                for mt in self.sicdroot.findall("./{*}MatchInfo/{*}MatchType")
+            ]
+
+            with self.need("MatchType indexed 1 to NumMatchTypes"):
+                assert np.array_equal(
+                    np.sort(mt_indices), np.arange(1, num_matchtype_nodes + 1)
+                )
+
+    def check_match_collection(self) -> None:
+        """Checks MatchCollection consistent with NumMatchCollections."""
+        with self.precondition():
+            assert self.sicdroot.find("./{*}MatchInfo/{*}MatchType") is not None
+            for match_type in self.sicdroot.findall("./{*}MatchInfo/{*}MatchType"):
+                num_match_collections = self.xmlhelp.load_elem(
+                    match_type.find("./{*}NumMatchCollections")
+                )
+                num_matchcollection_nodes = len(
+                    match_type.findall("./{*}MatchCollection")
+                )
+                with self.need(
+                    "Number of MatchCollection nodes matches NumMatchCollections"
+                ):
+                    assert num_match_collections == num_matchcollection_nodes
+
+                mtc_indices = [
+                    int(mtc.get("index"))
+                    for mtc in match_type.findall("./{*}MatchCollection")
+                ]
+
+                with self.need("MatchCollection indexed 1 to NumMatchCollections"):
+                    assert np.array_equal(
+                        np.sort(mtc_indices),
+                        np.arange(1, num_matchcollection_nodes + 1),
+                    )
 
     def check_pfa_polys(self) -> None:
         """Checks consistency of all PFA polynomials."""
