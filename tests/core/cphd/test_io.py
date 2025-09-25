@@ -268,6 +268,29 @@ def test_write_support_array(is_masked, nodata_in_xml, tmp_path):
         assert np.array_equal(mx, read_sa)
 
 
+INDICES_TO_CHECK = [None, 0, 7, 9, -9, -7, -1_000_000_000, 1_000_000_000_000]
+
+
+@pytest.mark.parametrize("start", INDICES_TO_CHECK)
+@pytest.mark.parametrize("stop", INDICES_TO_CHECK)
+def test_read_partial(example_cphd, start, stop):
+    with open(example_cphd, "rb") as file, skcphd.Reader(file) as reader:
+        ch_id = reader.metadata.xmltree.findtext("{*}Data/{*}Channel/{*}Identifier")
+        all_signal, all_pvp = reader.read_channel(ch_id)
+        kwargs = {}
+
+        if start is not None:
+            kwargs["start_vector"] = start
+
+        if stop is not None:
+            kwargs["stop_vector"] = stop
+
+        partial_signal, partial_pvp = reader.read_channel(ch_id, **kwargs)
+
+    np.testing.assert_array_equal(all_signal[start:stop, :], partial_signal)
+    np.testing.assert_array_equal(all_pvp[start:stop], partial_pvp)
+
+
 def test_remote_read(example_cphd):
     with tests.utils.static_http_server(example_cphd.parent) as server_url:
         with smart_open.open(
