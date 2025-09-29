@@ -124,6 +124,10 @@ class XsdHelper(abc.ABC):
         return self.get_transcoder(self.get_elem_typeinfo(elem)[0], tag=elem.tag)
 
 
+class _UNSET:
+    """Sentinel class indicating a value is not set.  Allows for `None` as a valid value."""
+
+
 class ElementWrapper(collections.abc.MutableMapping):
     """Wrapper for lxml.etree.Element that provides dictionary-ish interface
 
@@ -225,6 +229,20 @@ class ElementWrapper(collections.abc.MutableMapping):
         if isinstance(elem, tuple):
             return tuple(self._handle_subelem(x, localname) for x in elem)
         return self._handle_subelem(elem, localname)
+
+    def get(self, localname: str, default=_UNSET):
+        """Return value from an ElementWrapper.
+
+        If the localname is not schema-valid a KeyError is raised.
+        Otherwise, return the value for localname if localname is in the ElementWrapper, else default.
+        If default is not given it defaults to the behavior of __getitem__.
+
+        """
+        # ElementWrapper.__getitem__ returns an empty ElementWrapper for valid, missing keys
+        if default is _UNSET or localname in self:
+            return self[localname]
+
+        return default
 
     def _handle_subelem(
         self, subelem: "lxml.etree.Element | None", subelem_localname: str
