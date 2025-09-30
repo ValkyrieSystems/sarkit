@@ -297,6 +297,7 @@ class ElementWrapper(collections.abc.MutableMapping):
                     appendfunc(_val_to_elem(val))
         else:
             if isinstance(value, dict) and transcoder is None:
+                appendfunc(lxml.etree.Element(childdef.tag))
                 for k, v in value.items():
                     self[localname][k] = v
             else:
