@@ -411,6 +411,22 @@ class NitfReader:
                     self.metadata.product_support_xmls.append(
                         NitfProductSupportXmlMetadata(xmltree, de_subheader_part)
                     )
+            elif des_header["DESID"].value == "SICD_XML":
+                # SIDD v1.0 SICD XML DES Description uses a different DESID
+                file.seek(deseg["DESDATA"].get_offset(), os.SEEK_SET)
+                try:
+                    xmltree = lxml.etree.fromstring(
+                        file.read(deseg["DESDATA"].size)
+                    ).getroottree()
+                except lxml.etree.XMLSyntaxError:
+                    logger.error(f"Failed to parse DES {idx} as XML")
+                    continue
+                de_subheader_part = NitfDeSubheaderPart(
+                    security=NitfSecurityFields._from_nitf_fields("DES", des_header)
+                )
+                self.metadata.sicd_xmls.append(
+                    NitfSicdXmlMetadata(xmltree, de_subheader_part)
+                )
 
         # TODO Legends
         # TODO DED
@@ -482,11 +498,9 @@ def jbp_from_nitf_metadata(metadata: NitfMetadata) -> jbpy.Jbp:
         image_num = int(seginfo.iid1[4:7]) - 1
 
         imageinfo = metadata.images[image_num]
-        xml_helper = sarkit.sidd._xml.XmlHelper(imageinfo.xmltree)
+        xml_helper = sksidd.XmlHelper(imageinfo.xmltree)
         pixel_type = xml_helper.load("./{*}Display/{*}PixelType")
         pixel_info = siddconst.PIXEL_TYPES[pixel_type]
-
-        icp = xml_helper.load("./{*}GeoData/{*}ImageCorners")
 
         subhdr["IID1"].value = seginfo.iid1
         subhdr["IDATIM"].value = xml_helper.load(
@@ -602,7 +616,11 @@ def jbp_from_nitf_metadata(metadata: NitfMetadata) -> jbpy.Jbp:
         subhdr["DESSHF"]["DESSHSD"].value = siddconst.VERSION_INFO[xmlns]["date"]
         subhdr["DESSHF"]["DESSHTN"].value = xmlns
 
-        icp = xml_helper.load("./{*}GeoData/{*}ImageCorners")
+        if xmlns == "urn:SIDD:1.0.0":
+            corners_path = "{*}GeographicAndTarget/{*}GeographicCoverage/{*}Footprint"
+        else:
+            corners_path = "{*}GeoData/{*}ImageCorners"
+        icp = xml_helper.load(corners_path)
         desshlpg = ""
         for icp_lat, icp_lon in itertools.chain(icp, [icp[0]]):
             desshlpg += f"{icp_lat:0=+12.8f}{icp_lon:0=+13.8f}"
@@ -648,11 +666,16 @@ def jbp_from_nitf_metadata(metadata: NitfMetadata) -> jbpy.Jbp:
         desidx += 1
 
     # SICD XML DES
+    sidd_ns = lxml.etree.QName(metadata.images[0].xmltree.getroot()).namespace
     for sicd_xml_info in metadata.sicd_xmls:
         deseg = jbp["DataExtensionSegments"][desidx]
-        sarkit.sicd._io._populate_de_segment(
-            deseg, sicd_xml_info.xmltree, sicd_xml_info.de_subheader_part
-        )
+
+        if sidd_ns == "urn:SIDD:1.0.0":
+            populate_sicd_xml_des_sidd1(deseg, sicd_xml_info.de_subheader_part)
+        else:
+            sarkit.sicd._io._populate_de_segment(
+                deseg, sicd_xml_info.xmltree, sicd_xml_info.de_subheader_part
+            )
 
         xml_bytes = lxml.etree.tostring(sicd_xml_info.xmltree)
         deseg["DESDATA"].size = len(xml_bytes)
@@ -661,6 +684,15 @@ def jbp_from_nitf_metadata(metadata: NitfMetadata) -> jbpy.Jbp:
 
     jbp.finalize()
     return jbp
+
+
+def populate_sicd_xml_des_sidd1(deseg, de_subheader_part):
+    """Populate SICD XML DES according to SIDD v1.0 volume 2, section 2.2.4"""
+    subhdr = deseg["subheader"]
+    subhdr["DESID"].value = "SICD_XML"
+    subhdr["DESVER"].value = 1
+    de_subheader_part.security._set_nitf_fields("DES", subhdr)
+    subhdr["DESSHL"].value = 0
 
 
 def _is_sidd_product_image_segment(segment):
@@ -937,9 +969,11 @@ def segmentation_algorithm(
         num_rows_k = xml_helper.load("./{*}Measurement/{*}PixelFootprint/{*}Row")
         num_cols_k = xml_helper.load("./{*}Measurement/{*}PixelFootprint/{*}Col")
 
-        pcc = xml_helper.load(
-            "./{*}GeoData/{*}ImageCorners"
-        )  # Document says /SIDD/GeographicAndTarget/GeogrpahicCoverage/Footprint, but that was renamed in v2.0
+        if lxml.etree.QName(sidd_xmltree.getroot()).namespace == "urn:SIDD:1.0.0":
+            corners_path = "{*}GeographicAndTarget/{*}GeographicCoverage/{*}Footprint"
+        else:
+            corners_path = "{*}GeoData/{*}ImageCorners"
+        pcc = xml_helper.load(corners_path)
 
         bytes_per_pixel = pixel_info[
             "dtype"

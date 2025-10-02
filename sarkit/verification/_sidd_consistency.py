@@ -76,6 +76,20 @@ def _get_version(xml_tree):
     return lxml.etree.QName(xml_tree.getroot()).namespace.split(":")[-1]
 
 
+def _is_v1(con_obj) -> bool:
+    """Return ``True`` if first SIDD XML tree is v1.0"""
+    return _get_version(con_obj.xml_trees[0]) == "1.0.0"
+
+
+def _get_corners(xmlhelp):
+    ns = lxml.etree.QName(xmlhelp.element_tree.getroot()).namespace
+    if ns == "urn:SIDD:1.0.0":
+        corners_path = "{*}GeographicAndTarget/{*}GeographicCoverage/{*}Footprint"
+    else:
+        corners_path = "{*}GeoData/{*}ImageCorners"
+    return xmlhelp.load(corners_path)
+
+
 class SiddConsistency(con.ConsistencyChecker):
     """Check SIDD file structure and metadata for internal consistency
 
@@ -83,7 +97,7 @@ class SiddConsistency(con.ConsistencyChecker):
 
     Parameters
     ----------
-    sidd_xml : lxml.etree.Element or lxml.etree.ElementTree
+    xml_trees : lxml.etree.Element or lxml.etree.ElementTree
         SIDD XML
     schema_override : `path-like object`, optional
         Path to XML Schema. If None, tries to find a version-specific schema
@@ -103,7 +117,7 @@ class SiddConsistency(con.ConsistencyChecker):
             self.ntf = None
 
         self.xml_trees = [
-            item.getrootree() if hasattr(item, "getroottree") else item
+            item.getroottree() if hasattr(item, "getroottree") else item
             for item in xml_trees
         ]
 
@@ -200,9 +214,12 @@ class SiddConsistency(con.ConsistencyChecker):
             file.seek(0, os.SEEK_SET)
             ntf.load(file)
             for deseg in ntf["DataExtensionSegments"]:
-                if not deseg["subheader"]["DESSHF"]["DESSHTN"].value.startswith(
-                    "urn:SIDD"
-                ):
+                if not deseg["subheader"]["DESID"].value == "XML_DATA_CONTENT":
+                    continue
+                desshtn = getattr(
+                    deseg["subheader"].get("DESSHF", {}).get("DESSHTN"), "value", ""
+                )
+                if not desshtn.startswith("urn:SIDD"):
                     continue
                 file.seek(deseg["DESDATA"].get_offset())
                 xml_bytes = file.read(deseg["DESDATA"].size)
@@ -298,6 +315,9 @@ class SiddConsistency(con.ConsistencyChecker):
                         deseg_type = "SICD"
                     else:
                         deseg_type = "SUPPORT"
+                elif segment["subheader"]["DESID"].value == "SICD_XML":
+                    # SIDD v1.0 uses this nonstandard DESID
+                    deseg_type = "SICD"
                 return deseg_type
 
             deseg_types = [
@@ -308,6 +328,15 @@ class SiddConsistency(con.ConsistencyChecker):
                     deseg_types, key=["SIDD", "SUPPORT", "SICD", "OTHER"].index
                 )
                 assert deseg_types == expected
+
+            with self.precondition():
+                assert not _is_v1(self)
+                desids = set(
+                    x["subheader"]["DESID"].value
+                    for x in self.ntf["DataExtensionSegments"]
+                )
+                with self.want("Outmoded DESID=SICD_XML not present"):
+                    assert "SICD_XML" not in desids
 
             for des_idx, xml_tree in enumerate(self.xml_trees):
                 subhdr = self.ntf["DataExtensionSegments"][des_idx]["subheader"]
@@ -358,7 +387,7 @@ class SiddConsistency(con.ConsistencyChecker):
                 ]
 
                 xmlhelp = sksidd.XmlHelper(xml_tree)
-                icp_ll = xmlhelp.load("./{*}GeoData/{*}ImageCorners")
+                icp_ll = _get_corners(xmlhelp)
 
                 found = False
                 # Starting vertex isn't specified in document, try them all
@@ -700,7 +729,7 @@ class SiddConsistency(con.ConsistencyChecker):
             # k is 1 based in document, 0 based here
 
             xmlhelp = sksidd.XmlHelper(xml_tree)
-            icp_ll = xmlhelp.load("./{*}GeoData/{*}ImageCorners")
+            icp_ll = _get_corners(xmlhelp)
             pcc_lla = np.concatenate((icp_ll, np.full((len(icp_ll), 1), 0)), axis=1)
             pcc_ecef = wgs84.geodetic_to_cartesian(pcc_lla)
 
@@ -742,6 +771,7 @@ class SiddConsistency(con.ConsistencyChecker):
                     assert element.text.strip().endswith("Z")
 
     @per_image
+    @con.skipif(_is_v1, "Does not apply to SIDD v1.0")
     def check_display_numbands(self, image_number, xml_tree) -> None:
         """Display/NumBands is consistent with Display/PixelType."""
         pixel_type = xml_tree.findtext("./{*}Display/{*}PixelType")
@@ -760,6 +790,7 @@ class SiddConsistency(con.ConsistencyChecker):
             )
 
     @per_image
+    @con.skipif(_is_v1, "Does not apply to SIDD v1.0")
     def check_display_processing_bands(self, image_number, xml_tree) -> None:
         """Display/[Non]InteractiveProcessing nodes are present for each band."""
         num_bands = int(xml_tree.findtext("./{*}Display/{*}NumBands"))
@@ -777,6 +808,7 @@ class SiddConsistency(con.ConsistencyChecker):
                 assert actual_bands == expected_bands
 
     @per_image
+    @con.skipif(_is_v1, "Does not apply to SIDD v1.0")
     def check_display_antialias_filter_operation(self, image_number, xml_tree) -> None:
         """Display/.../(RRDS|Scaling)/AntiAlias/Operation is set correctly."""
         elems = itertools.chain(
@@ -796,6 +828,7 @@ class SiddConsistency(con.ConsistencyChecker):
                 assert elem.text == expected_operation
 
     @per_image
+    @con.skipif(_is_v1, "Does not apply to SIDD v1.0")
     def check_display_interpolation_filter_operation(
         self, image_number, xml_tree
     ) -> None:
@@ -817,6 +850,7 @@ class SiddConsistency(con.ConsistencyChecker):
                 assert elem.text == expected_operation
 
     @per_image
+    @con.skipif(_is_v1, "Does not apply to SIDD v1.0")
     def check_display_dra_bandstatssource(self, image_number, xml_tree) -> None:
         """Display/InteractiveProcessing/DynamicRangeAdjustment/BandStatsSource is a valid band index."""
         num_bands = int(xml_tree.findtext("./{*}Display/{*}NumBands"))
@@ -825,6 +859,7 @@ class SiddConsistency(con.ConsistencyChecker):
             assert 1 <= int(xml_tree.findtext(path)) <= num_bands
 
     @per_image
+    @con.skipif(_is_v1, "Does not apply to SIDD v1.0")
     def check_display_auto_dra_parameters(self, image_number, xml_tree) -> None:
         """Display/InteractiveProcessing/DynamicRangeAdjustment/DRAParameters included if AlgorithmType = AUTO."""
         dra_path = "./{*}Display/{*}InteractiveProcessing/{*}DynamicRangeAdjustment"
@@ -835,6 +870,7 @@ class SiddConsistency(con.ConsistencyChecker):
                 assert elem.find("../{*}DRAParameters") is not None
 
     @per_image
+    @con.skipif(_is_v1, "Does not apply to SIDD v1.0")
     def check_display_valid_dra_parameters(self, image_number, xml_tree) -> None:
         """Display/InteractiveProcessing/DynamicRangeAdjustment/DRAParameters: 0.0 <= min <= max <= 1.0"""
         for elem in xml_tree.findall(
@@ -854,6 +890,7 @@ class SiddConsistency(con.ConsistencyChecker):
                     )
 
     @per_image
+    @con.skipif(_is_v1, "Does not apply to SIDD v1.0")
     def check_display_none_dra_overrides(self, image_number, xml_tree) -> None:
         """Display/InteractiveProcessing/DynamicRangeAdjustment/DRAOverrides excluded if AlgorithmType = NONE."""
         dra_path = "./{*}Display/{*}InteractiveProcessing/{*}DynamicRangeAdjustment"
@@ -862,6 +899,7 @@ class SiddConsistency(con.ConsistencyChecker):
                 assert elem.find("../{*}DRAOverrides") is None
 
     @per_image
+    @con.skipif(_is_v1, "Does not apply to SIDD v1.0")
     def check_display_valid_dra_overrides(self, image_number, xml_tree) -> None:
         """Display/InteractiveProcessing/DynamicRangeAdjustment/DRAOverrides ∈ [0.0, 2047.0]"""
         for elem in xml_tree.findall(
@@ -895,6 +933,7 @@ class SiddConsistency(con.ConsistencyChecker):
                 assert np.dot(u_row, u_col) == con.Approx(0, atol=1e-6)
 
     @per_image
+    @con.skipif(_is_v1, "Does not apply to SIDD v1.0")
     def check_measurement_validdata(self, image_number, xml_tree) -> None:
         """Measurement/ValidData is a simple convex polygon with vertices in clockwise order"""
         xmlhelp = sksidd.XmlHelper(xml_tree)
@@ -985,11 +1024,11 @@ class SiddConsistency(con.ConsistencyChecker):
 
     @per_image
     def check_geodata_image_corners(self, image_number, xml_tree) -> None:
-        """GeoData/ImageCorners are consistent with Measurement element."""
+        """Image Corners are consistent with Measurement element."""
         with self.precondition():
             icp_from_measurement = calc_geodata_imagecorners(xml_tree)
             xmlhelp = sksidd.XmlHelper(xml_tree)
-            icp_ll = xmlhelp.load("./{*}GeoData/{*}ImageCorners")
+            icp_ll = _get_corners(xmlhelp)
             scp = xmlhelp.load("./{*}Measurement//{*}ReferencePoint/{*}ECEF")
             _, _, scp_height = wgs84.cartesian_to_geodetic(scp)
             icp_ecef = wgs84.geodetic_to_cartesian(
@@ -1107,7 +1146,7 @@ def calc_expfeatures_geom(sidd_xml, sidd_version="2.0.0"):
     groundtrack_ang2 = np.arctan2(np.dot(c_hat, t), np.dot(r_hat, t))
     groundtrack_ang3 = np.arctan2(np.dot(r_hat, t), np.dot(c_hat, t))
 
-    if sidd_version == "2.0.0":
+    if sidd_version in ("1.0.0", "2.0.0"):
         exp_feat = {
             "{*}Collection/{*}Geometry/{*}Azimuth": np.degrees(azim_ang) % 360,
             "{*}Collection/{*}Geometry/{*}Slope": np.degrees(slope_ang),

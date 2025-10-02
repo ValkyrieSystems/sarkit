@@ -32,6 +32,7 @@ def _random_image(sidd_xmltree):
 @pytest.mark.parametrize(
     "sidd_xml",
     [
+        DATAPATH / "example-sidd-1.0.0.xml",
         DATAPATH / "example-sidd-2.0.0.xml",
         DATAPATH / "example-sidd-3.0.0.xml",
     ],
