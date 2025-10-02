@@ -58,6 +58,7 @@ def simple_open_read(filename, *args, **kwargs):
             self._file = builtins.open(filename, "rb")
 
             self.read = self._file.read
+            self.readinto = self._file.readinto
             self.readline = self._file.readline
             self.seek = self._file.seek
             self.tell = self._file.tell
