@@ -630,7 +630,7 @@ def jbp_from_nitf_metadata(metadata: NitfMetadata) -> jbpy.Jbp:
         ded_segment = jbp["ImageSegments"][-1]
         subhdr = ded_segment["subheader"]
         subhdr["IID1"].value = "DED001"
-        # subhdr["IDATIM"]  # set below per DIGEST document
+        # subhdr["IDATIM"]  # not clear how to set this
         subhdr["TGTID"].value = metadata.ded.im_subheader_part.tgtid
         subhdr["IID2"].value = metadata.ded.im_subheader_part.iid2
         metadata.ded.im_subheader_part.security._set_nitf_fields("IS", subhdr)
@@ -759,11 +759,6 @@ def jbp_from_nitf_metadata(metadata: NitfMetadata) -> jbpy.Jbp:
         desidx += 1
 
     jbp.finalize()
-
-    if metadata.ded is not None:
-        # DIGEST document says to default IDATIM to FDT, which is set in finalize()
-        ded_segment["subheader"]["IDATIM"].value = jbp["FileHeader"]["FDT"].value
-
     return jbp
 
 

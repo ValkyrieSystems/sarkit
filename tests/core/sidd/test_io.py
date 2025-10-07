@@ -394,10 +394,6 @@ def test_roundtrip(force_segmentation, with_ded, sidd_xml, tmp_path, monkeypatch
     if with_ded:
         assert np.array_equal(basis_ded_array, read_ded_array)
         assert write_metadata.ded == read_metadata.ded
-        assert (
-            reader.jbp["ImageSegments"][-1]["subheader"]["IDATIM"].value
-            == reader.jbp["FileHeader"]["FDT"].value
-        )
 
     idlvls = set(
         imseg["subheader"]["IDLVL"].value for imseg in reader.jbp["ImageSegments"]
