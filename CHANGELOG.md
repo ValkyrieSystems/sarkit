@@ -8,7 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Ability to read and write SIDD DED segments
 - SICD and SIDD consistency checks for ValidData bounds
+
+### Changed
+- Improved read performance
 
 ### Fixed
 - SICD consistency failure when optional IPP Sets were omitted
