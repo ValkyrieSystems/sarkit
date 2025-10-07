@@ -148,15 +148,31 @@ class NitfProductImageMetadata:
 
         if isinstance(self.im_subheader_part, dict):
             self.im_subheader_part = NitfImSubheaderPart(**self.im_subheader_part)
+        if isinstance(self.de_subheader_part, dict):
             self.de_subheader_part = NitfDeSubheaderPart(**self.de_subheader_part)
 
 
 @dataclasses.dataclass
 class NitfDedMetadata:
-    """SIDD NITF DED metadata"""
+    """SIDD NITF Digital Elevation Data (DED) metadata
+
+    Attributes
+    ----------
+    nrows : int
+        Number of rows in the DED
+    ncols : int
+        Number of columns in the DED
+    im_subheader_part : NitfImSubheaderPart
+        NITF Image Segment Header fields which can be set
+    """
+
+    nrows: int
+    ncols: int
+    im_subheader_part: NitfImSubheaderPart
 
     def __post_init__(self):
-        raise NotImplementedError()
+        if isinstance(self.im_subheader_part, dict):
+            self.im_subheader_part = NitfImSubheaderPart(**self.im_subheader_part)
 
 
 @dataclasses.dataclass
@@ -306,6 +322,7 @@ class NitfReader:
         self.jbp = jbpy.Jbp().load(file)
 
         im_segments = {}
+        self._ded_segment = None
         for imseg_index, imseg in enumerate(self.jbp["ImageSegments"]):
             img_header = imseg["subheader"]
             if img_header["IID1"].value.startswith("SIDD"):
@@ -315,8 +332,13 @@ class NitfReader:
                     im_segments[image_number].append(imseg_index)
                 else:
                     raise NotImplementedError("Non SAR images not supported")  # TODO
-            elif img_header["IID1"].value.startswith("DED"):
-                raise NotImplementedError("DED not supported")  # TODO
+            elif img_header["IID1"].value == "DED001":
+                if self._ded_segment is None:
+                    self._ded_segment = imseg
+                else:
+                    logger.warning(
+                        "SIDD contains extra DED segments.  Only the first will be used."
+                    )
 
         image_segment_collections = {}
         for idx, imseg in enumerate(self.jbp["ImageSegments"]):
@@ -413,9 +435,16 @@ class NitfReader:
                     )
 
         # TODO Legends
-        # TODO DED
         assert not any(x.legends for x in self.metadata.images)
-        assert not self.metadata.ded
+
+        if self._ded_segment is not None:
+            self.metadata.ded = NitfDedMetadata(
+                nrows=self._ded_segment["subheader"]["NROWS"].value,
+                ncols=self._ded_segment["subheader"]["NCOLS"].value,
+                im_subheader_part=sksidd.NitfImSubheaderPart._from_header(
+                    self._ded_segment["subheader"]
+                ),
+            )
 
     def read_image(self, image_number: int) -> npt.NDArray:
         """Read the entire pixel array
@@ -456,6 +485,24 @@ class NitfReader:
 
         return image_pixels
 
+    def read_ded(self):
+        """Read Digital Elevation Data (DED)
+
+        Returns
+        -------
+        ndarray
+            2D array of DED posts, dtype= `numpy.int16`
+        """
+        if self._ded_segment is None:
+            raise RuntimeError("no DED to read")
+
+        shape = (self.metadata.ded.nrows, self.metadata.ded.ncols)
+        dtype = np.dtype(">i2")
+        self._file_object.seek(self._ded_segment["Data"].get_offset())
+        return _iohelp.fromfile(
+            self._file_object, dtype=dtype, count=np.prod(shape)
+        ).reshape(shape)
+
     def __enter__(self):
         return self
 
@@ -475,7 +522,11 @@ def jbp_from_nitf_metadata(metadata: NitfMetadata) -> jbpy.Jbp:
     jbp["FileHeader"]["OPHONE"].value = metadata.file_header_part.ophone
 
     _, _, seginfos = segmentation_algorithm((img.xmltree for img in metadata.images))
-    jbp["FileHeader"]["NUMI"].value = len(seginfos)  # TODO + num DES + num LEG
+    numi = len(seginfos)
+    if metadata.ded is not None:
+        numi += 1
+    # TODO + num LEG
+    jbp["FileHeader"]["NUMI"].value = numi
 
     for idx, seginfo in enumerate(seginfos):
         subhdr = jbp["ImageSegments"][idx]["subheader"]
@@ -569,10 +620,58 @@ def jbp_from_nitf_metadata(metadata: NitfMetadata) -> jbpy.Jbp:
             // 8
         )
 
-    # TODO add image_managers for legends
+    # TODO add legends
+
     assert not any(x.legends for x in metadata.images)
-    # TODO add image_managers for DED
-    assert not metadata.ded
+    if metadata.ded is not None:
+        if metadata.ded.nrows * metadata.ded.ncols * 2 > 9_999_999_998:
+            raise ValueError("DED must fit within a single image segment")
+
+        ded_segment = jbp["ImageSegments"][-1]
+        subhdr = ded_segment["subheader"]
+        subhdr["IID1"].value = "DED001"
+        # subhdr["IDATIM"]  # set below per DIGEST document
+        subhdr["TGTID"].value = metadata.ded.im_subheader_part.tgtid
+        subhdr["IID2"].value = metadata.ded.im_subheader_part.iid2
+        metadata.ded.im_subheader_part.security._set_nitf_fields("IS", subhdr)
+
+        # subhdr["ISORCE"]  # not clear how to set this
+        subhdr["NROWS"].value = metadata.ded.nrows
+        subhdr["NCOLS"].value = metadata.ded.ncols
+        subhdr["PVTYPE"].value = "SI"
+        subhdr["IREP"].value = "NODISPLY"
+        subhdr["ICAT"].value = "DED"
+        subhdr["ABPP"].value = 16
+        subhdr["PJUST"].value = "R"
+
+        subhdr["NICOM"].value = len(metadata.ded.im_subheader_part.icom)
+        for icomidx, icom in enumerate(metadata.ded.im_subheader_part.icom):
+            subhdr[f"ICOM{icomidx + 1}"].value = icom
+
+        subhdr["IC"].value = "NC"
+        subhdr["NBANDS"].value = 1
+        subhdr["IREPBAND00001"].value = ""
+        subhdr["IMODE"].value = "B"
+        subhdr["NBPR"].value = 1  # Not clear if SIDD DED can be blocked
+        subhdr["NBPC"].value = 1  # Not clear if SIDD DED can be blocked
+        subhdr["NPPBH"].value = 0 if metadata.ded.ncols > 8192 else metadata.ded.ncols
+        subhdr["NPPBV"].value = 0 if metadata.ded.nrows > 8192 else metadata.ded.nrows
+        subhdr["NBPP"].value = 16
+        subhdr["IDLVL"].value = (
+            max(seg["subheader"]["IDLVL"].value for seg in jbp["ImageSegments"][:-1])
+            + 1
+        )
+        subhdr["IALVL"].value = 0
+        subhdr["IMAG"].value = "1.0"
+
+        jbp["ImageSegments"][-1]["Data"].size = (
+            # No compression, no masking, no blocking
+            subhdr["NROWS"].value
+            * subhdr["NCOLS"].value
+            * subhdr["NBANDS"].value
+            * subhdr["NBPP"].value
+            // 8
+        )
 
     # DE Segments
     jbp["FileHeader"]["NUMDES"].value = (
@@ -660,6 +759,11 @@ def jbp_from_nitf_metadata(metadata: NitfMetadata) -> jbpy.Jbp:
         desidx += 1
 
     jbp.finalize()
+
+    if metadata.ded is not None:
+        # DIGEST document says to default IDATIM to FDT, which is set in finalize()
+        ded_segment["subheader"]["IDATIM"].value = jbp["FileHeader"]["FDT"].value
+
     return jbp
 
 
@@ -776,6 +880,7 @@ class NitfWriter:
         self._metadata = metadata
         self._jbp = jbp_override or jbp_from_nitf_metadata(metadata)
         self._images_written: set[int] = set()
+        self._ded_written = False
 
         self._jbp.finalize()
         self._jbp.dump(file)
@@ -880,6 +985,41 @@ class NitfWriter:
 
         self._images_written.add(image_number)
 
+    def write_ded(self, array):
+        """Write Digital Elevation Data (DED) to a NITF file
+
+        Parameters
+        ----------
+        array : ndarray
+            2D array of DED posts, dtype= `numpy.int16`
+        """
+        if self._metadata.ded is None:
+            raise RuntimeError("Metadata must describe DED")
+
+        for imseg in self._jbp["ImageSegments"]:
+            if imseg["subheader"]["IID1"].value == "DED001":
+                break
+        else:
+            raise RuntimeError("Failed to find DED image segment")
+
+        subhdr = imseg["subheader"]
+        if not ((subhdr["NBPR"].value == 1) and (subhdr["NBPC"].value == 1)):
+            raise RuntimeError("Only single-block DED supported")
+
+        shape = (subhdr["NROWS"].value, subhdr["NCOLS"].value)
+        if np.any(array.shape != shape):
+            raise ValueError(
+                f"Array shape {array.shape} does not match DED shape {shape}."
+            )
+
+        if array.dtype.newbyteorder("=") != np.dtype("i2"):
+            raise ValueError(f"DED must be 16-bit signed int.  Not {array.dtype}.")
+        array = array.astype(array.dtype.newbyteorder(">"), copy=False)
+        self._file.seek(imseg["Data"].get_offset(), os.SEEK_SET)
+        array.tofile(self._file)
+
+        self._ded_written = True
+
     def __enter__(self):
         return self
 
@@ -890,7 +1030,11 @@ class NitfWriter:
             logger.warning(
                 f"SIDD Writer closed without writing all images. Missing: {images_missing}"
             )
-        # TODO check legends, DED
+        ded_missing = (self._metadata.ded is not None) and not self._ded_written
+        if ded_missing:
+            logger.warning("SIDD Writer closed without writing DED")
+
+        # TODO check legends
         return
 
 
