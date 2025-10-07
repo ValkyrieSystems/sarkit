@@ -25,6 +25,12 @@ def test_elementwrapper():
     with pytest.raises(KeyError, match="foo"):
         del wrapped_siddroot["foo"]
 
+    with pytest.raises(KeyError, match="foo"):
+        "foo" in wrapped_siddroot
+
+    with pytest.raises(KeyError, match="foo"):
+        wrapped_siddroot.get("foo")
+
     # Attribute KeyErrors
     with pytest.raises(KeyError, match="@fooattr"):
         wrapped_siddroot["@fooattr"] = "doesn't exist"
@@ -34,6 +40,9 @@ def test_elementwrapper():
 
     with pytest.raises(KeyError, match="@fooattr"):
         del wrapped_siddroot["@fooattr"]
+
+    with pytest.raises(KeyError, match="@fooattr"):
+        "@fooattr" in wrapped_siddroot
 
     # Add descendant of repeatable
     wrapped_siddroot["ProductProcessing"].add("ProcessingModule")["ModuleName"] = (
@@ -103,6 +112,22 @@ def test_elementwrapper():
     assert (
         "ECEF"
         not in wrapped_siddroot["Measurement"]["PlaneProjection"]["ReferencePoint"]
+    )
+
+    # get() defaults to empty ElementWrappers
+    assert (
+        wrapped_siddroot["Measurement"]["PlaneProjection"]["ReferencePoint"].get("ECEF")
+        == wrapped_siddroot["Measurement"]["PlaneProjection"]["ReferencePoint"]["ECEF"]
+    )
+    assert (
+        wrapped_siddroot["Measurement"]["PlaneProjection"]["ReferencePoint"].get("ECEF")
+        == {}
+    )
+    assert (
+        wrapped_siddroot["Measurement"]["PlaneProjection"]["ReferencePoint"].get(
+            "ECEF", None
+        )
+        is None
     )
 
 

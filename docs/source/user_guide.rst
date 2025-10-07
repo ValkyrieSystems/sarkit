@@ -347,11 +347,25 @@ Accessing keys that are not schema-valid raises a `KeyError`:
    Traceback (most recent call last):
    KeyError: 'NotValid'
 
+Unlike normal dictionaries, `KeyError` can still be raised by `get()` when the key is not schema-valid
+
+.. doctest::
+
+   >>> wrappedsicd.get("NotValid", default=None)
+   Traceback (most recent call last):
+   KeyError: 'NotValid'
+
 Accessing schema-valid keys that don't exist does not raise an exception.
 
 .. doctest::
 
    >>> wrappedsicd["RMA"]
+   ElementWrapper({})
+
+.. doctest::
+
+   >>> assert wrappedsicd.get("RMA", default=None) is None
+   >>> wrappedsicd.get("RMA")
    ElementWrapper({})
 
 Attributes are accessed using BadgerFish notation (e.g. @attr).

@@ -13,5 +13,6 @@
          :toctree:
       
          ElementWrapper.add
+         ElementWrapper.get
          ElementWrapper.from_dict
          ElementWrapper.to_dict
