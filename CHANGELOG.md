@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Support for SIDD v1.0
+
+### Changed
+- Pinned `jbpy` dependency
+
+### Fixed
+- `ElementWrapper` not creating non-repeatable subelement for empty dict
+
 
 ## [1.1.0] - 2025-09-29
 
