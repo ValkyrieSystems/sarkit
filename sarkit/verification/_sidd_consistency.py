@@ -917,6 +917,11 @@ class SiddConsistency(con.ConsistencyChecker):
             assert not shg_polygon.exterior.is_ccw
         with self.need("Vertex 1 determined by min row index & min col index"):
             assert np.lexsort((polygon[:, 1], polygon[:, 0]))[0] == 0
+        with self.want("ValidData vertices contained within PixelFootprint"):
+            nrows, ncols = xmlhelp.load("./{*}Measurement/{*}PixelFootprint")
+            pad = 1
+            assert np.all(polygon >= (-pad, -pad))
+            assert np.all(polygon <= (nrows + pad, ncols + pad))
 
     @per_image
     def check_expfeatures_geometry(self, image_number, xml_tree) -> None:

@@ -267,6 +267,16 @@ def _invalidate_validdata_first_vertex(xml):
         vertex.attrib["index"] = str(orig_index % size + 1)
 
 
+def _invalidate_validdata_bounds_negative(xml):
+    xml.find("./{*}Measurement/{*}ValidData/{*}Vertex/{*}Row").text = "-10"
+
+
+def _invalidate_validdata_bounds_footprint(xml):
+    xml.find("./{*}Measurement/{*}ValidData/{*}Vertex/{*}Col").text = str(
+        int(xml.find("./{*}Measurement/{*}PixelFootprint/{*}Col").text) + 10
+    )
+
+
 @pytest.mark.parametrize(
     "invalidate_func",
     [
@@ -275,6 +285,8 @@ def _invalidate_validdata_first_vertex(xml):
         _invalidate_validdata_simplicity,
         _invalidate_validdata_winding,
         _invalidate_validdata_first_vertex,
+        _invalidate_validdata_bounds_negative,
+        _invalidate_validdata_bounds_footprint,
     ],
 )
 def test_check_measurement_validdata(sidd_con, invalidate_func):
