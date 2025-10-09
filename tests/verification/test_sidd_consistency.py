@@ -12,6 +12,8 @@ import tests.utils
 from sarkit.verification._sidd_consistency import SiddConsistency
 from sarkit.verification._siddcheck import main
 
+from . import testing
+
 DATAPATH = pathlib.Path(__file__).parents[2] / "data"
 
 GOOD_SIDD_XML_PATH = DATAPATH / "example-sidd-3.0.0.xml"
@@ -65,8 +67,20 @@ def sidd_con_with_plane_projection(example_sidd_file):
     yield con
 
 
-def test_main_xml():
-    assert not main([str(GOOD_SIDD_XML_PATH)])
+@pytest.mark.parametrize(
+    "sidd_xml_path",
+    (
+        DATAPATH / "example-sidd-1.0.0.xml",
+        DATAPATH / "example-sidd-2.0.0.xml",
+        DATAPATH / "example-sidd-3.0.0.xml",
+    ),
+)
+def test_main_xml(sidd_xml_path):
+    assert not main([str(sidd_xml_path)])
+
+
+def test_main_v1(example_sidd_v1):
+    assert not main([str(example_sidd_v1)])
 
 
 def test_check_against_schema():
@@ -353,3 +367,11 @@ def test_smart_open_contract(example_sidd, monkeypatch):
     monkeypatch.setattr(sarkit.verification._siddcheck, "open", mock_open)
     assert not main([str(example_sidd)])
     mock_open.assert_called_once_with(str(example_sidd), "rb")
+
+
+def test_check_nitf_des_headers_outmoded_desid(sidd_con):
+    sidd_con.ntf["FileHeader"]["NUMDES"].value += 1
+    new_des = sidd_con.ntf["DataExtensionSegments"][-1]
+    new_des["subheader"]["DESID"].value = "SICD_XML"
+    sidd_con.check("check_nitf_des_headers")
+    testing.assert_failures(sidd_con, "Outmoded DESID=SICD_XML not present")

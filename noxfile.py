@@ -110,6 +110,11 @@ def data(session):
     session.run(
         "python", "data/syntax_only/crsd/make_syntax_only_crsd_xmls.py", "--check"
     )
+    session.run(
+        "python",
+        "data/syntax_only/sidd/version1/make_syntax_only_sidd_xmls.py",
+        "--check",
+    )
 
 
 @nox.session

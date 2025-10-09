@@ -66,13 +66,16 @@ class XyzType(skxt.XyzType):
 class AngleMagnitudeType(skxt.ArrayType):
     """Transcoder for double-precision floating point angle magnitude XML parameter type.
 
-    Children are in the SICommon namespace.
+    Parameters
+    ----------
+    child_ns : str, optional
+        Namespace to use for child elements.  Default: "urn:SICommon:1.0"
     """
 
-    def __init__(self) -> None:
+    def __init__(self, child_ns=NSMAP["sicommon"]) -> None:
         super().__init__(
             subelements={c: skxt.DblType() for c in ("Angle", "Magnitude")},
-            child_ns=NSMAP["sicommon"],
+            child_ns=child_ns,
         )
 
 
@@ -231,6 +234,40 @@ class IntListType(skxt.Type):
         elem.text = " ".join([str(entry) for entry in val])
 
 
+class LookupTableType(IntListType):
+    """
+    Transcoder for XML parameters containing a list of ints and a size attribute.
+    """
+
+    def set_elem(
+        self, elem: lxml.etree.Element, val: Sequence[numbers.Integral]
+    ) -> None:
+        super().set_elem(elem, val)
+        elem.set("size", str(len(val)))
+
+
+class Lookup3TableType(skxt.Type):
+    """
+    Transcoder for XML parameters containing a list of comma-separated int triplets and a size attribute.
+
+    """
+
+    def parse_elem(self, elem: lxml.etree.Element) -> npt.NDArray:
+        """Returns space-separated comma-separated triplets of ints as ndarray of ints"""
+        val = "" if elem.text is None else elem.text
+        retval = []
+        for triplet in val.split(" "):
+            retval.append([int(x) for x in triplet.split(",")])
+        return np.array(retval, dtype=int)
+
+    def set_elem(
+        self, elem: lxml.etree.Element, val: Sequence[Sequence[numbers.Integral]]
+    ) -> None:
+        """Sets ``elem`` node using the sequence of integer-triplets in ``val``."""
+        elem.text = " ".join(",".join(str(x) for x in triplet) for triplet in val)
+        elem.set("size", str(len(val)))
+
+
 class ImageCornersType(skxt.NdArrayType):
     """
     Transcoder for GeoData/ImageCorners XML parameter types.
@@ -290,14 +327,16 @@ class RangeAzimuthType(skxt.ArrayType):
     """
     Transcoder for double-precision floating point range and azimuth XML parameter types.
 
-    Children are in the SICommon namespace.
-
+    Parameters
+    ----------
+    child_ns : str, optional
+        Namespace to use for child elements.  Default: "urn:SICommon:1.0"
     """
 
-    def __init__(self) -> None:
+    def __init__(self, child_ns=NSMAP["sicommon"]) -> None:
         super().__init__(
             subelements={c: skxt.DblType() for c in ("Range", "Azimuth")},
-            child_ns=NSMAP["sicommon"],
+            child_ns=child_ns,
         )
 
 
@@ -305,14 +344,16 @@ class RowColDblType(skxt.ArrayType):
     """
     Transcoder for double-precision floating point row and column XML parameter types.
 
-    Children are in the SICommon namespace.
-
+    Parameters
+    ----------
+    child_ns : str, optional
+        Namespace to use for child elements.  Default: "urn:SICommon:1.0"
     """
 
-    def __init__(self) -> None:
+    def __init__(self, child_ns=NSMAP["sicommon"]) -> None:
         super().__init__(
             subelements={c: skxt.DblType() for c in ("Row", "Col")},
-            child_ns=NSMAP["sicommon"],
+            child_ns=child_ns,
         )
 
 
@@ -421,9 +462,41 @@ class XsdHelper(skxml.XsdHelper):
             "{http://www.w3.org/2001/XMLSchema}dateTime": XdtType(),
             "{http://www.w3.org/2001/XMLSchema}int": IntType(),
             "{http://www.w3.org/2001/XMLSchema}double": DblType(),
+            "{http://www.w3.org/2001/XMLSchema}boolean": BoolType(),
         }
         typedef = self.xsdtypes[typename]
-        easy = {
+        sidd_1 = {
+            "{urn:SICommon:0.1}AngleMagnitudeType": AngleMagnitudeType(
+                child_ns="urn:SICommon:0.1"
+            ),
+            "{urn:SICommon:0.1}LatLonVertexType": skxt.LatLonType(
+                child_ns="urn:SICommon:0.1"
+            ),
+            "{urn:SICommon:0.1}ParameterType": ParameterType(),
+            "{urn:SICommon:0.1}Poly1DType": skxt.PolyType(child_ns="urn:SICommon:0.1"),
+            "{urn:SICommon:0.1}Poly2DType": skxt.Poly2dType(
+                child_ns="urn:SICommon:0.1"
+            ),
+            "{urn:SICommon:0.1}RangeAzimuthType": RangeAzimuthType(
+                child_ns="urn:SICommon:0.1"
+            ),
+            "{urn:SICommon:0.1}RowColDoubleType": RowColDblType(
+                child_ns="urn:SICommon:0.1"
+            ),
+            "{urn:SICommon:0.1}RowColIntType": skxt.RowColType(
+                child_ns="urn:SICommon:0.1"
+            ),
+            "{urn:SICommon:0.1}XYZPolyType": skxt.XyzPolyType(
+                child_ns="urn:SICommon:0.1"
+            ),
+            "{urn:SICommon:0.1}XYZType": skxt.XyzType(child_ns="urn:SICommon:0.1"),
+            "{urn:SIDD:1.0.0}FootprintType": skxt.NdArrayType(
+                "Vertex", skxt.LatLonType(child_ns="urn:SICommon:0.1")
+            ),
+            "{urn:SIDD:1.0.0}Lookup3TableType": Lookup3TableType(),
+            "{urn:SIDD:1.0.0}LookupTableType": LookupTableType(),
+        }
+        sidd_2_and_3 = {
             "{urn:SFA:1.2.0}PointType": SfaPointType(),
             "{urn:SICommon:1.0}AngleZeroToExclusive360MagnitudeType": AngleMagnitudeType(),
             "{urn:SICommon:1.0}LatLonRestrictionType": LatLonType(),
@@ -453,31 +526,40 @@ class XsdHelper(skxml.XsdHelper):
             ),
             "<UNNAMED>-{urn:SIDD:3.0.0}ImageCornersType/{urn:SIDD:3.0.0}ICP": LatLonType(),
         }
-        easy["{urn:SIDD:2.0.0}FilterBankCoefType"] = easy[
+        sidd_2_and_3["{urn:SIDD:2.0.0}FilterBankCoefType"] = sidd_2_and_3[
             "{urn:SIDD:3.0.0}FilterBankCoefType"
         ]
-        easy["{urn:SIDD:2.0.0}FilterKernelCoefType"] = easy[
+        sidd_2_and_3["{urn:SIDD:2.0.0}FilterKernelCoefType"] = sidd_2_and_3[
             "{urn:SIDD:3.0.0}FilterKernelCoefType"
         ]
-        easy["{urn:SIDD:2.0.0}ImageCornersType"] = easy[
+        sidd_2_and_3["{urn:SIDD:2.0.0}ImageCornersType"] = sidd_2_and_3[
             "{urn:SIDD:3.0.0}ImageCornersType"
         ]
-        easy["{urn:SIDD:2.0.0}LookupTableType"] = easy[
+        sidd_2_and_3["{urn:SIDD:2.0.0}LookupTableType"] = sidd_2_and_3[
             "{urn:SIDD:3.0.0}LookupTableType"
         ]
-        easy["{urn:SIDD:2.0.0}LUTInfoType"] = easy["{urn:SIDD:3.0.0}LUTInfoType"]
-        easy["{urn:SIDD:2.0.0}PolygonType"] = easy["{urn:SIDD:3.0.0}PolygonType"]
-        easy["{urn:SIDD:2.0.0}ValidDataType"] = easy["{urn:SIDD:3.0.0}ValidDataType"]
-        easy["<UNNAMED>-{urn:SIDD:2.0.0}ImageCornersType/{urn:SIDD:2.0.0}ICP"] = easy[
+        sidd_2_and_3["{urn:SIDD:2.0.0}LUTInfoType"] = sidd_2_and_3[
+            "{urn:SIDD:3.0.0}LUTInfoType"
+        ]
+        sidd_2_and_3["{urn:SIDD:2.0.0}PolygonType"] = sidd_2_and_3[
+            "{urn:SIDD:3.0.0}PolygonType"
+        ]
+        sidd_2_and_3["{urn:SIDD:2.0.0}ValidDataType"] = sidd_2_and_3[
+            "{urn:SIDD:3.0.0}ValidDataType"
+        ]
+        sidd_2_and_3[
+            "<UNNAMED>-{urn:SIDD:2.0.0}ImageCornersType/{urn:SIDD:2.0.0}ICP"
+        ] = sidd_2_and_3[
             "<UNNAMED>-{urn:SIDD:3.0.0}ImageCornersType/{urn:SIDD:3.0.0}ICP"
         ]
+        supported_types = sidd_1 | sidd_2_and_3
 
         if tag in ("{urn:SIDD:2.0.0}LocalDateTime", "{urn:SIDD:3.0.0}LocalDateTime"):
             return skxt.XdtType(force_utc=False)
         if typename.startswith("{http://www.w3.org/2001/XMLSchema}"):
             return known_builtins[typename]
-        if typename in easy:
-            return easy[typename]
+        if typename in supported_types:
+            return supported_types[typename]
         if not typedef.children:
             return known_builtins.get(typedef.text_typename, TxtType())
         return None

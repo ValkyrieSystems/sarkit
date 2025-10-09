@@ -5,6 +5,7 @@ Common functionality for verifying files for internal consistency.
 import argparse
 import ast
 import contextlib
+import functools
 import linecache
 import os
 import re
@@ -25,6 +26,35 @@ class _ExceptionOnUse:
 
     def __getattr__(self, name):
         raise self._error_class(self._error_message)
+
+
+def skipif(condition_func, details=None):
+    """Skip check if condition_func evalulates to ``True``
+
+    Parameters
+    ----------
+    condition_func : callable
+        Function that returns ``True`` is check should be skipped.
+        Called with a single argument which is the `ConsistencyChecker` containing the check.
+    details : str or None, optional
+        Text describing the scope of checks
+
+    Returns
+    -------
+    callable
+        decorator for check method
+    """
+
+    def decorator_skipif(func):
+        @functools.wraps(func)
+        def wrap_check(check_obj, *args, **kwargs):
+            with check_obj.precondition(details):
+                assert not condition_func(check_obj)
+                func(check_obj, *args, **kwargs)
+
+        return wrap_check
+
+    return decorator_skipif
 
 
 def _exception_stack():
