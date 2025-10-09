@@ -8,12 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Ability to read and write SIDD DED segments
+- SICD and SIDD consistency checks for ValidData bounds
 - Support for SIDD v1.0
 
 ### Changed
+- Improved read performance
 - Pinned `jbpy` dependency
 
 ### Fixed
+- SICD consistency failure when optional IPP Sets were omitted
 - `ElementWrapper` not creating non-repeatable subelement for empty dict
 
 

@@ -29,6 +29,7 @@ def _random_image(sidd_xmltree):
 
 
 @pytest.mark.parametrize("force_segmentation", [False, True])
+@pytest.mark.parametrize("with_ded", [False, True])
 @pytest.mark.parametrize(
     "sidd_xml",
     [
@@ -37,7 +38,7 @@ def _random_image(sidd_xmltree):
         DATAPATH / "example-sidd-3.0.0.xml",
     ],
 )
-def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
+def test_roundtrip(force_segmentation, with_ded, sidd_xml, tmp_path, monkeypatch):
     out_sidd = tmp_path / "out.sidd"
     sicd_xmltree = lxml.etree.parse(DATAPATH / "example-sicd-1.4.0.xml")
     basis_etree0 = lxml.etree.parse(sidd_xml)
@@ -86,6 +87,10 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
         monkeypatch.setattr(
             sarkit.sidd._constants, "LI_MAX", basis_array0.nbytes // 5
         )  # reduce the segment size limit to force segmentation
+
+    basis_ded_array = np.random.default_rng().integers(
+        -32768, 32767, size=(1000, 2000), dtype=np.int16
+    )
 
     write_metadata = sksidd.NitfMetadata(
         file_header_part={
@@ -276,6 +281,18 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
             ),
         ]
     )
+    if with_ded:
+        write_metadata.ded = sksidd.NitfDedMetadata(
+            nrows=basis_ded_array.shape[0],
+            ncols=basis_ded_array.shape[1],
+            im_subheader_part={
+                "tgtid": "dedtgt",
+                "iid2": "dediid2",
+                "security": {
+                    "clas": "U",
+                },
+            },
+        )
 
     with out_sidd.open("wb") as file:
         jbp = sksidd.jbp_from_nitf_metadata(write_metadata)
@@ -288,12 +305,17 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
             writer.write_image(3, basis_array3)
             writer.write_image(4, basis_array4)
             writer.write_image(5, basis_array5)
+            if with_ded:
+                writer.write_ded(basis_ded_array)
+            else:
+                with pytest.raises(RuntimeError, match="Metadata must describe DED"):
+                    writer.write_ded(basis_ded_array)
 
     def _num_imseg(array):
         rows_per_seg = int(np.floor(sarkit.sidd._constants.LI_MAX / array[0].nbytes))
         return int(np.ceil(array.shape[0] / rows_per_seg))
 
-    num_expected_imseg = (
+    num_expected_product_imseg = (
         _num_imseg(basis_array0)
         + _num_imseg(basis_array1)
         + _num_imseg(basis_array2)
@@ -301,8 +323,15 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
         + _num_imseg(basis_array4)
         + _num_imseg(basis_array5)
     )
+    if with_ded:
+        num_expected_imseg = num_expected_product_imseg + 1
+    else:
+        num_expected_imseg = num_expected_product_imseg
+
     if force_segmentation:
-        assert num_expected_imseg > 2  # make sure the monkeypatch caused segmentation
+        assert (
+            num_expected_product_imseg > 5
+        )  # make sure the monkeypatch caused segmentation
     with out_sidd.open("rb") as file:
         ntf = jbpy.Jbp()
         ntf.load(file)
@@ -310,7 +339,10 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
 
         mapping = sksidd.product_image_segment_mapping(ntf)
         assert len(mapping) == 6
-        assert sum(len(indices) for indices in mapping.values()) == num_expected_imseg
+        assert (
+            sum(len(indices) for indices in mapping.values())
+            == num_expected_product_imseg
+        )
 
     with out_sidd.open("rb") as file:
         with sksidd.NitfReader(file) as reader:
@@ -326,6 +358,12 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
             read_array3 = reader.read_image(3)
             read_array4 = reader.read_image(4)
             read_array5 = reader.read_image(5)
+            if with_ded:
+                read_ded_array = reader.read_ded()
+            else:
+                with pytest.raises(RuntimeError, match="no DED to read"):
+                    read_ded_array = reader.read_ded()
+
             read_xmltree = read_metadata.images[0].xmltree
             read_sicd_xmltree = read_metadata.sicd_xmls[-1].xmltree
             read_ps_xmltree0 = read_metadata.product_support_xmls[0].xmltree
@@ -354,6 +392,18 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
     assert np.array_equal(basis_array3, read_array3)
     assert np.array_equal(basis_array4, read_array4)
     assert np.array_equal(basis_array5, read_array5)
+    if with_ded:
+        assert np.array_equal(basis_ded_array, read_ded_array)
+        assert write_metadata.ded == read_metadata.ded
+        assert (
+            reader.jbp["ImageSegments"][-1]["subheader"]["IDATIM"].value
+            == reader.jbp["FileHeader"]["FDT"].value
+        )
+
+    idlvls = set(
+        imseg["subheader"]["IDLVL"].value for imseg in reader.jbp["ImageSegments"]
+    )
+    assert len(idlvls) == len(reader.jbp["ImageSegments"])
 
     assert np.array_equal(
         read_metadata.images[3].lookup_table, write_metadata.images[3].lookup_table

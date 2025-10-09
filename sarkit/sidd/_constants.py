@@ -83,5 +83,6 @@ PIXEL_TYPES: Final[dict[str, _PixelTypeDict]] = {
     },
 }
 
+# Segmentation algorithm constants
 LI_MAX: Final[int] = 9_999_999_998
 ILOC_MAX: Final[int] = 99_999

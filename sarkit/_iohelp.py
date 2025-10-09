@@ -8,20 +8,22 @@ BUFFER_SIZE = 2**27
 
 
 def fromfile(file_obj, dtype, count):
-    values = np.empty((count,), dtype)
-    max_read_items = max(BUFFER_SIZE // dtype.itemsize, 1)
-    num_to_read = count
+    # Read as bytes because some io libraries (eg smart_open) don't always like buffers with uncommon dtypes
+    values = np.empty((count * dtype.itemsize,), np.uint8)
+
+    bytes_remaining = values.nbytes
     num_already_read = 0
-    while num_to_read > 0:
-        read_count = min(max_read_items, num_to_read)
-        nbytes_requested = read_count * dtype.itemsize
-        array = file_obj.read(nbytes_requested)
-        nbytes_read = len(array)
+
+    # read chunks because some libraries buffer inside readinto()
+    while bytes_remaining:
+        nbytes_requested = min(bytes_remaining, BUFFER_SIZE)
+        buff = values[num_already_read : num_already_read + nbytes_requested].data
+
+        nbytes_read = file_obj.readinto(buff)
         if nbytes_read != nbytes_requested:
             raise RuntimeError(f"Expected {nbytes_requested=}; only read {nbytes_read}")
-        values[num_already_read : num_already_read + read_count] = np.frombuffer(
-            array, dtype
-        )
-        num_already_read += read_count
-        num_to_read -= read_count
-    return values
+
+        num_already_read += nbytes_requested
+        bytes_remaining -= nbytes_requested
+
+    return values.view(dtype)
