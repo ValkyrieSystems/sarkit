@@ -1,0 +1,174 @@
+<SIDD xmlns="urn:SIDD:1.0.0" xmlns:sicommon="urn:SICommon:0.1" xmlns:sfa="urn:SFA:1.2.0" xmlns:ism="urn:us:gov:ic:ism">
+  <ProductCreation>
+    <ProcessorInformation>
+      <Application>nga_sar_processing 1.2.0</Application>
+      <ProcessingDateTime>2025-09-23T16:22:59.939106Z</ProcessingDateTime>
+      <Site>Unknown</Site>
+    </ProcessorInformation>
+    <Classification ism:DESVersion="4" ism:resourceElement="true" ism:createDate="2025-09-23" ism:classification="U" ism:ownerProducer="USA"/>
+    <ProductName>Detected Image</ProductName>
+    <ProductClass>Detected Image</ProductClass>
+  </ProductCreation>
+  <Display>
+    <PixelType>MONO8I</PixelType>
+  </Display>
+  <GeographicAndTarget>
+    <GeographicCoverage>
+      <Footprint size="4">
+        <Vertex index="1">
+          <sicommon:Lat>0.0026148693456123483</sicommon:Lat>
+          <sicommon:Lon>-0.0018276522714230081</sicommon:Lon>
+        </Vertex>
+        <Vertex index="2">
+          <sicommon:Lat>0.0018257736264529673</sicommon:Lat>
+          <sicommon:Lon>0.0026175733520944137</sicommon:Lon>
+        </Vertex>
+        <Vertex index="3">
+          <sicommon:Lat>-0.0026306745860156687</sicommon:Lat>
+          <sicommon:Lon>0.0018370416849164547</sicommon:Lon>
+        </Vertex>
+        <Vertex index="4">
+          <sicommon:Lat>-0.0018415788668926139</sicommon:Lat>
+          <sicommon:Lon>-0.0026081839386108904</sicommon:Lon>
+        </Vertex>
+      </Footprint>
+      <GeographicInfo/>
+    </GeographicCoverage>
+  </GeographicAndTarget>
+  <Measurement>
+    <PlaneProjection>
+      <ReferencePoint>
+        <sicommon:ECEF>
+          <sicommon:X>6378137</sicommon:X>
+          <sicommon:Y>0</sicommon:Y>
+          <sicommon:Z>0</sicommon:Z>
+        </sicommon:ECEF>
+        <sicommon:Point>
+          <sicommon:Row>162</sicommon:Row>
+          <sicommon:Col>188</sicommon:Col>
+        </sicommon:Point>
+      </ReferencePoint>
+      <SampleSpacing>
+        <sicommon:Row>1.5396008719969376</sicommon:Row>
+        <sicommon:Col>1.3328221795055135</sicommon:Col>
+      </SampleSpacing>
+      <TimeCOAPoly order1="0" order2="0">
+        <sicommon:Coef exponent1="0" exponent2="0">0.88683635292592233</sicommon:Coef>
+      </TimeCOAPoly>
+      <ProductPlane>
+        <RowUnitVector>
+          <sicommon:X>0</sicommon:X>
+          <sicommon:Y>-0.17364817766693033</sicommon:Y>
+          <sicommon:Z>-0.98480775301220813</sicommon:Z>
+        </RowUnitVector>
+        <ColUnitVector>
+          <sicommon:X>0</sicommon:X>
+          <sicommon:Y>0.98480775301220813</sicommon:Y>
+          <sicommon:Z>-0.17364817766693033</sicommon:Z>
+        </ColUnitVector>
+      </ProductPlane>
+    </PlaneProjection>
+    <PixelFootprint>
+      <sicommon:Row>325</sicommon:Row>
+      <sicommon:Col>377</sicommon:Col>
+    </PixelFootprint>
+    <ARPPoly>
+      <sicommon:X order1="5">
+        <sicommon:Coef exponent1="0">7228404.811503545</sicommon:Coef>
+        <sicommon:Coef exponent1="1">346.84829637761965</sicommon:Coef>
+        <sicommon:Coef exponent1="2">-3.5893085042377235</sicommon:Coef>
+        <sicommon:Coef exponent1="3">-5.6920695479356394e-05</sicommon:Coef>
+        <sicommon:Coef exponent1="4">3.500556514807558e-07</sicommon:Coef>
+        <sicommon:Coef exponent1="5">-1.0291535827708768e-08</sicommon:Coef>
+      </sicommon:X>
+      <sicommon:Y order1="5">
+        <sicommon:Coef exponent1="0">262323.8621818392</sicommon:Coef>
+        <sicommon:Coef exponent1="1">-7332.590937252358</sicommon:Coef>
+        <sicommon:Coef exponent1="2">-0.1302491995889796</sicommon:Coef>
+        <sicommon:Coef exponent1="3">0.0012136272230393542</sicommon:Coef>
+        <sicommon:Coef exponent1="4">1.0933841750688422e-08</sicommon:Coef>
+        <sicommon:Coef exponent1="5">-1.1586081338262393e-10</sicommon:Coef>
+      </sicommon:Y>
+      <sicommon:Z order1="5">
+        <sicommon:Coef exponent1="0">1451209.4380581959</sicommon:Coef>
+        <sicommon:Coef exponent1="1">-402.23122351918136</sicommon:Coef>
+        <sicommon:Coef exponent1="2">-0.7206062977369828</sicommon:Coef>
+        <sicommon:Coef exponent1="3">6.667127628537508e-05</sicommon:Coef>
+        <sicommon:Coef exponent1="4">6.968649247235243e-08</sicommon:Coef>
+        <sicommon:Coef exponent1="5">-1.9518129986854026e-09</sicommon:Coef>
+      </sicommon:Z>
+    </ARPPoly>
+  </Measurement>
+  <ExploitationFeatures>
+    <Collection identifier="SyntheticCore">
+      <Information>
+        <SensorName>Synthetic</SensorName>
+        <RadarMode>
+          <sicommon:ModeType>SPOTLIGHT</sicommon:ModeType>
+        </RadarMode>
+        <CollectionDateTime>2025-09-23T15:58:33.000000Z</CollectionDateTime>
+        <CollectionDuration>1.8818218481278524</CollectionDuration>
+        <Resolution>
+          <sicommon:Range>1.9941177368164062</sicommon:Range>
+          <sicommon:Azimuth>1.994041804212616</sicommon:Azimuth>
+        </Resolution>
+        <Polarization>
+          <TxPolarization>V</TxPolarization>
+          <RcvPolarization>V</RcvPolarization>
+        </Polarization>
+      </Information>
+      <Geometry>
+        <Azimuth>9.9998687024360056</Azimuth>
+        <Slope>31.195141668073123</Slope>
+        <Squint>76.589822638771778</Squint>
+        <Graze>30.000027599903614</Graze>
+        <Tilt>8.98085253449735</Tilt>
+      </Geometry>
+      <Phenomenology>
+        <Shadow>
+          <sicommon:Angle>0.00013129756399393467</sicommon:Angle>
+          <sicommon:Magnitude>1.7320488807337198</sicommon:Magnitude>
+        </Shadow>
+        <Layover>
+          <sicommon:Angle>-162.45898206640172</sicommon:Angle>
+          <sicommon:Magnitude>0.60550563857030382</sicommon:Magnitude>
+        </Layover>
+        <MultiPath>-175.48168703169617</MultiPath>
+        <GroundTrack>-76.850313677425561</GroundTrack>
+      </Phenomenology>
+    </Collection>
+    <Product>
+      <Resolution>
+        <sicommon:Row>2.3026098816448664</sicommon:Row>
+        <sicommon:Col>2.0269747534018392</sicommon:Col>
+      </Resolution>
+      <North>-170</North>
+    </Product>
+  </ExploitationFeatures>
+  <ProductProcessing>
+    <ProcessingModule>
+      <ModuleName name="inscription"/>
+      <ModuleParameter name="krange">fixed</ModuleParameter>
+      <ModuleParameter name="kazimuth">fixed</ModuleParameter>
+    </ProcessingModule>
+    <ProcessingModule>
+      <ModuleName name="Valkyrie Systems Sage | sar_common_kit 2.0.0.1 @ 2025-09-23T15:58:34Z"/>
+    </ProcessingModule>
+    <ProcessingModule>
+      <ModuleName name="polar_deterministic_phase"/>
+      <ModuleParameter name="phase_contiguous">true</ModuleParameter>
+      <ModuleParameter name="quadratic_type">none</ModuleParameter>
+      <ModuleParameter name="linear_type">none</ModuleParameter>
+      <ModuleParameter name="constant_type">one_dimensional</ModuleParameter>
+    </ProcessingModule>
+    <ProcessingModule>
+      <ModuleName name="nga_sar_processing 1.2.0 | sicd_to_detected_image.py @ 2025-09-23T16:22:55.112452+00:00"/>
+      <ModuleParameter name="sidelobe_control">SVA</ModuleParameter>
+      <ModuleParameter name="spectral_shaping">True</ModuleParameter>
+      <ModuleParameter name="pre_detection_osr">None</ModuleParameter>
+      <ModuleParameter name="egr_threshold">0.2</ModuleParameter>
+      <ModuleParameter name="egr_max_weight">0.45</ModuleParameter>
+      <ModuleParameter name="fft_backend">auto</ModuleParameter>
+    </ProcessingModule>
+  </ProductProcessing>
+</SIDD>

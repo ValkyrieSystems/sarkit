@@ -9,6 +9,10 @@ import sarkit.verification._consistency as con
 class DummyConsistency(con.ConsistencyChecker):
     """A ConsistencyChecker used for unit testing and code coverage"""
 
+    def __init__(self, skip_skipif_test=False):
+        super().__init__()
+        self.skip_skipif_test = skip_skipif_test
+
     def check_need_pass(self):
         with self.need("need pass"):
             assert True
@@ -62,6 +66,11 @@ class DummyConsistency(con.ConsistencyChecker):
     def check_exception(self):
         raise ValueError
 
+    @con.skipif(lambda x: getattr(x, "skip_skipif_test"))
+    def check_skipif(self):
+        with self.need():
+            assert not self.skip_skipif_test
+
 
 @pytest.fixture
 def dummycon():
@@ -76,7 +85,7 @@ def dummycon():
 
 def test_all(dummycon, capsys, monkeypatch):
     dummycon.check()
-    assert len(dummycon.all()) == 11
+    assert len(dummycon.all()) == 12
     assert len(dummycon.failures()) == 5
 
     num_checks_by_part = [
@@ -132,6 +141,17 @@ def test_all(dummycon, capsys, monkeypatch):
     assert "Skip" in captured3.out
     assert "check_nopre_want_pass" in captured3.out
     assert "check_want_pass" in captured3.out
+
+
+@pytest.mark.parametrize("should_skip", [True, False])
+def test_skipif(should_skip):
+    conobj = DummyConsistency(skip_skipif_test=should_skip)
+    conobj.check("check_skipif")
+    assert len(conobj.all()) == 1
+    if should_skip:
+        assert conobj.skips()
+    else:
+        assert conobj.passes()
 
 
 def test_one(dummycon):

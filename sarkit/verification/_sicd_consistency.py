@@ -993,6 +993,16 @@ class SicdConsistency(con.ConsistencyChecker):
                 (min(row), min(col)), (vertices[0][0], vertices[0][1])
             )
 
+    def check_validdata_bounds(self) -> None:
+        """ValidData vertices contained within FullImage"""
+        vertices = _get_valid_data_vertices(self.xmlhelp)
+        nrows = self.xmlhelp.load("./{*}ImageData/{*}FullImage/{*}NumRows")
+        ncols = self.xmlhelp.load("./{*}ImageData/{*}FullImage/{*}NumCols")
+        with self.want("ValidData vertices contained within FullImage"):
+            pad = 1
+            assert np.all(vertices >= (-pad, -pad))
+            assert np.all(vertices <= (nrows + pad, ncols + pad))
+
     def check_validdata_winding(self) -> None:
         """ValidData should be clockwise."""
         validdata = shg.Polygon(_get_valid_data_vertices(self.xmlhelp))
@@ -1358,62 +1368,67 @@ class SicdConsistency(con.ConsistencyChecker):
     def check_ipp_poly(self):
         """Checks that the IPPPolys are nominally correct."""
         ipp_sets = self.sicdroot.findall("./{*}Timeline/{*}IPP/{*}Set")
-        isets = []
-        for ipp_set in ipp_sets:
-            ipp_poly_node = ipp_set.find("./{*}IPPPoly")
-            iset = {
-                "t_start": float(ipp_set.findtext("./{*}TStart")),
-                "t_end": float(ipp_set.findtext("./{*}TEnd")),
-                "ipp_start": int(ipp_set.findtext("./{*}IPPStart")),
-                "ipp_end": int(ipp_set.findtext("./{*}IPPEnd")),
-                "ipp_poly": self.xmlhelp.load_elem(ipp_poly_node),
-                "index": int(ipp_set.get("index")),
-            }
-            with self.need("TEnd greater than TStart"):
-                assert iset["t_end"] > iset["t_start"]
-            with self.need("IPPEnd greater than IPPStart"):
-                assert iset["ipp_end"] > iset["ipp_start"]
-            with self.need("IPPStart is close to the polynomial evaluation at TStart"):
-                assert np.allclose(
-                    iset["ipp_start"],
-                    np.round(npp.polyval(iset["t_start"], iset["ipp_poly"])),
-                )
-            with self.need("IPPEnd is close to the polynomial evaluation at TEnd"):
-                assert np.allclose(
-                    iset["ipp_end"],
-                    np.round(npp.polyval(iset["t_end"], iset["ipp_poly"]) - 1),
-                )
-            isets.append(iset)
-        isets.sort(key=lambda x: x["index"])
+        with self.precondition():
+            assert len(ipp_sets) > 0
 
-        t_starts = np.asarray([iset["t_start"] for iset in isets])
-        min_time = np.min(t_starts)
-        t_ends = np.asarray([iset["t_end"] for iset in isets])
-        max_time = np.max(t_ends)
-        # SICD Vol. 1 says "the IPP sequence spans the collection" which is impractical
-        # because the CollectStart may be before imaging occurs
-        t_start_proc = self.xmlhelp.load("./{*}ImageFormation/{*}TStartProc")
-        t_end_proc = self.xmlhelp.load("./{*}ImageFormation/{*}TEndProc")
-        with self.need("min(IPP.Set.TStart) <= TStartProc"):
-            assert min_time <= con.Approx(t_start_proc, atol=1e-2)
-        with self.need("max(IPP.Set.TEnd) >= TEndProc"):
-            assert max_time >= con.Approx(t_end_proc, atol=1e-2)
-        time_between = t_starts[1:] - t_ends[:-1]
-        with self.need("TStart values are increasing"):
-            assert np.array_equal(t_starts, sorted(t_starts))
-        with self.need("TEnds values are increasing"):
-            assert np.array_equal(t_ends, sorted(t_ends))
-        with self.need("No time gaps/overlap between IPP Sets"):
-            assert np.array_equal(time_between, [0] * time_between.size)
-        ipp_starts = np.asarray([iset["ipp_start"] for iset in isets])
-        ipp_ends = np.asarray([iset["ipp_end"] for iset in isets])
-        ipp_index_between = ipp_starts[1:] - ipp_ends[:-1]
-        with self.need("IPPStarts increase"):
-            assert np.array_equal(ipp_starts, sorted(ipp_starts))
-        with self.need("IPPEnds increase"):
-            assert np.array_equal(ipp_ends, sorted(ipp_ends))
-        with self.need("No IPP index gaps/overlap between IPP Sets"):
-            assert np.array_equal(ipp_index_between, [1] * ipp_index_between.size)
+            isets = []
+            for ipp_set in ipp_sets:
+                ipp_poly_node = ipp_set.find("./{*}IPPPoly")
+                iset = {
+                    "t_start": float(ipp_set.findtext("./{*}TStart")),
+                    "t_end": float(ipp_set.findtext("./{*}TEnd")),
+                    "ipp_start": int(ipp_set.findtext("./{*}IPPStart")),
+                    "ipp_end": int(ipp_set.findtext("./{*}IPPEnd")),
+                    "ipp_poly": self.xmlhelp.load_elem(ipp_poly_node),
+                    "index": int(ipp_set.get("index")),
+                }
+                with self.need("TEnd greater than TStart"):
+                    assert iset["t_end"] > iset["t_start"]
+                with self.need("IPPEnd greater than IPPStart"):
+                    assert iset["ipp_end"] > iset["ipp_start"]
+                with self.need(
+                    "IPPStart is close to the polynomial evaluation at TStart"
+                ):
+                    assert np.allclose(
+                        iset["ipp_start"],
+                        np.round(npp.polyval(iset["t_start"], iset["ipp_poly"])),
+                    )
+                with self.need("IPPEnd is close to the polynomial evaluation at TEnd"):
+                    assert np.allclose(
+                        iset["ipp_end"],
+                        np.round(npp.polyval(iset["t_end"], iset["ipp_poly"]) - 1),
+                    )
+                isets.append(iset)
+            isets.sort(key=lambda x: x["index"])
+
+            t_starts = np.asarray([iset["t_start"] for iset in isets])
+            min_time = np.min(t_starts)
+            t_ends = np.asarray([iset["t_end"] for iset in isets])
+            max_time = np.max(t_ends)
+            # SICD Vol. 1 says "the IPP sequence spans the collection" which is impractical
+            # because the CollectStart may be before imaging occurs
+            t_start_proc = self.xmlhelp.load("./{*}ImageFormation/{*}TStartProc")
+            t_end_proc = self.xmlhelp.load("./{*}ImageFormation/{*}TEndProc")
+            with self.need("min(IPP.Set.TStart) <= TStartProc"):
+                assert min_time <= con.Approx(t_start_proc, atol=1e-2)
+            with self.need("max(IPP.Set.TEnd) >= TEndProc"):
+                assert max_time >= con.Approx(t_end_proc, atol=1e-2)
+            time_between = t_starts[1:] - t_ends[:-1]
+            with self.need("TStart values are increasing"):
+                assert np.array_equal(t_starts, sorted(t_starts))
+            with self.need("TEnds values are increasing"):
+                assert np.array_equal(t_ends, sorted(t_ends))
+            with self.need("No time gaps/overlap between IPP Sets"):
+                assert np.array_equal(time_between, [0] * time_between.size)
+            ipp_starts = np.asarray([iset["ipp_start"] for iset in isets])
+            ipp_ends = np.asarray([iset["ipp_end"] for iset in isets])
+            ipp_index_between = ipp_starts[1:] - ipp_ends[:-1]
+            with self.need("IPPStarts increase"):
+                assert np.array_equal(ipp_starts, sorted(ipp_starts))
+            with self.need("IPPEnds increase"):
+                assert np.array_equal(ipp_ends, sorted(ipp_ends))
+            with self.need("No IPP index gaps/overlap between IPP Sets"):
+                assert np.array_equal(ipp_index_between, [1] * ipp_index_between.size)
 
     def check_valid_data_indices(self) -> None:
         """Checks consistency of the values in the ImageData child elements."""
