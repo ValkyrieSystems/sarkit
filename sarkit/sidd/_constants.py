@@ -18,15 +18,20 @@ class VersionInfoType(TypedDict):
 
 # Keys must be in ascending order
 VERSION_INFO: Final[dict[str, VersionInfoType]] = {
+    "urn:SIDD:1.0.0": {
+        "version": "1.0",
+        "date": "2011-08-01T00:00:00Z",
+        "schema": SCHEMA_DIR / "version1/SIDD_schema_V1.0.0_2011_08_31.xsd",
+    },
     "urn:SIDD:2.0.0": {
         "version": "2.0",
         "date": "2019-05-31T00:00:00Z",
-        "schema": SCHEMA_DIR / "version2" / "SIDD_schema_V2.0.0_2019_05_31.xsd",
+        "schema": SCHEMA_DIR / "version2/SIDD_schema_V2.0.0_2019_05_31.xsd",
     },
     "urn:SIDD:3.0.0": {
         "version": "3.0",
         "date": "2021-11-30T00:00:00Z",
-        "schema": SCHEMA_DIR / "version3" / "SIDD_schema_V3.0.0.xsd",
+        "schema": SCHEMA_DIR / "version3/SIDD_schema_V3.0.0.xsd",
     },
 }
 

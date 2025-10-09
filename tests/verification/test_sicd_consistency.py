@@ -1184,6 +1184,23 @@ def test_check_validdata_first_vertex(sicd_con):
     testing.assert_failures(sicd_con, "First ValidData Vertex is min row -> min col")
 
 
+def test_check_validdata_bounds(sicd_con):
+    sicd_con.check("check_validdata_bounds")
+    assert not sicd_con.failures()
+
+    vertices = sicd_con.xmlhelp.load("./{*}ImageData/{*}ValidData")
+    vertices[0][0] = -2
+    sicd_con.xmlhelp.set("./{*}ImageData/{*}ValidData", vertices)
+    sicd_con.check("check_validdata_bounds")
+    testing.assert_failures(sicd_con, "ValidData vertices contained within FullImage")
+
+    vertices = sicd_con.xmlhelp.load("./{*}ImageData/{*}ValidData")
+    vertices[0][1] = sicd_con.xmlhelp.load("./{*}ImageData/{*}FullImage/{*}NumCols") + 2
+    sicd_con.xmlhelp.set("./{*}ImageData/{*}ValidData", vertices)
+    sicd_con.check("check_validdata_bounds")
+    testing.assert_failures(sicd_con, "ValidData vertices contained within FullImage")
+
+
 def test_check_amptable_bad_index(sicd_con, em):
     img_data_node = sicd_con.sicdroot.find("./{*}ImageData")
     img_data_node.append(

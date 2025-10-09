@@ -77,9 +77,25 @@ def test_sfapointtype():
     assert np.array_equal(sksidd.SfaPointType().parse_elem(elem), data[:-1])
 
 
+def test_lookup_table_type():
+    data = [1, 2, 3]
+    t = sksidd.LookupTableType()
+    elem = t.make_elem("{ns}LookupTable", data)
+    assert np.array_equal(t.parse_elem(elem), data)
+    assert int(elem.get("size")) == 3
+
+
+def test_lookup3_table_type():
+    data = [[1, 2, 3], [4, 5, 6]]
+    t = sksidd.Lookup3TableType()
+    elem = t.make_elem("{ns}Lookup3Table", data)
+    assert np.array_equal(t.parse_elem(elem), data)
+    assert int(elem.get("size")) == 2
+
+
 def test_transcoders():
     no_transcode_leaf = set()
-    for xml_file in (DATAPATH / "syntax_only/sidd").glob("*.xml"):
+    for xml_file in (DATAPATH / "syntax_only/sidd").rglob("*.xml"):
         etree = lxml.etree.parse(xml_file)
         basis_version = lxml.etree.QName(etree.getroot()).namespace
         schema = lxml.etree.XMLSchema(file=sksidd.VERSION_INFO[basis_version]["schema"])
@@ -101,7 +117,7 @@ def test_transcoders():
 
 @pytest.mark.parametrize(
     "xmlpath",
-    list((DATAPATH / "syntax_only/sidd").glob("*.xml"))
+    list((DATAPATH / "syntax_only/sidd").rglob("*.xml"))
     + list(DATAPATH.glob("example-sidd*.xml")),
 )
 def test_elementwrapper_tofromdict(xmlpath):

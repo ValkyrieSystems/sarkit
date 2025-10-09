@@ -379,3 +379,24 @@ def example_sidd(tmp_path_factory):
     with tmp_sidd.open("wb") as f, sksidd.NitfWriter(f, sidd_meta):
         pass  # don't currently care about the pixels
     yield tmp_sidd
+
+
+@pytest.fixture(scope="session")
+def example_sidd_v1(tmp_path_factory):
+    xml_path = DATAPATH / "example-sidd-1.0.0.xml"
+    sidd_etree = etree.parse(xml_path)
+    tmp_sidd = tmp_path_factory.mktemp("data") / xml_path.with_suffix(".sidd").name
+    sec = {"security": {"clas": "U"}}
+    sidd_meta = sksidd.NitfMetadata(
+        file_header_part={"ostaid": "nowhere"} | sec,
+        images=[
+            sksidd.NitfProductImageMetadata(
+                xmltree=sidd_etree,
+                im_subheader_part=sec,
+                de_subheader_part=sec,
+            )
+        ],
+    )
+    with tmp_sidd.open("wb") as f, sksidd.NitfWriter(f, sidd_meta):
+        pass  # don't currently care about the pixels
+    yield tmp_sidd
