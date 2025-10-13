@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Ability to read and write SIDD DED segments
+- Ability to read and write SIDD legend segments
 - SICD and SIDD consistency checks for ValidData bounds
 - Support for SIDD v1.0
 
