@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+## [1.2.0] - 2025-10-13
+
 ### Added
 - Ability to read and write SIDD DED segments
 - SICD and SIDD consistency checks for ValidData bounds
@@ -176,7 +179,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Limited SICD Reading and Writing
 - Limited SIDD NITF Reading and Writing
 
-[unreleased]: https://github.com/ValkyrieSystems/sarkit/compare/v1.1.0...HEAD
+[unreleased]: https://github.com/ValkyrieSystems/sarkit/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/ValkyrieSystems/sarkit/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/ValkyrieSystems/sarkit/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/ValkyrieSystems/sarkit/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/ValkyrieSystems/sarkit/compare/v0.12.0...v1.0.0
