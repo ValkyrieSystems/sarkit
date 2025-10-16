@@ -421,72 +421,158 @@ class SiddConsistency(con.ConsistencyChecker):
         with self.precondition():
             assert self.ntf is not None
 
-            # not clear if all legends all go after the last SAR, or if each legend goes after the SAR it's attached to
-            imseg_types = [
-                self._im_segment_type(seg) for seg in self.ntf["ImageSegments"]
-            ]
-            with self.need("IM segments start with SIDD"):
-                required_order = ["SIDD_SAR", "SIDD_LEGEND", "SIDD_DED", "OTHER"]
-                expected = sorted(imseg_types, key=required_order.index)
-                assert imseg_types == expected
+            # iterate and for each segment create a list of what is allowed to be next
+            #    SIDD{n}{m} SAR -> SIDD{n}{m+1} SAR | SIDD{n}{m+1} LEG | SIDD{n+1}001 SAR | DED001 | OTHER
+            #    SIDD{n}{m} LEG -> SIDD{n}{m+1} LEG | SIDD{n+1}001 SAR | DED001 | OTHER
+            #    DED001 -> OTHER
+            #    OTHER -> OTHER
+            def _segment_desc(segment):
+                iid1 = segment["subheader"]["IID1"].value
+                icat = segment["subheader"]["ICAT"].value
 
-    def check_nitf_iid1_order(self) -> None:
-        """Images stored sequentially"""
+                if (iid1.startswith("SIDD") and icat in ("SAR", "LEG")) or (
+                    iid1 == "DED001" and icat == "DED"
+                ):
+                    return (iid1, icat)
+                return ("OTHER", "")
+
+            allowed = [("SIDD001001", "SAR")]  # must start with first SAR image segment
+            for seg in self.ntf["ImageSegments"]:
+                desc = _segment_desc(seg)
+                with self.need("Image segments in correct order"):
+                    assert desc in allowed
+
+                if desc == ("OTHER", ""):
+                    allowed = [("OTHER", "")]
+                elif desc[1] == "DED":
+                    allowed = [("OTHER", "")]
+                elif desc[1] == "SAR":
+                    n = int(desc[0][4:7])
+                    m = int(desc[0][7:10])
+                    allowed = [
+                        (f"SIDD{n:03d}{m + 1:03d}", "SAR"),
+                        (f"SIDD{n:03d}{m + 1:03d}", "LEG"),
+                        (f"SIDD{n + 1:03d}001", "SAR"),
+                        ("DED001", "DED"),
+                        ("OTHER", ""),
+                    ]
+                elif desc[1] == "LEG":
+                    n = int(desc[0][4:7])
+                    m = int(desc[0][7:10])
+                    allowed = [
+                        (f"SIDD{n:03d}{m + 1:03d}", "LEG"),
+                        (f"SIDD{n + 1:03d}001", "SAR"),
+                        ("DED001", "DED"),
+                        ("OTHER", ""),
+                    ]
+
+    def check_nitf_display_levels(self):
+        """Image segments have reasonable display and attachment levels"""
         with self.precondition():
             assert self.ntf is not None
 
-            sar_segments = [
-                imseg
-                for imseg in self.ntf["ImageSegments"]
-                if self._im_segment_type(imseg) == "SIDD_SAR"
+            idlvls = [
+                seg["subheader"]["IDLVL"].value for seg in self.ntf["ImageSegments"]
             ]
-            iid1s = [imseg["subheader"]["IID1"].value for imseg in sar_segments]
-            with self.need("SIDD image segments must be in order"):
-                assert iid1s == sorted(iid1s)
+            ialvls = [
+                seg["subheader"]["IALVL"].value for seg in self.ntf["ImageSegments"]
+            ]
+            with self.need("IDLVLs range from 1...num image segments"):
+                assert sorted(idlvls) == sorted(
+                    range(1, len(self.ntf["ImageSegments"]) + 1)
+                )
+            with self.need("IALVLs reference an existing IDLVL"):
+                assert set(ialvls) <= set(idlvls) | set([0])
 
-    def check_nitf_segmentation(self) -> None:
-        """NITF Image Subheaders match SIDD segmentation"""
+            with self.need("image segment is attached to a lower display level"):
+                for idlvl, ialvl in zip(idlvls, ialvls):
+                    assert ialvl < idlvl
+
+    @per_image
+    def check_nitf_sidd_image_segments(self, image_number, xml_tree):
+        """Check relationships between segments of a single image"""
         with self.precondition():
             assert self.ntf is not None
 
-            segmentation_imhdrs = self._image_segmentation()
-            for idx, expected in enumerate(segmentation_imhdrs):
+            headers = [
+                seg["subheader"]
+                for seg in self.ntf["ImageSegments"]
+                if seg["subheader"]["IID1"].value.startswith(
+                    f"SIDD{image_number + 1:03d}"
+                )
+            ]
+            sar_headers = [hdr for hdr in headers if hdr["ICAT"].value == "SAR"]
+            sar_idlvls = sorted([hdr["IDLVL"].value for hdr in sar_headers])
+            sar_ialvls = sorted([hdr["IALVL"].value for hdr in sar_headers])
+            with self.need("First SAR segment is attached to CCS"):
+                assert sar_ialvls[0] == 0
+            with self.need("SAR segments have sequential IDLVLS"):
+                assert np.all(np.diff(sar_idlvls)) == 1
+            with self.need("SAR segments are attached to the previous segment"):
+                assert sar_ialvls[1:] == sar_idlvls[:-1]
+
+            pixel_footprint = sksidd.ElementWrapper(xml_tree.getroot())["Measurement"][
+                "PixelFootprint"
+            ]
+            sum_nrows = sum(hdr["NROWS"].value for hdr in sar_headers)
+            all_ncols = np.asarray([hdr["NCOLS"].value for hdr in sar_headers])
+            with self.need("Combined SAR segments shape matches pixel footprint"):
+                assert np.all(all_ncols == all_ncols[0])
+                assert all_ncols[0] == pixel_footprint[1]
+                assert sum_nrows == pixel_footprint[0]
+
+            leg_headers = [hdr for hdr in headers if hdr["ICAT"].value == "LEG"]
+            leg_idlvls = sorted([hdr["IDLVL"].value for hdr in leg_headers])
+            leg_ialvls = sorted([hdr["IALVL"].value for hdr in leg_headers])
+            with self.need("Legends are displayed immediately after the SAR segments"):
+                expected_idlvls = list(
+                    range(sar_idlvls[-1] + 1, sar_idlvls[-1] + 1 + len(leg_headers))
+                )
+                assert sorted(leg_idlvls) == expected_idlvls
+            with self.need("Legends are attached to SAR segments"):
+                assert set(leg_ialvls) <= set(sar_idlvls)
+
+    @per_image
+    def check_nitf_image_segmentation(self, image_number, xml_tree):
+        """NITF Image Subheaders match SIDD segmentation algorithm"""
+        with self.precondition():
+            assert self.ntf is not None
+
+            segments = [
+                seg
+                for seg in self.ntf["ImageSegments"]
+                if seg["subheader"]["IID1"].value.startswith(
+                    f"SIDD{image_number + 1:03d}"
+                )
+            ]
+
+            # seginfos are for a single image, update based on other images in the SIDD
+            _, _, seginfos = sksidd.segmentation_algorithm([xml_tree])
+            for info in seginfos:
+                info.iid1 = f"SIDD{image_number + 1:03d}{info.iid1[7:10]}"
+                info.idlvl += segments[0]["subheader"]["IDLVL"].value - 1
+                if info.ialvl != 0:
+                    info.ialvl += segments[0]["subheader"]["IDLVL"].value - 1
+
+            for idx, (segment, expected) in enumerate(zip(segments, seginfos)):
                 with self.need(f"Image Segment {idx} must be SAR"):
-                    assert (
-                        self.ntf["ImageSegments"][idx]["subheader"]["ICAT"].value
-                        == "SAR"
-                    )
+                    assert segment["subheader"]["ICAT"].value == "SAR"
 
                 with self.need(f"Image Segment {idx} has expected IDLVL"):
-                    assert (
-                        self.ntf["ImageSegments"][idx]["subheader"]["IDLVL"].value
-                        == expected["idlvl"]
-                    )
+                    assert segment["subheader"]["IDLVL"].value == expected.idlvl
                 with self.need(f"Image Segment {idx} has expected IALVL"):
-                    assert (
-                        self.ntf["ImageSegments"][idx]["subheader"]["IALVL"].value
-                        == expected["ialvl"]
-                    )
+                    assert segment["subheader"]["IALVL"].value == expected.ialvl
                 with self.need(f"Image Segment {idx} has expected ILOC"):
-                    assert (
-                        self.ntf["ImageSegments"][idx]["subheader"]["ILOC"].value
-                        == expected["iloc"]
+                    assert segment["subheader"]["ILOC"].value == (
+                        int(expected.iloc[:5]),
+                        int(expected.iloc[5:]),
                     )
                 with self.need(f"Image Segment {idx} has expected IID1"):
-                    assert (
-                        self.ntf["ImageSegments"][idx]["subheader"]["IID1"].value
-                        == expected["iid1"]
-                    )
+                    assert segment["subheader"]["IID1"].value == expected.iid1
                 with self.need(f"Image Segment {idx} has expected NROWS"):
-                    assert (
-                        self.ntf["ImageSegments"][idx]["subheader"]["NROWS"].value
-                        == expected["nrows"]
-                    )
+                    assert segment["subheader"]["NROWS"].value == expected.nrows
                 with self.need(f"Image Segment {idx} has expected NCOLS"):
-                    assert (
-                        self.ntf["ImageSegments"][idx]["subheader"]["NCOLS"].value
-                        == expected["ncols"]
-                    )
+                    assert segment["subheader"]["NCOLS"].value == expected.ncols
 
                 def _dms_to_dd(dms_str):
                     direction = dms_str[-1]
@@ -504,10 +590,22 @@ class SiddConsistency(con.ConsistencyChecker):
                     [_dms_to_dd(igeolo[45:52]), _dms_to_dd(igeolo[52:60])],
                 ]
 
+                igeolo = expected.igeolo
+                expected_ll = [
+                    [_dms_to_dd(igeolo[0:7]), _dms_to_dd(igeolo[7:15])],
+                    [_dms_to_dd(igeolo[15:22]), _dms_to_dd(igeolo[22:30])],
+                    [_dms_to_dd(igeolo[30:37]), _dms_to_dd(igeolo[37:45])],
+                    [_dms_to_dd(igeolo[45:52]), _dms_to_dd(igeolo[52:60])],
+                ]
+
                 with self.need(f"Image Segment {idx} has expected IGEOLO"):
                     np.testing.assert_allclose(
-                        igeolo_ll, expected["igeolo_dd"], atol=1.0 / 60 / 60, rtol=0
+                        igeolo_ll, expected_ll, atol=1.0 / 60 / 60, rtol=0
                     )
+
+            for segment in segments[len(seginfos) :]:
+                with self.need("Legends located after SAR image"):
+                    assert segment["subheader"]["ICAT"].value == "LEG"
 
     @per_image
     def check_nitf_image_subheaders(self, image_number, xml_tree):
@@ -627,136 +725,6 @@ class SiddConsistency(con.ConsistencyChecker):
                         imseg["subheader"]["NBPP"].value
                         == imseg["subheader"]["ABPP"].value
                     )
-
-    def _image_segmentation(self):
-        """Attempts to implement the SIDD segmentation algorithm (sans obvious document errors)"""
-        z = 0
-        fhdr_numi = 0
-        num_rows_limit = []
-        imhdr = []
-        num_seg_per_image = []
-
-        # Not defined by document, but necessary to make coordinate calculation work with multple xml_trees
-        starting_seg_per_image = []
-
-        num_rows = []
-        num_cols = []
-        for k, xml_tree in enumerate(self.xml_trees):
-            # k is 1 based in document, 0 based here
-            num_rows.append(
-                int(xml_tree.findtext("./{*}Measurement/{*}PixelFootprint/{*}Row"))
-            )
-            num_cols.append(
-                int(xml_tree.findtext("./{*}Measurement/{*}PixelFootprint/{*}Col"))
-            )
-
-        for k, xml_tree in enumerate(self.xml_trees):
-            # k is 1 based in document, 0 based here
-            pixel_info = _PIXEL_INFO[xml_tree.findtext("./{*}Display/{*}PixelType")]
-
-            bytes_per_pixel = pixel_info["NBANDS"]
-            bytes_per_row = (
-                bytes_per_pixel * num_cols[k]
-            )  # document says NumRows(m), which can't possibly be right
-            num_rows_limit.append(
-                min(np.floor(sksidd.LI_MAX / bytes_per_row), sksidd.ILOC_MAX)
-            )
-            product_size = bytes_per_pixel * num_rows[k] * num_cols[k]
-
-            starting_seg_per_image.append(z)
-            if product_size <= sksidd.LI_MAX:
-                num_seg_per_image.append(1)
-                z += 1
-                fhdr_numi += 1
-                imhdr.append(
-                    {
-                        "idlvl": z,
-                        "ialvl": 0,
-                        "iloc": (0, 0),
-                        "iid1": f"SIDD{k + 1:03d}001",  # document say to use m instead of k, but that doesn't make sense
-                        "nrows": num_rows[k],  # document says to use num_rows_limit[k],
-                        "ncols": num_cols[k],
-                    }
-                )
-            else:
-                num_seg_per_image.append(
-                    int(np.ceil(num_rows[k] / num_rows_limit[k]))
-                )  # document omits ceil
-                z += 1
-                fhdr_numi += num_seg_per_image[k]
-                imhdr.append(
-                    {
-                        "idlvl": z,
-                        "ialvl": 0,
-                        "iloc": (0, 0),
-                        "iid1": f"SIDD{k + 1:03d}001",  # document say to use m instead of k, but that doesn't make sense
-                        "nrows": num_rows_limit[k],  # document doesn't set nrows here
-                        "ncols": num_cols[k],
-                    }
-                )
-                for n in range(2, num_seg_per_image[k]):
-                    z += 1
-                    imhdr.append(
-                        {
-                            "idlvl": z,
-                            "ialvl": z - 1,
-                            "iloc": (num_rows_limit[k], 0),
-                            "iid1": f"SIDD{k + 1:03d}{n:03d}",
-                            "nrows": num_rows_limit[k],
-                            "ncols": num_cols[k],
-                        }
-                    )
-                z += 1
-                last_seg_rows = (
-                    num_rows[k] - (num_seg_per_image[k] - 1) * num_rows_limit[k]
-                )
-                imhdr.append(
-                    {
-                        "idlvl": z,
-                        "ialvl": z - 1,
-                        "iloc": (
-                            num_rows_limit[k],
-                            0,
-                        ),  # document says to use last_seg_rows
-                        "iid1": f"SIDD{k + 1:03d}{num_seg_per_image[k]:03d}",  # document says to use the undefiend 'n'
-                        "nrows": last_seg_rows,
-                        "ncols": num_cols[k],
-                    }
-                )
-
-        # Image Segment Corner Coordinate Parameters
-        for k, xml_tree in enumerate(self.xml_trees):
-            # k is 1 based in document, 0 based here
-
-            xmlhelp = sksidd.XmlHelper(xml_tree)
-            icp_ll = _get_corners(xmlhelp)
-            pcc_lla = np.concatenate((icp_ll, np.full((len(icp_ll), 1), 0)), axis=1)
-            pcc_ecef = wgs84.geodetic_to_cartesian(pcc_lla)
-
-            for z in range(num_seg_per_image[k]):
-                iscc_ecef = np.zeros((4, 3))
-                imhdr_idx = starting_seg_per_image[k] + z
-                # imhdr_idx is 'z' in document, but offset to actually work with multiple product images
-
-                wgt1 = (z * num_rows_limit[k]) / num_rows[k]
-                wgt2 = 1 - wgt1
-                wgt3 = (z * num_rows_limit[k] + imhdr[imhdr_idx]["nrows"]) / num_rows[k]
-                wgt4 = 1 - wgt3
-
-                iscc_ecef[1 - 1] = wgt2 * pcc_ecef[1 - 1] + wgt1 * pcc_ecef[4 - 1]
-                iscc_ecef[2 - 1] = wgt2 * pcc_ecef[2 - 1] + wgt1 * pcc_ecef[3 - 1]
-                iscc_ecef[3 - 1] = wgt4 * pcc_ecef[2 - 1] + wgt3 * pcc_ecef[3 - 1]
-                iscc_ecef[4 - 1] = wgt4 * pcc_ecef[1 - 1] + wgt3 * pcc_ecef[4 - 1]
-
-                iscc = wgs84.cartesian_to_geodetic(iscc_ecef)[:, :2]
-                imhdr[imhdr_idx]["igeolo_dd"] = [
-                    [iscc[0, 0], iscc[0, 1]],
-                    [iscc[1, 0], iscc[1, 1]],
-                    [iscc[2, 0], iscc[2, 1]],
-                    [iscc[3, 0], iscc[3, 1]],
-                ]
-
-        return imhdr
 
     @per_image
     def check_datetime_fields_are_utc(self, image_number, xml_tree) -> None:
