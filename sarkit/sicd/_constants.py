@@ -19,6 +19,11 @@ class VersionInfoType(TypedDict):
 
 # Keys must be in ascending order
 VERSION_INFO: Final[dict[str, VersionInfoType]] = {
+    "urn:SICD:1.0.1": {
+        "version": "1.0",
+        "date": "2011-09-28T00:00:00Z",  # vols 1-3 have different dates, this is from DIDD
+        "schema": SCHEMA_DIR / "SICD_schema_V1.0.1_2013_02_25.xsd",
+    },
     "urn:SICD:1.1.0": {
         "version": "1.1",
         "date": "2014-09-30T00:00:00Z",
