@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Ability to read and write SIDD legend segments
+
 ### Fixed
 - SICD consistency failure when optional ValidData polygon was omitted
 
