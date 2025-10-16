@@ -60,6 +60,57 @@ def test_from_file_xml():
     assert len(sicdcon.failures()) == 0
 
 
+def test_no_optional():
+    """Make sure SicdConsistency does not rely on optional fields"""
+
+    xmltree = etree.parse(good_sicd_xml_path)
+    assert xmltree.findtext("./{*}CollectionInfo/{*}CollectType") != "BISTATIC"
+    optional = [
+        "./{*}CollectionInfo/{*}IlluminatorName",
+        "./{*}CollectionInfo/{*}CollectType",
+        "./{*}CollectionInfo/{*}RadarMode/{*}ModeID",
+        "./{*}CollectionInfo/{*}InformationSecurityMarking",
+        "./{*}CollectionInfo/{*}CountryCode",
+        "./{*}CollectionInfo/{*}Parameter",
+        "./{*}ImageCreation",
+        "./{*}ImageData/{*}AmpTable",
+        "./{*}ImageData/{*}ValidData",
+        "./{*}GeoData/{*}ValidData",
+        "./{*}GeoData/{*}GeoInfo",
+        "./{*}Grid/{*}Row/{*}DeltaKCOAPoly",
+        "./{*}Grid/{*}Row/{*}WgtType",
+        "./{*}Grid/{*}Row/{*}WgtFunct",
+        "./{*}Grid/{*}Col/{*}DeltaKCOAPoly",
+        "./{*}Grid/{*}Col/{*}WgtType",
+        "./{*}Grid/{*}Col/{*}WgtFunct",
+        "./{*}Timeline/{*}IPP",
+        "./{*}Position/{*}GRPPoly",
+        "./{*}Position/{*}TxAPCPoly",
+        "./{*}Position/{*}RcvAPC",
+        "./{*}RadarCollection/{*}RefFreqIndex",
+        "./{*}RadarCollection/{*}Waveform",
+        "./{*}RadarCollection/{*}TxSequence",
+        "./{*}RadarCollection/{*}RcvChannels/{*}ChanParameters/{*}RcvAPCIndex",
+        "./{*}RadarCollection/{*}Area",
+        "./{*}RadarCollection/{*}Parameter",
+        "./{*}ImageFormation/{*}RcvChanProc/{*}PRFScaleFactor",
+        "./{*}ImageFormation/{*}SegmentIdentifier",
+        "./{*}ImageFormation/{*}Processing",
+        "./{*}ImageFormation/{*}PolarizationCalibration",
+        "./{*}Radiometric",
+        "./{*}Antenna",
+        "./{*}ErrorStatistics",
+        "./{*}MatchInfo",
+    ]
+    for path in optional:
+        for node in xmltree.findall(path):
+            node.getparent().remove(node)
+
+    sicdcon = SicdConsistency.from_parts(xmltree)
+    sicdcon.check()
+    assert len(sicdcon.failures()) == 0
+
+
 @pytest.mark.parametrize(
     "file",
     [
@@ -986,14 +1037,32 @@ def test_check_match_collection_indices(sicd_con, em):
     )
 
 
-def test_check_valid_data_indices(sicd_con):
+@pytest.mark.parametrize(
+    "datanode",
+    [
+        "ImageData",
+        "GeoData",
+    ],
+)
+def test_check_valid_data_indices(datanode, sicd_con):
     sicd_con.check("check_valid_data_indices")
     assert not sicd_con.failures()
 
-    vertices = sicd_con.sicdroot.findall("./{*}ImageData/{*}ValidData/{*}Vertex")
+    vertices = sicd_con.sicdroot.findall(
+        f"./{{*}}{datanode}/{{*}}ValidData/{{*}}Vertex"
+    )
     vertices[0].set("index", "99")
     sicd_con.check("check_valid_data_indices")
-    testing.assert_failures(sicd_con, "GeoData indices equal to ImageData indices")
+    testing.assert_failures(sicd_con, "Vertex elements are present")
+
+
+def test_check_valid_data_indices_size(sicd_con):
+    ew = sksicd.ElementWrapper(sicd_con.sicdroot)
+    vertices = ew["ImageData"]["ValidData"]
+    assert len(vertices) > 0
+    ew["ImageData"]["ValidData"] = vertices[:-1]
+    sicd_con.check("check_valid_data_indices")
+    testing.assert_failures(sicd_con, "GeoData size equal to ImageData size")
 
 
 def test_check_icp_indices(sicd_con):

@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- SICD consistency failure when optional ValidData polygon was omitted
+
 
 ## [1.2.0] - 2025-10-13
 

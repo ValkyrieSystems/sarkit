@@ -729,6 +729,7 @@ class SicdConsistency(con.ConsistencyChecker):
         are consistent with their parent's ``'size'``.
         """
         parent = self.sicdroot.find(path_to_parent)
+
         indices = [int(node.get("index")) for node in parent.findall(rel_path_to_child)]
         with self.need(f"All {rel_path_to_child} elements are present"):
             assert not set(indices).symmetric_difference(range(1, len(indices) + 1))
@@ -736,8 +737,6 @@ class SicdConsistency(con.ConsistencyChecker):
             f"{path_to_parent} size attribute matches number of {rel_path_to_child}"
         ):
             assert int(parent.attrib["size"]) == len(indices)
-
-        return indices
 
     @per_grid_dim
     def check_wgtfunct_indices(self, grid_dim) -> None:
@@ -1432,17 +1431,26 @@ class SicdConsistency(con.ConsistencyChecker):
 
     def check_valid_data_indices(self) -> None:
         """Checks consistency of the values in the ImageData child elements."""
-        image_indices = self._compare_size_and_index(
-            "./{*}ImageData/{*}ValidData", "./{*}Vertex"
-        )
-        geo_indices = self._compare_size_and_index(
-            "./{*}GeoData/{*}ValidData", "./{*}Vertex"
-        )
         with self.precondition():
-            assert image_indices is not None
-            assert geo_indices is not None
-            with self.need("GeoData indices equal to ImageData indices"):
-                assert np.array_equal(sorted(geo_indices), sorted(image_indices))
+            assert self.sicdroot.find("./{*}ImageData/{*}ValidData") is not None
+            self._compare_size_and_index("./{*}ImageData/{*}ValidData", "./{*}Vertex")
+
+        with self.precondition():
+            assert self.sicdroot.find("./{*}GeoData/{*}ValidData") is not None
+            self._compare_size_and_index("./{*}GeoData/{*}ValidData", "./{*}Vertex")
+
+        with self.precondition():
+            assert self.sicdroot.find("./{*}ImageData/{*}ValidData") is not None
+            assert self.sicdroot.find("./{*}GeoData/{*}ValidData") is not None
+
+            with self.need("GeoData size equal to ImageData size"):
+                image_validdata_size = self.sicdroot.find(
+                    "./{*}ImageData/{*}ValidData"
+                ).get("size")
+                geo_validdata_size = self.sicdroot.find(
+                    "./{*}GeoData/{*}ValidData"
+                ).get("size")
+                assert image_validdata_size == geo_validdata_size
 
     def check_icp_indices(self) -> None:
         """Checks consistency of the indices in the GeoData ICP elements."""
