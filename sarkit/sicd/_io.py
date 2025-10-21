@@ -202,7 +202,7 @@ class NitfImSubheaderPart:
             iid2=image_header["IID2"].value,
             security=NitfSecurityFields._from_nitf_fields("IS", image_header),
             isorce=image_header["ISORCE"].value,
-            icom=[val.value for val in image_header.find_all("ICOM\\d+")],
+            icom=[val.value for val in image_header.find_all("ICOM\\d+")],  # type: ignore  # all ICOM should have value
         )
 
     def __post_init__(self):
