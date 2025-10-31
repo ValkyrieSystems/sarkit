@@ -12,7 +12,7 @@ from lxml import etree
 import sarkit.cphd as skcphd
 import sarkit.verification._cphdcheck
 import tests.utils
-from sarkit.verification._cphd_consistency import CphdConsistency
+from sarkit.verification._cphd_consistency import CphdConsistency, get_by_id
 from sarkit.verification._cphdcheck import main
 
 from . import testing
@@ -43,12 +43,47 @@ def example_compressed_cphd(example_cphd_file, tmp_path_factory):
     data_chan_elem.addprevious(em.SignalCompressionID("is constant!"))
     compressed_data = b"ultra-compressed"
     data_chan_elem.append(em.CompressedSignalSize(str(len(compressed_data))))
-
     tmp_cphd = tmp_path_factory.mktemp("data") / "faux-compressed.cphd"
     with tmp_cphd.open("wb") as f, skcphd.Writer(f, new_meta) as w:
         w.write_pvp("1", pvps)
         w.write_signal("1", np.frombuffer(compressed_data, np.uint8))
     assert not main([str(tmp_cphd), "--thorough"])
+    with tmp_cphd.open("rb") as f:
+        yield f
+
+
+@pytest.fixture(scope="session")
+def example_all_zero_cphd(example_cphd_file, tmp_path_factory):
+    example_cphd_file.seek(0)
+    with skcphd.Reader(example_cphd_file) as r:
+        pvps = r.read_pvps("1")
+        signal = r.read_signal("1")
+
+    zero_buffer = np.zeros(signal.shape, dtype=signal.dtype)
+    new_meta = r.metadata
+    tmp_cphd = tmp_path_factory.mktemp("data") / "faux-all-zero.cphd"
+    with tmp_cphd.open("wb") as f, skcphd.Writer(f, new_meta) as w:
+        w.write_pvp("1", pvps)
+        w.write_signal("1", zero_buffer)
+
+    with tmp_cphd.open("rb") as f:
+        yield f
+
+
+@pytest.fixture(scope="session")
+def example_non_finite_cphd(example_cphd_file, tmp_path_factory):
+    example_cphd_file.seek(0)
+    with skcphd.Reader(example_cphd_file) as r:
+        pvps = r.read_pvps("1")
+        signal = r.read_signal("1")
+
+    signal[0, :] = np.nan
+    new_meta = r.metadata
+    tmp_cphd = tmp_path_factory.mktemp("data") / "faux-non-finite.cphd"
+    with tmp_cphd.open("wb") as f, skcphd.Writer(f, new_meta) as w:
+        w.write_pvp("1", pvps)
+        w.write_signal("1", signal)
+
     with tmp_cphd.open("rb") as f:
         yield f
 
@@ -65,7 +100,7 @@ def good_xml():
 
 @pytest.fixture
 def cphd_con(good_xml):
-    return CphdConsistency.from_parts(good_xml)
+    return CphdConsistency.from_parts(copy_xml(good_xml))
 
 
 @pytest.fixture
@@ -168,6 +203,122 @@ def test_xml_schema_error(good_xml_root):
     assert cphd_con.failures()
 
 
+@pytest.mark.parametrize(
+    "tag_to_invalidate, check, err_txt",
+    [
+        (
+            "./{*}Data/{*}NumCPHDChannels",
+            "check_data_num_cphd_channels",
+            "NumCPHDChannels matches",
+        ),
+        (
+            "./{*}Data/{*}NumSupportArrays",
+            "check_data_num_support_arrays",
+            "NumSupportArrays matches",
+        ),
+        (
+            "./{*}Dwell/{*}NumCODTimes",
+            "check_dwell_num_cod_times",
+            "NumCODTimes matches",
+        ),
+        (
+            "./{*}Dwell/{*}NumDwellTimes",
+            "check_dwell_num_dwell_times",
+            "NumDwellTimes matches",
+        ),
+    ],
+)
+def test_check_count_mismatch(good_xml, tag_to_invalidate, check, err_txt):
+    bad_xml = copy_xml(good_xml)
+    bad_xml.find(tag_to_invalidate).text += "1"
+    cphd_con = CphdConsistency(bad_xml)
+    cphd_con.check(check)
+    testing.assert_failures(cphd_con, err_txt)
+
+
+@pytest.mark.parametrize(
+    "bad_num_bytes_pvp, err_txt",
+    [("0", "NumBytesPVP > 0"), ("23", "NumBytesPVP is a multiple of 8")],
+)
+def test_check_data_num_bytes_pvp_is_valid(cphd_con, bad_num_bytes_pvp, err_txt):
+    cphd_con.cphdroot.find("./{*}Data/{*}NumBytesPVP").text = bad_num_bytes_pvp
+    cphd_con.check("check_data_num_bytes_pvp_is_valid")
+    testing.assert_failures(cphd_con, err_txt)
+
+
+def test_check_data_num_bytes_pvp_no_pad(cphd_con):
+    cphd_con.cphdroot.find("./{*}Data/{*}NumBytesPVP").text = "1"
+    cphd_con.check("check_data_num_bytes_pvp_accommodates_pvps")
+    testing.assert_failures(
+        cphd_con,
+        "NumBytesPVP does not indicate trailing pad",
+    )
+
+
+def test_check_data_num_bytes_pvp_accommodates_pvps(cphd_con):
+    cphd_con.cphdroot.find("./{*}Data/{*}NumBytesPVP").text = cphd_con.cphdroot.find(
+        "./{*}PVP/{*}TxTime/{*}Offset"
+    ).text
+    cphd_con.check("check_data_num_bytes_pvp_accommodates_pvps")
+    testing.assert_failures(
+        cphd_con,
+        "NumBytesPVP large enough to accommodate PVPs described in XML",
+    )
+
+
+def test_check_overlapping_pvps(cphd_con):
+    pvp_nodes = cphd_con.cphdroot.find("./{*}PVP")
+    pvp_nodes[1].find("./{*}Offset").text = pvp_nodes[0].findtext("./{*}Offset")
+    cphd_con.check("check_overlapping_pvps")
+    testing.assert_failures(
+        cphd_con,
+        "PVP layout described in XML does not contain overlapping parameters",
+    )
+
+
+def test_check_gaps_between_pvps(cphd_con):
+    pvp_nodes = cphd_con.cphdroot.find("./{*}PVP")
+    pvp_nodes[0].find("./{*}Offset").text += "99999"
+    cphd_con.check("check_gaps_between_pvps")
+    testing.assert_failures(
+        cphd_con,
+        "PVP layout described in XML does not contain gaps between parameters",
+    )
+
+
+def test_check_pvp_block_size(example_cphd_file):
+    cphd_con = CphdConsistency.from_file(example_cphd_file, thorough=True)
+    cphd_con.kvp_list["PVP_BLOCK_SIZE"] += "1"
+    cphd_con.check("check_pvp_block_size")
+    testing.assert_failures(
+        cphd_con,
+        "PVP_BLOCK_SIZE in header consistent with XML /Data branch",
+    )
+
+
+def test_check_pvp_set_finiteness(example_cphd_file):
+    cphd_con = CphdConsistency.from_file(example_cphd_file, thorough=True)
+    cphd_con.pvps["1"][["FX1", "FX2"]][0] = (
+        np.nan
+    )  # both are nan so it should still pass
+    cphd_con.check("check_pvp_set_finiteness", allow_prefix=True)
+    assert not cphd_con.failures()
+
+    cphd_con.pvps["1"]["FX1"][1] = np.nan  # with only FX1 nan, we should fail
+    cphd_con.check("check_pvp_set_finiteness", allow_prefix=True)
+    testing.assert_failures(cphd_con, "have the same per-vector finiteness")
+
+
+def test_txrcv_lfmrate():
+    cphd_con = CphdConsistency.from_file(str(good_cphd_xml_path))
+    cphd_con.cphdroot.find("./{*}TxRcv/{*}TxWFParameters/{*}LFMRate").text = "0.0"
+    cphd_con.check("check_txrcv_lfmrate")
+    testing.assert_failures(
+        cphd_con,
+        r"/TxRcv/TxWFParameters\[Identifier='txwf_id#1'\]/LFMRate is not zero",
+    )
+
+
 def test_txrcv_bad_txwfid(good_xml_root):
     root = copy_xml(good_xml_root)
 
@@ -230,6 +381,25 @@ def test_antenna_non_matching_acfids(good_xml_root):
     assert cphd_con.failures()
 
 
+def test_check_antenna_array_element_antgpid(good_xml_root, em):
+    bad_xml = copy_xml(good_xml_root)
+
+    antpat_node = bad_xml.find("./{*}Antenna/{*}AntPattern")
+    if antpat_node.find("./{*}Array/{*}AntGPId") is not None:
+        remove_nodes(antpat_node.find("./{*}Element/{*}AntGPId"))
+    else:
+        antpat_node.find("./{*}Element/{*}PhasePoly").addnext(
+            em.AntGPId("mock-antgpid")
+        )
+
+    cphd_con = CphdConsistency(bad_xml)
+    cphd_con.check("check_antenna_array_element_antgpid")
+    testing.assert_failures(
+        cphd_con,
+        "Array/AntGPId and Element/AntGPId, when present, are included together in /Antenna/AntPattern",
+    )
+
+
 def test_chan_antenna_no_apcs(good_xml_root):
     bad_xml = copy_xml(good_xml_root)
 
@@ -290,10 +460,26 @@ def test_check_extended_imagearea_x1y1_x2y2(cphd_con_from_file):
     assert new_con.failures()
 
 
-def test_channel_signal_data(cphd_con_from_file):
-    cphd_con_from_file.kvp_list["SIGNAL_BLOCK_SIZE"] = "0"
-    cphd_con_from_file.check("check_channel_signal_data", allow_prefix=True)
-    assert cphd_con_from_file.failures()
+def test_channel_signal_0_data(example_all_zero_cphd):
+    cphd_con = CphdConsistency.from_file(example_all_zero_cphd, thorough=True)
+    cphd_con.check("check_channel_signal_data", allow_prefix=True)
+    testing.assert_failures(cphd_con, "Signal samples are not all zeroes")
+
+
+def test_channel_signal_nan_data(example_non_finite_cphd):
+    cphd_con = CphdConsistency.from_file(example_non_finite_cphd, thorough=True)
+    cphd_con.check("check_channel_signal_data", allow_prefix=True)
+    testing.assert_failures(cphd_con, "All signal samples are finite and not NaN")
+
+
+def test_check_channel_signal_data_with_signal_pvp(example_cphd_file):
+    cphd_con = CphdConsistency.from_file(example_cphd_file, thorough=True)
+    cphd_con.pvps["1"]["SIGNAL"][0] = 0
+    cphd_con.check("check_channel_signal_data", allow_prefix=True)
+    testing.assert_failures(
+        cphd_con,
+        "Vectors contain only zeroes where SIGNAL PVP is 0",
+    )
 
 
 def test_image_area_polygon_size_error(good_xml_root):
@@ -319,6 +505,115 @@ def test_image_area_polygon_winding_error(good_xml_root):
     cphd_con = CphdConsistency(bad_xml)
     cphd_con.check("check_imagearea_polygon")
     assert cphd_con.failures()
+
+
+# helper functions for test_check_segment_polygons
+def _invalidate_sv_indices(cphd_con):
+    # indices start at 1
+    seg_poly = cphd_con.cphdroot.find(
+        "./{*}SceneCoordinates/{*}ImageGrid/{*}SegmentList/{*}Segment/{*}SegmentPolygon"
+    )
+    seg_poly.find("./{*}SV").set("index", "0")
+
+
+def _make_not_simple(cphd_con):
+    # polygons must be simple
+    seg_poly = cphd_con.cphdroot.find(
+        "./{*}SceneCoordinates/{*}ImageGrid/{*}SegmentList/{*}Segment/{*}SegmentPolygon"
+    )
+    vertices = cphd_con.xmlhelp.load_elem(seg_poly)
+    vertices[[1, 2]] = vertices[[2, 1]]
+    cphd_con.xmlhelp.set_elem(seg_poly, vertices)
+
+
+def _make_ccw(cphd_con):
+    # polygons must be clockwise
+    seg_poly = cphd_con.cphdroot.find(
+        "./{*}SceneCoordinates/{*}ImageGrid/{*}SegmentList/{*}Segment/{*}SegmentPolygon"
+    )
+    for sv in seg_poly:
+        sv.set("index", str(len(seg_poly) - 1 - int(sv.get("index"))))
+
+
+def _invalidate_size_attr(cphd_con):
+    seg_poly = cphd_con.cphdroot.find(
+        "./{*}SceneCoordinates/{*}ImageGrid/{*}SegmentList/{*}Segment/{*}SegmentPolygon"
+    )
+    seg_poly.set("size", seg_poly.get("size") + "1")
+
+
+@pytest.mark.parametrize(
+    "invalidate_func, err_txt",
+    [
+        (
+            _invalidate_sv_indices,
+            "SceneCoordinates/ImageGrid/SegmentList/Segment/SegmentPolygon indices are all present",
+        ),
+        (
+            _make_not_simple,
+            "SceneCoordinates/ImageGrid/SegmentList/Segment/SegmentPolygon is simple",
+        ),
+        (
+            _make_ccw,
+            "SceneCoordinates/ImageGrid/SegmentList/Segment/SegmentPolygon is clockwise",
+        ),
+        (
+            _invalidate_size_attr,
+            "SceneCoordinates/ImageGrid/SegmentList/Segment/SegmentPolygon size attribute matches the number of vertices",
+        ),
+    ],
+)
+def test_check_segment_polygons(good_xml_root, invalidate_func, err_txt, em):
+    bad_xml = copy_xml(good_xml_root)
+    img_grid = bad_xml.find("./{*}SceneCoordinates/{*}ImageGrid")
+    assert img_grid is not None
+
+    img_grid.append(
+        em.SegmentList(
+            em.NumSegments("2"),
+            em.Segment(
+                em.Identifier("FAKE_SEGMENT0"),
+                em.StartLine("1"),
+                em.StartSample("1"),
+                em.EndLine("2"),
+                em.EndSample("2"),
+                em.SegmentPolygon(
+                    em.SV(
+                        em.Line("0"),
+                        em.Sample("0"),
+                        index="1",
+                    ),
+                    em.SV(
+                        em.Line("0"),
+                        em.Sample("10"),
+                        index="2",
+                    ),
+                    em.SV(
+                        em.Line("10"),
+                        em.Sample("10"),
+                        index="3",
+                    ),
+                    em.SV(
+                        em.Line("10"),
+                        em.Sample("0"),
+                        index="4",
+                    ),
+                    size="4",
+                ),
+            ),
+            em.Segment(
+                em.Identifier("FAKE_SEGMENT1"),
+                em.StartLine("1"),
+                em.StartSample("1"),
+                em.EndLine("2"),
+                em.EndSample("2"),
+            ),
+        )
+    )
+    cphd_con = CphdConsistency(bad_xml)
+    invalidate_func(cphd_con)
+    cphd_con.check("check_segment_polygons")
+    testing.assert_failures(cphd_con, err_txt)
 
 
 def test_image_area_missing_corner_point_error(good_xml_root):
@@ -401,6 +696,43 @@ def test_check_channel_imagearea_x1y1(good_xml_root):
 
     cphd_con.check("check_channel_imagearea_x1y1", allow_prefix=True)
     assert cphd_con.failures()
+
+
+def _invalidate_x0(xml):
+    xml.find("./{*}SupportArray/{*}AntGainPhase/{*}X0").text = "-1.001"
+
+
+def _invalidate_yss(xml):
+    agp = xml.find("./{*}SupportArray/{*}AntGainPhase")
+    get_by_id(xml, "./{*}Data/{*}SupportArray", agp.findtext("./{*}Identifier")).find(
+        "./{*}NumCols"
+    ).text = "4"
+    agp.find("./{*}YSS").text = "1"
+
+
+@pytest.mark.parametrize(
+    "invalidate_func",
+    [
+        _invalidate_x0,
+        _invalidate_yss,
+    ],
+)
+def test_check_antgainphase_support_array_domain(good_xml_root, invalidate_func):
+    bad_xml = copy_xml(good_xml_root)
+    invalidate_func(bad_xml)
+    cphd_con = CphdConsistency(bad_xml)
+    cphd_con.check("check_antgainphase_support_array_domain")
+    assert cphd_con.failures()
+
+
+def test_check_uncompressed_signal_array_byte_offsets(cphd_con_from_file):
+    cphd_con = cphd_con_from_file
+    cphd_con.cphdroot.find("./{*}Data/{*}Channel/{*}SignalArrayByteOffset").text += "8"
+    cphd_con.check("check_signal_block_size_and_packing")
+    testing.assert_failures(
+        cphd_con,
+        "SIGNAL array 1 starts at offset 0",
+    )
 
 
 def test_antenna_missing_channel_node(good_xml_root):
@@ -703,6 +1035,13 @@ def test_time_rcv_after_tx(cphd_con_from_file):
     assert cphd_con.failures()
 
 
+def test_check_first_txtime(cphd_con_from_file):
+    cphd_con = cphd_con_from_file
+    cphd_con.pvps["1"]["TxTime"][0] = -1
+    cphd_con.check("check_first_txtime", allow_prefix=True)
+    testing.assert_failures(cphd_con, "First TxTime >= 0")
+
+
 def test_time_rcv_time_not_finite(cphd_con_from_file):
     cphd_con = cphd_con_from_file
 
@@ -768,7 +1107,6 @@ def test_channel_ia_poly(good_xml_root):
     badroot.find("./{*}Channel/{*}Parameters/{*}ImageArea/{*}X1Y1/{*}Y").text = "0.0"
 
     cphd_con = CphdConsistency(badroot)
-
     cphd_con.check("check_channel_imagearea_polygon", allow_prefix=True)
     assert cphd_con.failures()
 
@@ -848,6 +1186,40 @@ def test_header_bad_release(cphd_con_from_file):
 
     cphd_con.check("check_classification_and_release_info")
     assert cphd_con.failures()
+
+
+def test_no_codtime_node(cphd_con_from_file):
+    cphd_con = cphd_con_from_file
+    remove_nodes(cphd_con.cphdroot.find("./{*}Dwell/{*}CODTime"))
+
+    cphd_con.check("check_channel_dwell_polys", allow_prefix=True)
+    testing.assert_failures(
+        cphd_con,
+        "/Dwell/CODTime with Identifier=1 exists for DwellTime in channel=1",
+    )
+
+
+def test_channel_dwell_usedta(cphd_con_from_file, em):
+    cphd_con = cphd_con_from_file
+
+    assert (
+        cphd_con.cphdroot.find("./{*}Channel/{*}Parameters/{*}DwellTimes/{*}DTAId")
+        is None
+    )
+    assert (
+        cphd_con.cphdroot.find("./{*}Channel/{*}Parameters/{*}DwellTimes/{*}UseDTA")
+        is None
+    )
+
+    cphd_con.cphdroot.find("./{*}Channel/{*}Parameters/{*}DwellTimes").append(
+        em.UseDTA("true")
+    )
+
+    cphd_con.check("check_channel_dwell_usedta", allow_prefix=True)
+    testing.assert_failures(
+        cphd_con,
+        "UseDTA only included when DTAId is also included",
+    )
 
 
 def test_no_dwelltime_node(cphd_con_from_file):
@@ -975,6 +1347,60 @@ def test_toaextsaved(cphd_con_from_file, em):
     assert new_con.failures()
 
 
+def test_check_channel_fx2_gt_fx1(cphd_con_from_file):
+    cphd_con = cphd_con_from_file
+    # check is tolerant to nans
+    cphd_con.pvps["1"]["FX1"][0] = np.nan
+    cphd_con.check("check_channel_fx2_gt_fx1", allow_prefix=True)
+    assert not cphd_con.failures()
+
+    # but flags when fx1 is not less than fx2
+    cphd_con.pvps["1"]["FX1"][0] = cphd_con.pvps["1"]["FX2"][0]
+    cphd_con.check("check_channel_fx2_gt_fx1", allow_prefix=True)
+    testing.assert_failures(
+        cphd_con,
+        "FX2 PVPs greater than FX1 PVPs",
+    )
+
+
+@pytest.mark.parametrize(
+    "param, err_msg",
+    [
+        ("FX1", "FX1 PVP is strictly positive"),
+        ("FX2", "FX2 PVP is strictly positive"),
+        ("SC0", "SC0 PVP is strictly positive for FX domain"),
+        ("SCSS", "SCSS PVP is strictly positive"),
+    ],
+)
+def test_check_channel_positive_pvps(cphd_con_from_file, param, err_msg):
+    cphd_con = cphd_con_from_file
+    cphd_con.pvps["1"][param][0] = 0
+    cphd_con.check("check_channel_positive_pvps", allow_prefix=True)
+    testing.assert_failures(cphd_con, err_msg)
+
+
+def test_check_channel_positive_pvps_toa_domain(cphd_con_from_file):
+    cphd_con = cphd_con_from_file
+    cphd_con.xmlhelp.set("./{*}Global/{*}DomainType", "TOA")
+    cphd_con.pvps["1"]["SC0"][0] = 0
+    cphd_con.check("check_channel_positive_pvps", allow_prefix=True)
+    assert not cphd_con.failures()
+    assert not cphd_con.skips()
+
+
+@pytest.mark.parametrize("param", ["TxPos", "TxVel", "RcvPos", "RcvVel"])
+def test_check_txrcv_posvel_residuals(cphd_con_from_file, param):
+    cphd_con = cphd_con_from_file
+    cphd_con.pvps["1"][param] = 10 * np.random.default_rng().random(
+        size=cphd_con.pvps["1"][param].shape
+    )
+    cphd_con.check("check_txrcv_posvel_residuals", allow_prefix=True)
+    testing.assert_failures(
+        cphd_con,
+        f"Max residual of order-5 poly fit of {param} < 1",
+    )
+
+
 def test_channel_fx_osr(cphd_con_from_file):
     cphd_con = cphd_con_from_file
     channel_pvps = next(iter(cphd_con.pvps.values()))
@@ -1088,7 +1514,19 @@ def test_image_grid_exists(cphd_con):
     remove_nodes(cphd_con.cphdroot.find("./{*}SceneCoordinates/{*}ImageGrid"))
 
     cphd_con.check("check_image_grid_exists")
-    assert cphd_con.failures()
+    testing.assert_failures(
+        cphd_con,
+        "It is recommended to populate SceneCoordinates.ImageGrid for processing purposes",
+    )
+
+
+def test_image_grid_error(cphd_con):
+    line_node = cphd_con.cphdroot.find(
+        "./{*}SceneCoordinates/{*}ImageGrid/{*}IARPLocation/{*}Line"
+    )
+    line_node.text = str(float(line_node.text) * 2)
+    cphd_con.check("check_image_grid")
+    testing.assert_failures(cphd_con, "Grid Extent to match ImageArea")
 
 
 def test_scene_plane_axis_vectors_bad_uiax(cphd_con):

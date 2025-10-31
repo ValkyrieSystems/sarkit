@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Ability to read and write SIDD legend segments
+- Additional CPHD consistency checks and associated unit tests
 
 ### Changed
 - `jbpy` dependency updated
