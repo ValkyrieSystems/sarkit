@@ -79,6 +79,8 @@ def example_cphd(tmp_path_factory):
     srp = xmlhelp.load(".//{*}SRP/{*}ECF")
     pvps["SRPPos"] = srp
 
+    pvps["SIGNAL"] = 1
+
     tmp_cphd = (
         tmp_path_factory.mktemp("data") / good_cphd_xml_path.with_suffix(".cphd").name
     )

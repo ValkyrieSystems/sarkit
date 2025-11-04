@@ -151,7 +151,7 @@
   </SceneCoordinates>
   <Data>
     <SignalArrayFormat>CF8</SignalArrayFormat>
-    <NumBytesPVP>216</NumBytesPVP>
+    <NumBytesPVP>224</NumBytesPVP>
     <NumCPHDChannels>1</NumCPHDChannels>
     <Channel>
       <Identifier>1</Identifier>
@@ -355,6 +355,11 @@
       <Size>1</Size>
       <Format>F8</Format>
     </SCSS>
+    <SIGNAL>
+      <Offset>27</Offset>
+      <Size>1</Size>
+      <Format>I8</Format>
+    </SIGNAL>
   </PVP>
   <SupportArray>
     <AntGainPhase>
