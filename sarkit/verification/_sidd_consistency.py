@@ -998,25 +998,32 @@ class SiddConsistency(con.ConsistencyChecker):
     @per_image
     def check_geodata_image_corners(self, image_number, xml_tree) -> None:
         """Image Corners are consistent with Measurement element."""
-        with self.precondition():
-            icp_from_measurement = calc_geodata_imagecorners(xml_tree)
-            xmlhelp = sksidd.XmlHelper(xml_tree)
-            icp_ll = _get_corners(xmlhelp)
-            scp = xmlhelp.load("./{*}Measurement//{*}ReferencePoint/{*}ECEF")
-            _, _, scp_height = wgs84.cartesian_to_geodetic(scp)
-            icp_ecef = wgs84.geodetic_to_cartesian(
-                np.concatenate((icp_ll, np.full((len(icp_ll), 1), scp_height)), axis=1)
-            )
-            for index, (icp_reported, icp_predicted) in enumerate(
-                zip(icp_ecef, icp_from_measurement)
+        xmlhelp = sksidd.XmlHelper(xml_tree)
+        n_rows, n_cols = xmlhelp.load("./{*}Measurement/{*}PixelFootprint")
+        corners = [
+            (-0.5, -0.5),
+            (-0.5, n_cols - 0.5),
+            (n_rows - 0.5, n_cols - 0.5),
+            (n_rows - 0.5, -0.5),
+        ]
+        icp_from_measurement = sksidd.calculations.pixel_to_ecef(xml_tree, corners)
+
+        icp_ll = _get_corners(xmlhelp)
+        scp = xmlhelp.load("./{*}Measurement//{*}ReferencePoint/{*}ECEF")
+        _, _, scp_height = wgs84.cartesian_to_geodetic(scp)
+        icp_ecef = wgs84.geodetic_to_cartesian(
+            np.concatenate((icp_ll, np.full((len(icp_ll), 1), scp_height)), axis=1)
+        )
+        for index, (icp_reported, icp_predicted) in enumerate(
+            zip(icp_ecef, icp_from_measurement)
+        ):
+            icp_dist = np.linalg.norm(icp_predicted - icp_reported)
+            scp_dist = np.linalg.norm(icp_reported - scp)
+            with self.need(
+                f"Distance between reported and predicted ICP{index + 1} "
+                "< 0.1 * (distance between reported ICP and SCP)"
             ):
-                icp_dist = np.linalg.norm(icp_predicted - icp_reported)
-                scp_dist = np.linalg.norm(icp_reported - scp)
-                with self.need(
-                    f"Distance between reported and predicted ICP{index + 1} "
-                    "< 0.1 * (distance between reported ICP and SCP)"
-                ):
-                    assert icp_dist < 0.1 * scp_dist
+                assert icp_dist < 0.1 * scp_dist
 
 
 def calc_expfeatures_geom(sidd_xml, sidd_version="2.0.0"):
@@ -1029,6 +1036,7 @@ def calc_expfeatures_geom(sidd_xml, sidd_version="2.0.0"):
     ueast = wgs84.east(scp_llh)
     unor = wgs84.north(scp_llh)
     uup = wgs84.up(scp_llh)
+    assert meas_proj_elem.find("./{*}TimeCOAPoly") is not None
     scp_coa_time = sksidd.PolyCoef2dType().parse_elem(
         meas_proj_elem.find("./{*}TimeCOAPoly")
     )[0][0]
@@ -1174,75 +1182,3 @@ def calc_expfeatures_geom(sidd_xml, sidd_version="2.0.0"):
         raise ValueError(f"SIDD version {sidd_version} is not supported.")
 
     return exp_feat
-
-
-def calc_geodata_imagecorners(sidd_xml):
-    """Return approximate image corners (in ECEF) derived from a SIDD Measurement element (SIDD2.0, Sec. 3)"""
-    meas_proj_elem = sidd_xml.find("./{*}Measurement/*[1]")
-    ref_pt = sksidd.XyzType().parse_elem(
-        meas_proj_elem.find("./{*}ReferencePoint/{*}ECEF")
-    )
-    r_0, c_0 = sksidd.RowColDblType().parse_elem(
-        meas_proj_elem.find("./{*}ReferencePoint/{*}Point")
-    )
-    n_rows, n_cols = sksidd.RowColIntType().parse_elem(
-        sidd_xml.find("./{*}Measurement/{*}PixelFootprint")
-    )
-
-    def passthrough(*args):
-        return args
-
-    rc_to_sensor_coord = passthrough
-
-    if (ss_elem := meas_proj_elem.find("./{*}SampleSpacing")) is not None:
-        delta_r, delta_c = sksidd.RowColDblType().parse_elem(ss_elem)
-
-        def rc_to_sensor_grid_distance(r, c):
-            return delta_r * (r - r_0), delta_c * (c - c_0)
-
-        rc_to_sensor_coord = rc_to_sensor_grid_distance
-
-    sensor_coord_to_ecef = None
-    localname = lxml.etree.QName(meas_proj_elem).localname
-    if localname == "PlaneProjection":  # 3.2 - PGD Pixel to ECEF
-        p_pgd = ref_pt
-        r_pgd = sksidd.XyzType().parse_elem(
-            meas_proj_elem.find("./{*}ProductPlane/{*}RowUnitVector")
-        )
-        c_pgd = sksidd.XyzType().parse_elem(
-            meas_proj_elem.find("./{*}ProductPlane/{*}ColUnitVector")
-        )
-
-        def sensor_coord_to_ecef_pgd(d_r, d_c):
-            reshape_vec = np.append(np.ones(d_r.ndim, dtype=int), -1)
-            return (
-                p_pgd.reshape(reshape_vec)
-                + np.multiply.outer(d_r, r_pgd)
-                + np.multiply.outer(d_c, c_pgd)
-            )
-
-        sensor_coord_to_ecef = sensor_coord_to_ecef_pgd
-
-    elif localname == "GeographicProjection":  # 3.4 GGD Pixel to Geodetic
-        lon_0, lat_0, h_0 = wgs84.cartesian_to_geodetic(ref_pt)
-
-        def sensor_coord_to_ecef_ggd(d_r, d_c):
-            d_r_, d_c_, h_0_ = np.broadcast_arrays(d_r, d_c, h_0)
-            pt_llh = np.stack(
-                [
-                    np.radians(lon_0 + d_c_ / 3600),
-                    np.radians(lat_0 - d_r_ / 3600),
-                    h_0_,
-                ],
-                -1,
-            )
-            return wgs84.geodetic_to_cartesian(pt_llh)
-
-        sensor_coord_to_ecef = sensor_coord_to_ecef_ggd
-    else:
-        raise NotImplementedError(f"{localname} not supported.")
-
-    # use pixel-as-area
-    r_corner = np.array([-0.5, -0.5, n_rows - 0.5, n_rows - 0.5])
-    c_corner = np.array([-0.5, n_cols - 0.5, n_cols - 0.5, -0.5])
-    return sensor_coord_to_ecef(*rc_to_sensor_coord(r_corner, c_corner))
