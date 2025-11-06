@@ -1645,6 +1645,10 @@ def test_numbytesppp(crsd_con):
     nbppp = crsd_con.crsdroot.find("{*}Data/{*}Transmit/{*}NumBytesPPP")
     nbppp.text = str(int(nbppp.text) + 1)
     crsd_con.check("check_numbytesppp")
+    assert not crsd_con.failures()
+
+    nbppp.text = str(int(nbppp.text) - 2)
+    crsd_con.check("check_numbytesppp")
     assert crsd_con.failures()
 
 
@@ -1687,6 +1691,10 @@ def test_numbytespvp(crsd_con):
         pytest.skip("test not applicable with CRSDtx")
     nbpvp = crsd_con.crsdroot.find("{*}Data/{*}Receive/{*}NumBytesPVP")
     nbpvp.text = str(int(nbpvp.text) + 1)
+    crsd_con.check("check_numbytespvp")
+    assert not crsd_con.failures()
+
+    nbpvp.text = str(int(nbpvp.text) - 2)
     crsd_con.check("check_numbytespvp")
     assert crsd_con.failures()
 

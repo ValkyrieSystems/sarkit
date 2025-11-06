@@ -102,13 +102,15 @@ class Metadata:
 read_file_header = skcphd.read_file_header
 
 
-def _get_pxp_dtype(pxp_node):
+def _get_pxp_dtype(pxp_node, num_bytes):
     """Get PXP dtype.
 
     Parameters
     ----------
     pxp_elem: lxml.etree.Element
         The root element of the PXP data descriptor in the CRSD XML
+    num_bytes: int
+        Number of bytes in a single PXP set
 
     Returns
     -------
@@ -135,7 +137,9 @@ def _get_pxp_dtype(pxp_node):
     for pnode in pxp_node:
         handle_field(pnode)
 
-    dtype = np.dtype({"names": names, "formats": formats, "offsets": offsets})
+    dtype = np.dtype(
+        {"names": names, "formats": formats, "offsets": offsets, "itemsize": num_bytes}
+    )
     return dtype
 
 
@@ -151,7 +155,10 @@ def get_ppp_dtype(crsd_xmltree):
     -------
     numpy.dtype
     """
-    return _get_pxp_dtype(crsd_xmltree.find("./{*}PPP"))
+    return _get_pxp_dtype(
+        crsd_xmltree.find("./{*}PPP"),
+        int(crsd_xmltree.findtext("./{*}Data/{*}Transmit/{*}NumBytesPPP")),
+    )
 
 
 def get_pvp_dtype(crsd_xmltree):
@@ -166,7 +173,10 @@ def get_pvp_dtype(crsd_xmltree):
     -------
     numpy.dtype
     """
-    return _get_pxp_dtype(crsd_xmltree.find("./{*}PVP"))
+    return _get_pxp_dtype(
+        crsd_xmltree.find("./{*}PVP"),
+        int(crsd_xmltree.findtext("./{*}Data/{*}Receive/{*}NumBytesPVP")),
+    )
 
 
 class Reader:
@@ -818,7 +828,7 @@ class Writer:
         self._file_object.seek(
             self._channel_size_offsets[channel_identifier]["pvp_offset"], os.SEEK_CUR
         )
-        output_dtype = pvp_array.dtype.newbyteorder(">")
+        output_dtype = get_pvp_dtype(self._metadata.xmltree).newbyteorder(">")
         pvp_array.astype(output_dtype, copy=False).tofile(self._file_object)
 
     def write_ppp(self, sequence_identifier: str, ppp_array: npt.NDArray):
@@ -842,7 +852,7 @@ class Writer:
         self._file_object.seek(
             self._sequence_size_offsets[sequence_identifier]["ppp_offset"], os.SEEK_CUR
         )
-        output_dtype = ppp_array.dtype.newbyteorder(">")
+        output_dtype = get_ppp_dtype(self._metadata.xmltree).newbyteorder(">")
         ppp_array.astype(output_dtype, copy=False).tofile(self._file_object)
 
     def write_support_array(
