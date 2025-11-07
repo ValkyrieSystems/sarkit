@@ -26,7 +26,7 @@ def test_elementwrapper():
         del wrapped_siddroot["foo"]
 
     with pytest.raises(KeyError, match="foo"):
-        "foo" in wrapped_siddroot
+        assert "foo" in wrapped_siddroot
 
     with pytest.raises(KeyError, match="foo"):
         wrapped_siddroot.get("foo")
@@ -42,7 +42,7 @@ def test_elementwrapper():
         del wrapped_siddroot["@fooattr"]
 
     with pytest.raises(KeyError, match="@fooattr"):
-        "@fooattr" in wrapped_siddroot
+        assert "@fooattr" in wrapped_siddroot
 
     # Add descendant of repeatable
     wrapped_siddroot["ProductProcessing"].add("ProcessingModule")["ModuleName"] = (

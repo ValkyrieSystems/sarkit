@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Ability to read and write SIDD legend segments
 - Additional CPHD consistency checks and associated unit tests
+- SIDD Coordinate Transforms for GGD, CGD, and PFGD coordinate systems
 
 ### Changed
 - `jbpy` dependency updated
@@ -17,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - SICD consistency failure when optional ValidData polygon was omitted
+- Handling of CPHD and CRSD with padded PVP/PPP sets
 
 
 ## [1.2.0] - 2025-10-13
