@@ -52,6 +52,31 @@ def test_dtype_binary_format(dtype, format_str):
     assert skcphd.binary_format_string_to_dtype(format_str) == dtype
 
 
+def _last_field(structured_dtype):
+    dtype, offset = sorted(
+        ((dtype, offset) for (dtype, offset) in structured_dtype.fields.values()),
+        key=lambda x: x[1],
+    )[-1]
+
+    return dtype, offset
+
+
+def test_get_pvp_dtype():
+    etree = lxml.etree.parse(DATAPATH / "example-cphd-1.0.1.xml")
+    num_bytes_pvp = int(etree.find("./{*}Data/{*}NumBytesPVP").text)
+    pvp_dtype = skcphd.get_pvp_dtype(etree)
+
+    dtype, offset = _last_field(pvp_dtype)
+    assert pvp_dtype.itemsize == dtype.itemsize + offset  # example has no end pad
+
+    end_pad = 10
+    num_bytes_pvp += end_pad
+    etree.find("./{*}Data/{*}NumBytesPVP").text = str(num_bytes_pvp)
+    pvp_dtype2 = skcphd.get_pvp_dtype(etree)
+    dtype, offset = _last_field(pvp_dtype)
+    assert pvp_dtype2.itemsize == dtype.itemsize + offset + end_pad
+
+
 def _random_array(shape, dtype, reshape=True):
     rng = np.random.default_rng()
     retval = np.frombuffer(
@@ -102,6 +127,10 @@ def test_roundtrip(tmp_path, with_support_block):
     num_vectors = xmlhelp.load("./{*}Data/{*}Channel/{*}NumVectors")
     num_samples = xmlhelp.load(".//{*}Data/{*}Channel/{*}NumSamples")
     basis_signal = _random_array((num_vectors, num_samples), signal_dtype)
+
+    num_bytes_pvp = xmlhelp.load("./{*}Data/{*}NumBytesPVP")
+    num_bytes_pvp += 10  # force padding
+    xmlhelp.set("./{*}Data/{*}NumBytesPVP", num_bytes_pvp)
 
     pvps = np.zeros(num_vectors, dtype=skcphd.get_pvp_dtype(basis_etree))
     for f, (dt, _) in pvps.dtype.fields.items():

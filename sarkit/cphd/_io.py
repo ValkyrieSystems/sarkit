@@ -283,6 +283,7 @@ def get_pvp_dtype(cphd_xmltree):
     """
 
     pvp_node = cphd_xmltree.find("./{*}PVP")
+    num_bytes_pvp = int(cphd_xmltree.findtext("./{*}Data/{*}NumBytesPVP"))
 
     bytes_per_word = 8
     names = []
@@ -308,7 +309,14 @@ def get_pvp_dtype(cphd_xmltree):
         else:
             handle_field(pnode)
 
-    dtype = np.dtype(({"names": names, "formats": formats, "offsets": offsets}))
+    dtype = np.dtype(
+        {
+            "names": names,
+            "formats": formats,
+            "offsets": offsets,
+            "itemsize": num_bytes_pvp,
+        }
+    )
     return dtype
 
 
@@ -827,7 +835,7 @@ class Writer:
         self._file_object.seek(
             self._channel_size_offsets[channel_identifier]["pvp_offset"], os.SEEK_CUR
         )
-        output_dtype = pvp_array.dtype.newbyteorder(">")
+        output_dtype = get_pvp_dtype(self._metadata.xmltree).newbyteorder(">")
         pvp_array.astype(output_dtype, copy=False).tofile(self._file_object)
 
     def write_support_array(
