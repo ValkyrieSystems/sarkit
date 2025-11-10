@@ -14,15 +14,15 @@ This is an overview of basic SARkit functionality. For details, see the :doc:`re
 
 Installation
 ============
-Basic SARkit functionality relies on a small set of dependencies.
-Some features require additional dependencies which can be installed using packaging extras:
+SARkit can be installed using pip:
 
 .. code-block:: shell-session
 
-   $ python -m pip install sarkit  # Install core dependencies
-   $ python -m pip install sarkit[verification]  # Install verification dependencies
-   $ python -m pip install sarkit[all]  # Install all dependencies
+   $ python -m pip install sarkit
 
+.. note:: Earlier versions of SARkit provided some packaging extras for additional functionality.
+   The functionality and dependencies have since been moved to the core package, but the vestigial packaging extras are
+   maintained for compatibility.
 
 Reading and writing files
 =========================
@@ -447,8 +447,6 @@ To serialize and deserialize ElementWrappers, use :py:meth:`~sarkit.xmlhelp.Elem
 
 Consistency Checking
 ====================
-
-.. warning:: Consistency checkers require the ``verification`` :ref:`extra <installation>`.
 
 SARkit provides checkers that can be used to identify inconsistencies in SAR standards files.
 

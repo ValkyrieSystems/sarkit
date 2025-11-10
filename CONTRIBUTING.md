@@ -1,11 +1,7 @@
 # Contributing to SARkit
 
 SARkit is a Python package that is intended to simplify working with the NGA SAR
-standards. Basic SARkit functionality relies on a small set of dependencies.
-Some features require additional dependencies which can be installed using packaging extras:
-
-- verification: Uses additional dependencies to test compliance with the NGA standards.  These additional dependencies are not needed to work with the formats.
-- processing: Contains SAR processing that is not defined in a standard, but has proven to be useful and commonplace.
+standards.
 
 ## Getting started with development
 
@@ -41,18 +37,6 @@ into your environment with pip from the package root.
 python -m pip install .
 ```
 
-The packaging extras are listed below:
-
-- verification
-- processing
-- all
-- dev-lint
-- dev-test
-- dev
-
-Any union of these dependencies can be installed simultaneously by specifying
-the individual dependency groups in brackets, comma delimited.
-
 The following install command would install core dependencies and allow for linting and testing.
 mypy works best with an editable install.
 
@@ -63,10 +47,6 @@ python -m pip install --editable .[dev]
 It is recommended that, whenever possible, contributors install all optional
 dependencies so that all unit tests can be run prior to submission of a
 Pull Request.
-
-```bash
-python -m pip install --editable .[all,dev]
-```
 
 ### Running tests
 

@@ -24,15 +24,12 @@ dependencies = [
     "jbpy>=0.2.0, <0.5",
     "lxml>=5.1.0",
     "numpy>=1.25.0",
+    "shapely>=2.0.2",
 ]
 
 [project.optional-dependencies]
-verification = [
-    "shapely>=2.0.2",
-]
-all = [
-    "sarkit[verification]"
-]
+verification = []  # deps moved; maintain extra for compatibility
+all = []  # deps moved; maintain extra for compatibility
 dev-lint = [
     "ruff>=0.3.0",
     "mypy>=1.8.0",

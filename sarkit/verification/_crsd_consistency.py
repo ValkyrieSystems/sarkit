@@ -5,26 +5,18 @@ Functionality for verifying CRSD files for internal consistency.
 import collections.abc
 import copy
 import functools
-import logging
 import numbers
 import os
 import re
 from typing import Any, Optional
 
 import numpy as np
+import shapely.geometry as shg
 from lxml import etree
 
 import sarkit.crsd as skcrsd
 import sarkit.verification._consistency as con
 import sarkit.wgs84
-
-logger = logging.getLogger(__name__)
-
-try:
-    import shapely.geometry as shg
-except ImportError as ie:
-    logger.warning("'shapely' package not found. Some features may not work correctly.")
-    shg = con._ExceptionOnUse(ie)
 
 INVALID_CHAR_REGEX = re.compile(r"\W")
 
