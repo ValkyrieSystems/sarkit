@@ -17,17 +17,6 @@ from typing import Optional
 import numpy as np
 
 
-class _ExceptionOnUse:
-    """Class to help handle optional dependencies"""
-
-    def __init__(self, exception):
-        self._error_class = type(exception)
-        self._error_message = exception.msg
-
-    def __getattr__(self, name):
-        raise self._error_class(self._error_message)
-
-
 def skipif(condition_func, details=None):
     """Skip check if condition_func evalulates to ``True``
 

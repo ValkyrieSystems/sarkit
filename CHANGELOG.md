@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `jbpy` dependency updated
+- `verification` packaging extra functionality and dependencies moved to the base package
 
 ### Fixed
 - SICD consistency failure when optional ValidData polygon was omitted
