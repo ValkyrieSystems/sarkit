@@ -92,21 +92,21 @@ class NitfSecurityFields:
         """Construct from NITF security fields"""
         return cls(
             clas=field_group[f"{prefix}CLAS"].value,
-            clsy=field_group[f"{prefix}CLSY"].value,
-            code=field_group[f"{prefix}CODE"].value,
-            ctlh=field_group[f"{prefix}CTLH"].value,
-            rel=field_group[f"{prefix}REL"].value,
-            dctp=field_group[f"{prefix}DCTP"].value,
-            dcdt=field_group[f"{prefix}DCDT"].value,
-            dcxm=field_group[f"{prefix}DCXM"].value,
-            dg=field_group[f"{prefix}DG"].value,
-            dgdt=field_group[f"{prefix}DGDT"].value,
-            cltx=field_group[f"{prefix}CLTX"].value,
-            catp=field_group[f"{prefix}CATP"].value,
-            caut=field_group[f"{prefix}CAUT"].value,
-            crsn=field_group[f"{prefix}CRSN"].value,
-            srdt=field_group[f"{prefix}SRDT"].value,
-            ctln=field_group[f"{prefix}CTLN"].value,
+            clsy=field_group[f"{prefix}CLSY"].value or "",
+            code=field_group[f"{prefix}CODE"].value or "",
+            ctlh=field_group[f"{prefix}CTLH"].value or "",
+            rel=field_group[f"{prefix}REL"].value or "",
+            dctp=field_group[f"{prefix}DCTP"].value or "",
+            dcdt=field_group[f"{prefix}DCDT"].value or "",
+            dcxm=field_group[f"{prefix}DCXM"].value or "",
+            dg=field_group[f"{prefix}DG"].value or "",
+            dgdt=field_group[f"{prefix}DGDT"].value or "",
+            cltx=field_group[f"{prefix}CLTX"].value or "",
+            catp=field_group[f"{prefix}CATP"].value or "",
+            caut=field_group[f"{prefix}CAUT"].value or "",
+            crsn=field_group[f"{prefix}CRSN"].value or "",
+            srdt=field_group[f"{prefix}SRDT"].value or "",
+            ctln=field_group[f"{prefix}CTLN"].value or "",
         )
 
     def _set_nitf_fields(self, prefix: str, field_group: jbpy.core.Group) -> None:
@@ -158,10 +158,10 @@ class NitfFileHeaderPart:
         """Construct from a NITF File Header object"""
         return cls(
             ostaid=file_header["OSTAID"].value,
-            ftitle=file_header["FTITLE"].value,
+            ftitle=file_header["FTITLE"].value or "",
             security=NitfSecurityFields._from_nitf_fields("FS", file_header),
-            oname=file_header["ONAME"].value,
-            ophone=file_header["OPHONE"].value,
+            oname=file_header["ONAME"].value or "",
+            ophone=file_header["OPHONE"].value or "",
         )
 
     def __post_init__(self):
@@ -198,10 +198,10 @@ class NitfImSubheaderPart:
     def _from_header(cls, image_header: jbpy.core.ImageSubheader) -> Self:
         """Construct from a NITF ImageSubheader object"""
         return cls(
-            tgtid=image_header["TGTID"].value,
-            iid2=image_header["IID2"].value,
+            tgtid=image_header["TGTID"].value or "",
+            iid2=image_header["IID2"].value or "",
             security=NitfSecurityFields._from_nitf_fields("IS", image_header),
-            isorce=image_header["ISORCE"].value,
+            isorce=image_header["ISORCE"].value or "",
             icom=[val.value for val in image_header.find_all("ICOM\\d+")],  # type: ignore  # all ICOM should have value
         )
 

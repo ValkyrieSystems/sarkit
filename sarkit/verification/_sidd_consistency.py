@@ -700,11 +700,11 @@ class SiddConsistency(con.ConsistencyChecker):
                             == irepband
                         )
                     with self.need("ISUBCAT is space-filled"):
-                        assert imseg["subheader"][f"ISUBCAT{idx + 1:05d}"].value == ""
+                        assert not imseg["subheader"][f"ISUBCAT{idx + 1:05d}"].value
                     with self.need('IFC is "N"'):
                         assert imseg["subheader"][f"IFC{idx + 1:05d}"].value == "N"
-                    with self.need("IREPBAND is space-filled"):
-                        assert imseg["subheader"][f"IMFLT{idx + 1:05d}"].value == ""
+                    with self.need("IMFLT is space-filled"):
+                        assert not imseg["subheader"][f"IMFLT{idx + 1:05d}"].value
                     with self.need("NLUTS consistent with PixelType"):
                         assert (
                             imseg["subheader"][f"NLUTS{idx + 1:05d}"].value
