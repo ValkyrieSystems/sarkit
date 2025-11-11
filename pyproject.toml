@@ -21,7 +21,7 @@ classifiers = [
 dynamic = ["version"]
 
 dependencies = [
-    "jbpy>=0.2.0, <0.4",
+    "jbpy>=0.2.0, <0.5",
     "lxml>=5.1.0",
     "numpy>=1.25.0",
     "shapely>=2.0.2",

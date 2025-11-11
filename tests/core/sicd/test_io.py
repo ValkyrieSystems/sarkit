@@ -198,7 +198,7 @@ def test_nitfheaderfields_from_header():
     assert fields.security.catp == header["FSCATP"].value
     assert fields.security.caut == header["FSCAUT"].value
     assert fields.security.crsn == header["FSCRSN"].value
-    assert fields.security.srdt == header["FSSRDT"].value
+    assert fields.security.srdt == ""  # header val is None
     assert fields.security.ctln == header["FSCTLN"].value
     assert fields.oname == header["ONAME"].value
     assert fields.ophone == header["OPHONE"].value
@@ -245,7 +245,7 @@ def test_nitfimagesegmentfields_from_header():
     assert fields.security.catp == header["ISCATP"].value
     assert fields.security.caut == header["ISCAUT"].value
     assert fields.security.crsn == header["ISCRSN"].value
-    assert fields.security.srdt == header["ISSRDT"].value
+    assert fields.security.srdt == ""  # header val is None
     assert fields.security.ctln == header["ISCTLN"].value
 
 
@@ -294,7 +294,7 @@ def test_nitfdesegmentfields_from_header():
     assert fields.security.catp == header["DESCATP"].value
     assert fields.security.caut == header["DESCAUT"].value
     assert fields.security.crsn == header["DESCRSN"].value
-    assert fields.security.srdt == header["DESSRDT"].value
+    assert fields.security.srdt == ""  # header val is None
     assert fields.security.ctln == header["DESCTLN"].value
 
 
