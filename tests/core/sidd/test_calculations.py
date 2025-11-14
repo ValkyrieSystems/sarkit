@@ -210,9 +210,15 @@ def test_coordinate_transform():
     np.testing.assert_almost_equal(pixel, pixel_rt)
 
 
-def test_angles():
-    sidd_xmlfile = DATAPATH / "example-sidd-3.0.0.xml"
-    sidd_xmltree = lxml.etree.parse(sidd_xmlfile)
+@pytest.mark.parametrize(
+    "siddxml, convention",
+    (
+        (DATAPATH / "example-sidd-2.0.0.xml", "2.0"),
+        (DATAPATH / "example-sidd-3.0.0.xml", "3.0"),
+    ),
+)
+def test_angles(siddxml, convention):
+    sidd_xmltree = lxml.etree.parse(siddxml)
     sidd_helper = sksidd.XmlHelper(sidd_xmltree)
 
     tcoa_poly = sidd_helper.load("./{*}Measurement/{*}PlaneProjection/{*}TimeCOAPoly")
@@ -230,6 +236,7 @@ def test_angles():
         sidd_helper.load(
             "./{*}Measurement/{*}PlaneProjection/{*}ProductPlane/{*}ColUnitVector"
         ),
+        convention=convention,
     )
     # Regression test against canned data
     col = "./{*}ExploitationFeatures/{*}Collection/"
