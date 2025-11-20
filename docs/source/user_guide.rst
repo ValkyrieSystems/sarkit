@@ -20,6 +20,12 @@ SARkit can be installed using pip:
 
    $ python -m pip install sarkit
 
+SARkit can also be installed using conda and the conda-forge channel:
+
+.. code-block:: shell-session
+
+   $ conda install --channel conda-forge sarkit
+
 .. note:: Earlier versions of SARkit provided some packaging extras for additional functionality.
    The functionality and dependencies have since been moved to the core package, but the vestigial packaging extras are
    maintained for compatibility.
