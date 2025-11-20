@@ -55,22 +55,16 @@ _PIXEL_INFO = {
 }
 
 
-def _unit(vec, axis=-1):
-    return vec / np.linalg.norm(vec, axis=axis, keepdims=True)
-
-
 def per_image(method):
     method.per_image = True
     return method
 
 
-def _get_version(xml_tree):
-    return lxml.etree.QName(xml_tree.getroot()).namespace.split(":")[-1]
-
-
 def _is_v1(con_obj) -> bool:
     """Return ``True`` if first SIDD XML tree is v1.0"""
-    return _get_version(con_obj.xml_trees[0]) == "1.0.0"
+    return (
+        lxml.etree.QName(con_obj.xml_trees[0].getroot()).namespace == "urn:SIDD:1.0.0"
+    )
 
 
 def _get_corners(xmlhelp):
@@ -937,7 +931,7 @@ class SiddConsistency(con.ConsistencyChecker):
 
         expfeatures_elem = xml_tree.find("./{*}ExploitationFeatures")
         with self.precondition():
-            expected_geom = calc_expfeatures_geom(xml_tree, _get_version(xml_tree))
+            expected_geom = calc_expfeatures_geom(xml_tree)
             collection_geom = {
                 k.removeprefix("{*}Collection/"): v
                 for k, v in expected_geom.items()
@@ -1018,159 +1012,46 @@ class SiddConsistency(con.ConsistencyChecker):
                 assert icp_dist < 0.1 * scp_dist
 
 
-def calc_expfeatures_geom(sidd_xml, sidd_version="2.0.0"):
+def calc_expfeatures_geom(sidd_xml):
     """ExploitationFeatures Geometry (SIDD2.0, Sec. 7.1-7.5)"""
-    meas_proj_elem = sidd_xml.find("./{*}Measurement/*[1]")
-    scp = sksidd.XyzType().parse_elem(
-        meas_proj_elem.find("./{*}ReferencePoint/{*}ECEF")
-    )
-    scp_llh = wgs84.cartesian_to_geodetic(scp)
-    ueast = wgs84.east(scp_llh)
-    unor = wgs84.north(scp_llh)
-    uup = wgs84.up(scp_llh)
-    assert meas_proj_elem.find("./{*}TimeCOAPoly") is not None
-    scp_coa_time = sksidd.PolyCoef2dType().parse_elem(
-        meas_proj_elem.find("./{*}TimeCOAPoly")
-    )[0][0]
-    arp_poly = sksidd.XyzPolyType().parse_elem(
-        sidd_xml.find("./{*}Measurement/{*}ARPPoly")
-    )
-
-    localname = lxml.etree.QName(meas_proj_elem).localname
-    if localname == "PlaneProjection":
-        r_hat = sksidd.XyzType().parse_elem(
-            meas_proj_elem.find("./{*}ProductPlane/{*}RowUnitVector")
-        )
-        c_hat = sksidd.XyzType().parse_elem(
-            meas_proj_elem.find("./{*}ProductPlane/{*}ColUnitVector")
-        )
-    elif localname == "GeographicProjection":
-        r_hat = -unor
-        c_hat = ueast
-    else:
-        raise NotImplementedError(f"{localname} not supported.")
+    sidd_xh = sksidd.XmlHelper(sidd_xml)
+    tcoa_poly = sidd_xh.load("./{*}Measurement/*[1]/{*}TimeCOAPoly")
+    assert tcoa_poly is not None
+    scp = sidd_xh.load("./{*}Measurement/*[1]/{*}ReferencePoint/{*}ECEF")
+    scp_coa_time = tcoa_poly[0][0]
+    arp_poly = sidd_xh.load("./{*}Measurement/{*}ARPPoly")
 
     p_a = npp.polyval(scp_coa_time, arp_poly)
     v_a = npp.polyval(scp_coa_time, npp.polyder(arp_poly))
-    va_hat = _unit(v_a)
-    p_0 = scp
-    zg_hat = uup
 
-    # 7.2 - Slant Plane Definition
-    xs_hat = _unit(p_a - p_0)
-    n_hat = _unit(np.cross(xs_hat, v_a))
-    zs_hat = np.sign(np.dot(p_0, n_hat)) * n_hat
-    ys_hat = np.cross(zs_hat, xs_hat)
+    scp_px = sksidd.ecef_to_pixel(sidd_xml, scp)
+    r, c = sksidd.pixel_to_ecef(sidd_xml, scp_px + [[1, 0], [0, 1]]) - scp
+    r_hat = r / np.linalg.norm(r)
+    c_hat = c / np.linalg.norm(c)
 
-    # 7.2.1 - Image Plane Definition
-    z_hat = np.cross(r_hat, c_hat)
-
-    # 7.5.1 - Azimuth Angle
-    azim_ang = np.arctan2(np.dot(ueast, xs_hat), np.dot(unor, xs_hat))
-
-    # 7.5.2 - Slope Angle
-    slope_ang = np.arccos(np.dot(zs_hat, zg_hat))
-
-    # 7.5.3 - Doppler Cone Angle
-    doppler_cone_ang = np.arccos(np.dot(-xs_hat, va_hat))
-
-    # 7.5.4 - Squint
-    # look direction seems to be omitted from the calculation in the spec but is referenced in the table
-    uleft = _unit(np.cross(p_a, v_a))
-    look = +1 if np.dot(uleft, xs_hat) < 0 else -1
-
-    zp_hat = _unit(p_a)
-    xs_prime = xs_hat - np.dot(xs_hat, zp_hat) * zp_hat
-    va_prime = va_hat - np.dot(va_hat, zp_hat) * zp_hat
-    squint_ang = look * np.arccos(-np.dot(_unit(xs_prime), _unit(va_prime)))
-
-    # 7.5.5 - Grazing Angle
-    graze_ang = np.arcsin(np.dot(xs_hat, zg_hat))
-
-    # 7.5.6 - Tilt Angle
-    tilt_ang = np.arctan(np.dot(zg_hat, ys_hat) / np.dot(zg_hat, zs_hat))
-
-    # 7.6 Phenomenology
-    # 7.6.1 - Shadow
-    s = zg_hat - xs_hat / np.dot(xs_hat, zg_hat)
-    s_prime = s - np.dot(s, z_hat) / np.dot(zs_hat, z_hat) * zs_hat
-    shadow_ang2 = np.arctan2(np.dot(c_hat, s_prime), np.dot(r_hat, s_prime))
-    shadow_ang3 = np.arctan2(np.dot(r_hat, s_prime), np.dot(c_hat, s_prime))
-    shadow_mag = np.sqrt(np.dot(s_prime, s_prime))
-
-    # 7.6.2 - Layover
-    L = z_hat - zs_hat / np.dot(zs_hat, z_hat)  # noqa N806
-    layover_ang2 = np.arctan2(np.dot(c_hat, L), np.dot(r_hat, L))
-    layover_ang3 = np.arctan2(np.dot(r_hat, L), np.dot(c_hat, L))
-    layover_mag = np.sqrt(np.dot(L, L))
-
-    # 7.6.3 - North Direction
-    n_prime = unor - np.dot(unor, z_hat) / np.dot(zs_hat, z_hat) * zs_hat
-    north_ang2 = np.arctan2(np.dot(c_hat, n_prime), np.dot(r_hat, n_prime))
-    north_ang3 = np.arctan2(np.dot(r_hat, n_prime), np.dot(c_hat, n_prime))
-
-    # 7.6.5 - Multi-Path
-    m = xs_hat - np.dot(xs_hat, z_hat) / np.dot(zs_hat, z_hat) * zs_hat
-    multipath_ang2 = np.arctan2(np.dot(c_hat, m), np.dot(r_hat, m))
-    multipath_ang3 = np.arctan2(np.dot(r_hat, m), np.dot(c_hat, m))
-
-    # 7.6.6 - Ground Track (Image Track) Angle
-    t = v_a - np.dot(v_a, z_hat) * z_hat
-    groundtrack_ang2 = np.arctan2(np.dot(c_hat, t), np.dot(r_hat, t))
-    groundtrack_ang3 = np.arctan2(np.dot(r_hat, t), np.dot(c_hat, t))
-
-    if sidd_version in ("1.0.0", "2.0.0"):
-        exp_feat = {
-            "{*}Collection/{*}Geometry/{*}Azimuth": np.degrees(azim_ang) % 360,
-            "{*}Collection/{*}Geometry/{*}Slope": np.degrees(slope_ang),
-            "{*}Collection/{*}Geometry/{*}Squint": np.degrees(squint_ang),
-            "{*}Collection/{*}Geometry/{*}Graze": np.degrees(graze_ang),
-            "{*}Collection/{*}Geometry/{*}Tilt": np.degrees(tilt_ang),
-            "{*}Collection/{*}Geometry/{*}DopplerConeAngle": np.degrees(
-                doppler_cone_ang
-            ),
-            "{*}Collection/{*}Phenomenology/{*}Shadow/{*}Angle": np.degrees(
-                shadow_ang2
-            ),
-            "{*}Collection/{*}Phenomenology/{*}Shadow/{*}Magnitude": shadow_mag,
-            "{*}Collection/{*}Phenomenology/{*}Layover/{*}Angle": np.degrees(
-                layover_ang2
-            ),
-            "{*}Collection/{*}Phenomenology/{*}Layover/{*}Magnitude": layover_mag,
-            "{*}Collection/{*}Phenomenology/{*}MultiPath": np.degrees(multipath_ang2),
-            "{*}Collection/{*}Phenomenology/{*}GroundTrack": np.degrees(
-                groundtrack_ang2
-            ),
-            "{*}Product/{*}North": np.degrees(north_ang2),
-        }
-
-    elif sidd_version == "3.0.0":
-        exp_feat = {
-            "{*}Collection/{*}Geometry/{*}Azimuth": np.degrees(azim_ang) % 360,
-            "{*}Collection/{*}Geometry/{*}Slope": np.degrees(slope_ang),
-            "{*}Collection/{*}Geometry/{*}Squint": np.degrees(squint_ang),
-            "{*}Collection/{*}Geometry/{*}Graze": np.degrees(graze_ang),
-            "{*}Collection/{*}Geometry/{*}Tilt": np.degrees(tilt_ang),
-            "{*}Collection/{*}Geometry/{*}DopplerConeAngle": np.degrees(
-                doppler_cone_ang
-            ),
-            "{*}Collection/{*}Phenomenology/{*}Shadow/{*}Angle": np.degrees(shadow_ang3)
-            % 360,
-            "{*}Collection/{*}Phenomenology/{*}Shadow/{*}Magnitude": shadow_mag,
-            "{*}Collection/{*}Phenomenology/{*}Layover/{*}Angle": np.degrees(
-                layover_ang3
-            )
-            % 360,
-            "{*}Collection/{*}Phenomenology/{*}Layover/{*}Magnitude": layover_mag,
-            "{*}Collection/{*}Phenomenology/{*}MultiPath": np.degrees(multipath_ang3)
-            % 360,
-            "{*}Collection/{*}Phenomenology/{*}GroundTrack": np.degrees(
-                groundtrack_ang3
-            )
-            % 360,
-            "{*}Product/{*}North": np.degrees(north_ang3) % 360,
-        }
-    else:
-        raise ValueError(f"SIDD version {sidd_version} is not supported.")
-
-    return exp_feat
+    sidd_versions = list(sksidd.VERSION_INFO)
+    this_ns = lxml.etree.QName(sidd_xml.getroot()).namespace
+    pre_3 = sidd_versions.index(this_ns) < sidd_versions.index("urn:SIDD:3.0.0")
+    angles = sksidd.compute_angles(
+        scp,
+        p_a,
+        v_a,
+        r_hat,
+        c_hat,
+        convention="2.0" if pre_3 else "3.0",
+    )
+    return {
+        "{*}Collection/{*}Geometry/{*}Azimuth": angles.Azimuth,
+        "{*}Collection/{*}Geometry/{*}Slope": angles.Slope,
+        "{*}Collection/{*}Geometry/{*}Squint": angles.Squint,
+        "{*}Collection/{*}Geometry/{*}Graze": angles.Graze,
+        "{*}Collection/{*}Geometry/{*}Tilt": angles.Tilt,
+        "{*}Collection/{*}Geometry/{*}DopplerConeAngle": angles.DopplerCone,
+        "{*}Collection/{*}Phenomenology/{*}Shadow/{*}Angle": angles.Shadow,
+        "{*}Collection/{*}Phenomenology/{*}Shadow/{*}Magnitude": angles.ShadowMagnitude,
+        "{*}Collection/{*}Phenomenology/{*}Layover/{*}Angle": angles.Layover,
+        "{*}Collection/{*}Phenomenology/{*}Layover/{*}Magnitude": angles.LayoverMagnitude,
+        "{*}Collection/{*}Phenomenology/{*}MultiPath": angles.MultiPath,
+        "{*}Collection/{*}Phenomenology/{*}GroundTrack": angles.GroundTrack,
+        "{*}Product/{*}North": angles.North,
+    }

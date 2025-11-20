@@ -498,6 +498,7 @@ class XsdHelper(skxml.XsdHelper):
         }
         sidd_2_and_3 = {
             "{urn:SFA:1.2.0}PointType": SfaPointType(),
+            "{urn:SICommon:1.0}AngleMagnitudeType": AngleMagnitudeType(),
             "{urn:SICommon:1.0}AngleZeroToExclusive360MagnitudeType": AngleMagnitudeType(),
             "{urn:SICommon:1.0}LatLonRestrictionType": LatLonType(),
             "{urn:SICommon:1.0}LatLonType": LatLonType(),
