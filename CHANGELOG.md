@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Option to use SIDD v1.0/2.0 image angle convention in `sarkit.sidd.compute_angles`
+
+### Fixed
+- SIDD v2.0 ANG_MAG types properly transcode to `AngleMagnitudeType`
+
 
 ## [1.3.0] - 2025-11-11
 
