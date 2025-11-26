@@ -59,28 +59,8 @@ def lint(session):
 
 @nox.session
 def test(session):
-    for next_session in ("test_core", "test_processing"):
-        session.notify(next_session)
-
-
-@nox.session
-def test_core(session):
     session.run_install("pdm", "sync", "--prod", "-G", "dev-test", external=True)
     session.run("pytest", "tests/core", "tests/verification")
-
-
-@nox.session
-def test_processing(session):
-    session.run_install(
-        "pdm",
-        "sync",
-        "-G",
-        "dev-test",
-        "-G",
-        "processing",
-        external=True,
-    )
-    session.run("pytest", "tests/processing")
 
 
 @nox.session
