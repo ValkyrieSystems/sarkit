@@ -198,6 +198,7 @@ def main(args=None):
                 diff.diff_files
                 or {
                     pathlib.Path(__file__).name,
+                    "manual-syntax-only-sicd-1.0.1.xml",
                     "manual-syntax-only-sicd-1.1.0.xml",
                     "stubs",
                 }.symmetric_difference(diff.left_only)
