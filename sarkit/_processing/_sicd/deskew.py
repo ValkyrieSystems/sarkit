@@ -1,5 +1,7 @@
 """
 Deskew (apply phase polynomial) to SICDs.
+
+Developed with numba>=0.59.1
 """
 
 import copy
