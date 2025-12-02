@@ -38,16 +38,14 @@ def docs(session):
 
 @nox.session
 def format(session):
-    session.run_install("pdm", "sync", "--prod", "-G", "dev-lint", external=True)
+    session.run_install("pdm", "sync", "-G", "dev-lint", external=True)
     session.run("ruff", "check", "--fix")
     session.run("ruff", "format")
 
 
 @nox.session
 def lint(session):
-    session.run_install(
-        "pdm", "sync", "--prod", "-G", "dev-lint", "-G", "all", external=True
-    )
+    session.run_install("pdm", "sync", "-G", "dev-lint", "-G", "all", external=True)
     session.run("ruff", "check")
     session.run(
         "ruff",
@@ -59,14 +57,20 @@ def lint(session):
 
 @nox.session
 def test(session):
-    for next_session in ("test_core", "test_processing"):
+    for next_session in ("test_core", "test_core_dependencies", "test_processing"):
         session.notify(next_session)
 
 
 @nox.session
 def test_core(session):
-    session.run_install("pdm", "sync", "--prod", "-G", "dev-test", external=True)
+    session.run_install("pdm", "sync", external=True)
     session.run("pytest", "tests/core", "tests/verification")
+
+
+@nox.session
+def test_core_dependencies(session):
+    session.run_install("pdm", "sync", "--prod", external=True)
+    session.run("python", "tests/core/test_dependencies.py")
 
 
 @nox.session

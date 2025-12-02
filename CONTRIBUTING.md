@@ -38,10 +38,10 @@ python -m pip install .
 ```
 
 The following install command would install core dependencies and allow for linting and testing.
-mypy works best with an editable install.
+mypy works best with an editable install.  Requires pip >= 25.1
 
 ```bash
-python -m pip install --editable .[dev]
+python -m pip install --editable . --group dev
 ```
 
 It is recommended that, whenever possible, contributors install all optional
