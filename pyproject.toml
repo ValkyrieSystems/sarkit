@@ -17,6 +17,7 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
 ]
 dynamic = ["version"]
 
@@ -34,9 +35,6 @@ all = []  # deps moved; maintain extra for compatibility
 [dependency-groups]
 test = [
     "nox>=2024.3.2",
-]
-processing = [
-    "numba>=0.59.1",
 ]
 doc = [
     "sphinx>=7.2.6",
