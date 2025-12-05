@@ -9,7 +9,15 @@ documents that define the Sensor Independent Complex Data (SICD) format.
 Supported Versions
 ==================
 
-* `SICD 1.1.0`_
+.. note:: As of 2025-10-09, there are no links to any version 1.0.x schema files on the NSG standards registry.
+
+   To get around this limitation, SARkit pulled SICD schemas from other sources.
+   Consult READMEs in the `SICD schema source directory <https://github.com/ValkyrieSystems/sarkit/tree/main/sarkit/sicd/schemas>`_
+   for information on their provenance.
+
+
+* `SICD 1.0`_
+* `SICD 1.1`_
 * `SICD 1.2.1`_
 * `SICD 1.3.0`_
 * `SICD 1.4.0`_
@@ -98,8 +106,33 @@ CLI Utilities
 References
 ==========
 
-SICD 1.1.0
-----------
+SICD 1.0
+--------
+.. [NGA.STND.0024-1_1.0] National Center for Geospatial Intelligence Standards,
+   "Sensor Independent Complex Data (SICD), Vol. 1, Design & Implementation Description Document,
+   Version 1.0", 2011.
+   https://nsgreg.nga.mil/doc/view?i=2226
+
+.. [NGA.STND.0024-2_1.0] National Center for Geospatial Intelligence Standards,
+   "Sensor Independent Complex Data (SICD), Vol. 2, File Format Description Document,
+   Version 1.0", 2011.
+   https://nsgreg.nga.mil/doc/view?i=2202
+
+.. [NGA.STND.0024-3_1.0] National Center for Geospatial Intelligence Standards,
+   "Sensor Independent Complex Data (SICD), Vol. 3, Image Projections Description Document,
+   Version 1.0", 2011.
+   https://nsgreg.nga.mil/doc/view?i=2227
+
+.. [SICD_schema_V1.0.1_2013_02_25.xsd] The schema documented in Table 1-1 of Volume 1 calls out
+   SICD_schema_V1.0_2011_06_10.xsd. This schema is not available in NSG Standards Registry or in
+   any commonly referenced libraries like six-library or sarpy.  As such, a version that is
+   available in both six-library and sarpy will be used in sarkit. Furthermore, the version 1.0.1
+   was selected as it was released in 2013 containing bugfixes only. SICD Volume 1, Table 1-1 was
+   not revised at the time to reflect the updated schema.
+
+
+SICD 1.1
+--------
 .. [NGA.STND.0024-1_1.1] National Center for Geospatial Intelligence Standards,
    "Sensor Independent Complex Data (SICD), Vol. 1, Design & Implementation Description Document,
    Version 1.1", 2014.
