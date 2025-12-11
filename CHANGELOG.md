@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Option to use SIDD v1.0/2.0 image angle convention in `sarkit.sidd.compute_angles`
 - Support for Python 3.14
+- `sarkit.wgs84.GM` constant
 
 ### Fixed
 - SIDD v2.0 ANG_MAG types properly transcode to `AngleMagnitudeType`
