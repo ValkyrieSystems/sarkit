@@ -24,6 +24,9 @@ Constants
    * - ``NOMINAL_MEAN_ANGULAR_VELOCITY``
      - nominal mean angular velocity of the earth
      - rad / s
+   * - ``GM``
+     - geocentric gravitational constant (mass of Earth's atmosphere included)
+     - m^3/s^2
 
 .. list-table:: WGS-84 Ellipsoid Derived Geometric Constants
    :header-rows: 1
@@ -87,6 +90,7 @@ import numpy.typing as npt
 SEMI_MAJOR_AXIS = A = 6378137.0  # meters
 FLATTENING_FACTOR = 298.257223563
 NOMINAL_MEAN_ANGULAR_VELOCITY = 7.292115e-5  # rad/s
+GM = 3.986004418e14  # m^3/s^2
 
 # Derived Parameters
 FLATTENING_REDUCED = F = 1 / FLATTENING_FACTOR
