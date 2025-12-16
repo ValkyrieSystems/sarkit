@@ -2,8 +2,8 @@
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
    elementFormDefault="qualified"
    attributeFormDefault="unqualified"
-   targetNamespace="urn:SICD:1.2.1"
-   xmlns="urn:SICD:1.2.1">
+   targetNamespace="urn:SICD:1.0.1"
+   xmlns="urn:SICD:1.0.1">
 
 <!-- SICD TYPES -->
 
@@ -287,20 +287,12 @@
       <xs:restriction base="xs:string">
          <xs:enumeration value="V:V"/>
          <xs:enumeration value="V:H"/>
-         <xs:enumeration value="V:RHC"/>
-         <xs:enumeration value="V:LHC"/>
          <xs:enumeration value="H:V"/>
          <xs:enumeration value="H:H"/>
-         <xs:enumeration value="H:RHC"/>
-         <xs:enumeration value="H:LHC"/>
          <xs:enumeration value="RHC:RHC"/>
          <xs:enumeration value="RHC:LHC"/>
-         <xs:enumeration value="RHC:V"/>
-         <xs:enumeration value="RHC:H"/>
          <xs:enumeration value="LHC:RHC"/>
          <xs:enumeration value="LHC:LHC"/>
-         <xs:enumeration value="LHC:V"/>
-         <xs:enumeration value="LHC:H"/>
          <xs:enumeration value="OTHER"/>
          <xs:enumeration value="UNKNOWN"/>
       </xs:restriction>
@@ -988,7 +980,7 @@
                   <xs:element name="TypeID" type="xs:string"/>
                   <xs:element name="CurrentIndex" type="xs:int" minOccurs="0"/>
                   <xs:element name="NumMatchCollections" type="xs:int"/>
-                  <xs:element name="MatchCollection" minOccurs="0" maxOccurs="unbounded">
+                  <xs:element name="MatchCollection" maxOccurs="unbounded">
                      <xs:complexType>
                         <xs:sequence>
                            <xs:element name="CoreName" type="xs:string"/>
