@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for Python 3.14
 - `sarkit.wgs84.GM` constant
 
+### Changed
+- `jbpy` dependency updated
+
 ### Fixed
 - SIDD v2.0 ANG_MAG types properly transcode to `AngleMagnitudeType`
 

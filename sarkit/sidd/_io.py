@@ -811,19 +811,18 @@ def jbp_from_nitf_metadata(metadata: NitfMetadata) -> jbpy.Jbp:
         xml_helper = sksidd.XmlHelper(imageinfo.xmltree)
 
         deseg = jbp["DataExtensionSegments"][desidx]
+        deseg.set_subheader(jbpy.des_subheader_factory("XML_DATA_CONTENT", 1))
         subhdr = deseg["subheader"]
-        subhdr["DESID"].value = "XML_DATA_CONTENT"
-        subhdr["DESVER"].value = 1
         imageinfo.de_subheader_part.security._set_nitf_fields("DES", subhdr)
         subhdr["DESSHL"].value = 773
-        subhdr["DESSHF"]["DESCRC"].value = 99999
-        subhdr["DESSHF"]["DESSHFT"].value = "XML"
-        subhdr["DESSHF"]["DESSHDT"].value = now_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-        subhdr["DESSHF"]["DESSHRP"].value = imageinfo.de_subheader_part.desshrp
-        subhdr["DESSHF"]["DESSHSI"].value = siddconst.SPECIFICATION_IDENTIFIER
-        subhdr["DESSHF"]["DESSHSV"].value = siddconst.VERSION_INFO[xmlns]["version"]
-        subhdr["DESSHF"]["DESSHSD"].value = siddconst.VERSION_INFO[xmlns]["date"]
-        subhdr["DESSHF"]["DESSHTN"].value = xmlns
+        subhdr["DESCRC"].value = 99999
+        subhdr["DESSHFT"].value = "XML"
+        subhdr["DESSHDT"].value = now_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+        subhdr["DESSHRP"].value = imageinfo.de_subheader_part.desshrp
+        subhdr["DESSHSI"].value = siddconst.SPECIFICATION_IDENTIFIER
+        subhdr["DESSHSV"].value = siddconst.VERSION_INFO[xmlns]["version"]
+        subhdr["DESSHSD"].value = siddconst.VERSION_INFO[xmlns]["date"]
+        subhdr["DESSHTN"].value = xmlns
 
         if xmlns == "urn:SIDD:1.0.0":
             corners_path = "{*}GeographicAndTarget/{*}GeographicCoverage/{*}Footprint"
@@ -833,10 +832,10 @@ def jbp_from_nitf_metadata(metadata: NitfMetadata) -> jbpy.Jbp:
         desshlpg = ""
         for icp_lat, icp_lon in itertools.chain(icp, [icp[0]]):
             desshlpg += f"{icp_lat:0=+12.8f}{icp_lon:0=+13.8f}"
-        subhdr["DESSHF"]["DESSHLPG"].value = desshlpg
-        subhdr["DESSHF"]["DESSHLI"].value = imageinfo.de_subheader_part.desshli
-        subhdr["DESSHF"]["DESSHLIN"].value = imageinfo.de_subheader_part.desshlin
-        subhdr["DESSHF"]["DESSHABS"].value = imageinfo.de_subheader_part.desshabs
+        subhdr["DESSHLPG"].value = desshlpg
+        subhdr["DESSHLI"].value = imageinfo.de_subheader_part.desshli
+        subhdr["DESSHLIN"].value = imageinfo.de_subheader_part.desshlin
+        subhdr["DESSHABS"].value = imageinfo.de_subheader_part.desshabs
 
         xml_bytes = lxml.etree.tostring(imageinfo.xmltree)
         deseg["DESDATA"].size = len(xml_bytes)
@@ -847,27 +846,26 @@ def jbp_from_nitf_metadata(metadata: NitfMetadata) -> jbpy.Jbp:
     # Product Support XML DES
     for prodinfo in metadata.product_support_xmls:
         deseg = jbp["DataExtensionSegments"][desidx]
+        deseg.set_subheader(jbpy.des_subheader_factory("XML_DATA_CONTENT", 1))
         subhdr = deseg["subheader"]
-        sidd_uh = jbp["DataExtensionSegments"][0]["subheader"]["DESSHF"]
+        sidd_uh = jbp["DataExtensionSegments"][0]["subheader"]
 
         xmlns = lxml.etree.QName(prodinfo.xmltree.getroot()).namespace or ""
 
-        subhdr["DESID"].value = "XML_DATA_CONTENT"
-        subhdr["DESVER"].value = 1
         prodinfo.de_subheader_part.security._set_nitf_fields("DES", subhdr)
         subhdr["DESSHL"].value = 773
-        subhdr["DESSHF"]["DESCRC"].value = 99999
-        subhdr["DESSHF"]["DESSHFT"].value = "XML"
-        subhdr["DESSHF"]["DESSHDT"].value = now_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-        subhdr["DESSHF"]["DESSHRP"].value = prodinfo.de_subheader_part.desshrp
-        subhdr["DESSHF"]["DESSHSI"].value = sidd_uh["DESSHSI"].value
-        subhdr["DESSHF"]["DESSHSV"].value = "v" + sidd_uh["DESSHSV"].value
-        subhdr["DESSHF"]["DESSHSD"].value = sidd_uh["DESSHSD"].value
-        subhdr["DESSHF"]["DESSHTN"].value = xmlns
-        subhdr["DESSHF"]["DESSHLPG"].value = ""
-        subhdr["DESSHF"]["DESSHLI"].value = prodinfo.de_subheader_part.desshli
-        subhdr["DESSHF"]["DESSHLIN"].value = prodinfo.de_subheader_part.desshlin
-        subhdr["DESSHF"]["DESSHABS"].value = prodinfo.de_subheader_part.desshabs
+        subhdr["DESCRC"].value = 99999
+        subhdr["DESSHFT"].value = "XML"
+        subhdr["DESSHDT"].value = now_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+        subhdr["DESSHRP"].value = prodinfo.de_subheader_part.desshrp
+        subhdr["DESSHSI"].value = sidd_uh["DESSHSI"].value
+        subhdr["DESSHSV"].value = "v" + sidd_uh["DESSHSV"].value
+        subhdr["DESSHSD"].value = sidd_uh["DESSHSD"].value
+        subhdr["DESSHTN"].value = xmlns
+        subhdr["DESSHLPG"].value = ""
+        subhdr["DESSHLI"].value = prodinfo.de_subheader_part.desshli
+        subhdr["DESSHLIN"].value = prodinfo.de_subheader_part.desshlin
+        subhdr["DESSHABS"].value = prodinfo.de_subheader_part.desshabs
 
         xml_bytes = lxml.etree.tostring(prodinfo.xmltree)
         deseg["DESDATA"].size = len(xml_bytes)
@@ -880,14 +878,17 @@ def jbp_from_nitf_metadata(metadata: NitfMetadata) -> jbpy.Jbp:
         deseg = jbp["DataExtensionSegments"][desidx]
 
         if sidd_ns == "urn:SIDD:1.0.0":
-            populate_sicd_xml_des_sidd1(deseg, sicd_xml_info.de_subheader_part)
+            xml_des_subheader = populate_sicd_xml_des_sidd1(
+                sicd_xml_info.de_subheader_part
+            )
         else:
-            sarkit.sicd._io._populate_de_segment(
-                deseg, sicd_xml_info.xmltree, sicd_xml_info.de_subheader_part
+            xml_des_subheader = sarkit.sicd._io._create_xml_des_subheader(
+                sicd_xml_info.xmltree, sicd_xml_info.de_subheader_part
             )
 
         xml_bytes = lxml.etree.tostring(sicd_xml_info.xmltree)
         deseg["DESDATA"].size = len(xml_bytes)
+        deseg.set_subheader(xml_des_subheader)
 
         desidx += 1
 
@@ -895,13 +896,12 @@ def jbp_from_nitf_metadata(metadata: NitfMetadata) -> jbpy.Jbp:
     return jbp
 
 
-def populate_sicd_xml_des_sidd1(deseg, de_subheader_part):
+def populate_sicd_xml_des_sidd1(de_subheader_part):
     """Populate SICD XML DES according to SIDD v1.0 volume 2, section 2.2.4"""
-    subhdr = deseg["subheader"]
-    subhdr["DESID"].value = "SICD_XML"
-    subhdr["DESVER"].value = 1
+    subhdr = jbpy.des_subheader_factory("SICD_XML", 1)
     de_subheader_part.security._set_nitf_fields("DES", subhdr)
     subhdr["DESSHL"].value = 0
+    return subhdr
 
 
 def _is_sidd_image_segment(segment, icat):

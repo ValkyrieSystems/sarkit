@@ -250,14 +250,12 @@ def test_nitfimagesegmentfields_from_header():
 
 
 def test_nitfdesegmentfields_from_header():
-    header = jbpy.core.DataExtensionSubheader("name")
-    header["DESID"].value = "XML_DATA_CONTENT"
-    header["DESVER"].value = 1
+    header = jbpy.des_subheader_factory("XML_DATA_CONTENT", 1)
     header["DESSHL"].value = 773
-    header["DESSHF"]["DESSHRP"].value = "desshrp"
-    header["DESSHF"]["DESSHLI"].value = "desshli"
-    header["DESSHF"]["DESSHLIN"].value = "desshlin"
-    header["DESSHF"]["DESSHABS"].value = "desshabs"
+    header["DESSHRP"].value = "desshrp"
+    header["DESSHLI"].value = "desshli"
+    header["DESSHLIN"].value = "desshlin"
+    header["DESSHABS"].value = "desshabs"
     # Data is unclassified.  These fields are filled for testing purposes only.
     header["DESCLAS"].value = "T"
     header["DESCLSY"].value = "US"
@@ -277,10 +275,10 @@ def test_nitfdesegmentfields_from_header():
     header["DESCTLN"].value = "ctln_h"
 
     fields = sksicd.NitfDeSubheaderPart._from_header(header)
-    assert fields.desshrp == header["DESSHF"]["DESSHRP"].value
-    assert fields.desshli == header["DESSHF"]["DESSHLI"].value
-    assert fields.desshlin == header["DESSHF"]["DESSHLIN"].value
-    assert fields.desshabs == header["DESSHF"]["DESSHABS"].value
+    assert fields.desshrp == header["DESSHRP"].value
+    assert fields.desshli == header["DESSHLI"].value
+    assert fields.desshlin == header["DESSHLIN"].value
+    assert fields.desshabs == header["DESSHABS"].value
     assert fields.security.clas == header["DESCLAS"].value
     assert fields.security.clsy == header["DESCLSY"].value
     assert fields.security.code == header["DESCODE"].value

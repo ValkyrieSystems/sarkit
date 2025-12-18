@@ -239,10 +239,10 @@ class NitfDeSubheaderPart:
         """Construct from a NITF DataExtensionSubheader object"""
         return cls(
             security=NitfSecurityFields._from_nitf_fields("DES", de_header),
-            desshrp=de_header["DESSHF"]["DESSHRP"].value,
-            desshli=de_header["DESSHF"]["DESSHLI"].value,
-            desshlin=de_header["DESSHF"]["DESSHLIN"].value,
-            desshabs=de_header["DESSHF"]["DESSHABS"].value,
+            desshrp=de_header["DESSHRP"].value,
+            desshli=de_header["DESSHLI"].value or "",
+            desshlin=de_header["DESSHLIN"].value or "",
+            desshabs=de_header["DESSHABS"].value or "",
         )
 
     def __post_init__(self):
@@ -362,7 +362,7 @@ class NitfReader:
         self.jbp = jbpy.Jbp().load(file)
 
         deseg = self.jbp["DataExtensionSegments"][0]  # SICD XML must be in first DES
-        if not deseg["subheader"]["DESSHF"]["DESSHTN"].value.startswith("urn:SICD"):
+        if not deseg["subheader"]["DESSHTN"].encoded_value.startswith(b"urn:SICD"):
             raise ValueError(f"Unable to find SICD DES in {file}")
 
         file.seek(deseg["DESDATA"].get_offset(), os.SEEK_SET)
@@ -730,28 +730,27 @@ def jbp_from_nitf_metadata(metadata: NitfMetadata) -> jbpy.Jbp:
     sicd_xml_bytes = lxml.etree.tostring(sicd_xmltree)
     jbp["FileHeader"]["NUMDES"].value = 1
     jbp["DataExtensionSegments"][0]["DESDATA"].size = len(sicd_xml_bytes)
-    _populate_de_segment(
-        jbp["DataExtensionSegments"][0],
-        sicd_xmltree,
-        metadata.de_subheader_part,
+    xml_des_subheader = _create_xml_des_subheader(
+        sicd_xmltree, metadata.de_subheader_part
     )
+    jbp["DataExtensionSegments"][0].set_subheader(xml_des_subheader)
 
     jbp.finalize()  # compute lengths, CLEVEL, etc...
     return jbp
 
 
-def _populate_de_segment(de_segment, sicd_xmltree, de_subheader_part):
-    subhdr = de_segment["subheader"]
-    subhdr["DESID"].value = "XML_DATA_CONTENT"
-    subhdr["DESVER"].value = 1
+def _create_xml_des_subheader(
+    sicd_xmltree: lxml.etree.ElementTree, de_subheader_part: NitfDeSubheaderPart
+):
+    subhdr = jbpy.des_subheader_factory("XML_DATA_CONTENT", 1)
     de_subheader_part.security._set_nitf_fields("DES", subhdr)
     subhdr["DESSHL"].value = 773
-    subhdr["DESSHF"]["DESCRC"].value = 99999
-    subhdr["DESSHF"]["DESSHFT"].value = "XML"
+    subhdr["DESCRC"].value = 99999
+    subhdr["DESSHFT"].value = "XML"
     now_dt = datetime.datetime.now(datetime.timezone.utc)
-    subhdr["DESSHF"]["DESSHDT"].value = now_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-    subhdr["DESSHF"]["DESSHRP"].value = de_subheader_part.desshrp
-    subhdr["DESSHF"][
+    subhdr["DESSHDT"].value = now_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+    subhdr["DESSHRP"].value = de_subheader_part.desshrp
+    subhdr[
         "DESSHSI"
     ].value = "SICD Volume 1 Design & Implementation Description Document"
 
@@ -765,18 +764,19 @@ def _populate_de_segment(de_segment, sicd_xmltree, de_subheader_part):
         spec_date = sicdconst.VERSION_INFO[xmlns]["date"]
         spec_version = sicdconst.VERSION_INFO[xmlns]["version"]
 
-    subhdr["DESSHF"]["DESSHSD"].value = spec_date
-    subhdr["DESSHF"]["DESSHSV"].value = spec_version
-    subhdr["DESSHF"]["DESSHTN"].value = xmlns
+    subhdr["DESSHSD"].value = spec_date
+    subhdr["DESSHSV"].value = spec_version
+    subhdr["DESSHTN"].value = xmlns
 
     icp = xml_helper.load("./{*}GeoData/{*}ImageCorners")
     desshlpg = ""
     for icp_lat, icp_lon in itertools.chain(icp, [icp[0]]):
         desshlpg += f"{icp_lat:0=+12.8f}{icp_lon:0=+13.8f}"
-    subhdr["DESSHF"]["DESSHLPG"].value = desshlpg
-    subhdr["DESSHF"]["DESSHLI"].value = de_subheader_part.desshli
-    subhdr["DESSHF"]["DESSHLIN"].value = de_subheader_part.desshlin
-    subhdr["DESSHF"]["DESSHABS"].value = de_subheader_part.desshabs
+    subhdr["DESSHLPG"].value = desshlpg
+    subhdr["DESSHLI"].value = de_subheader_part.desshli
+    subhdr["DESSHLIN"].value = de_subheader_part.desshlin
+    subhdr["DESSHABS"].value = de_subheader_part.desshabs
+    return subhdr
 
 
 class NitfWriter:
