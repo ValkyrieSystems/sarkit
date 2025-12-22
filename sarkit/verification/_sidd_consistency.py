@@ -203,9 +203,9 @@ class SiddConsistency(con.ConsistencyChecker):
                 if not deseg["subheader"]["DESID"].value == "XML_DATA_CONTENT":
                     continue
                 desshtn = getattr(
-                    deseg["subheader"].get("DESSHF", {}).get("DESSHTN"), "value", ""
+                    deseg["subheader"].get("DESSHTN"), "encoded_value", b""
                 )
-                if not desshtn.startswith("urn:SIDD"):
+                if not desshtn.startswith(b"urn:SIDD"):
                     continue
                 file.seek(deseg["DESDATA"].get_offset())
                 xml_bytes = file.read(deseg["DESDATA"].size)
@@ -291,12 +291,12 @@ class SiddConsistency(con.ConsistencyChecker):
             def _de_segment_type(segment):
                 deseg_type = "OTHER"
                 if segment["subheader"]["DESID"].value == "XML_DATA_CONTENT":
-                    if segment["subheader"]["DESSHF"]["DESSHTN"].value.startswith(
-                        "urn:SIDD"
+                    if segment["subheader"]["DESSHTN"].encoded_value.startswith(
+                        b"urn:SIDD"
                     ):
                         deseg_type = "SIDD"
-                    if segment["subheader"]["DESSHF"]["DESSHTN"].value.startswith(
-                        "urn:SICD"
+                    if segment["subheader"]["DESSHTN"].encoded_value.startswith(
+                        b"urn:SICD"
                     ):
                         deseg_type = "SICD"
                     else:
@@ -331,17 +331,17 @@ class SiddConsistency(con.ConsistencyChecker):
                 with self.need("DESVER is 1"):
                     assert subhdr["DESVER"].value == 1
                 with self.need("DESCRC is not used"):
-                    assert subhdr["DESSHF"]["DESCRC"].value == 99999
+                    assert subhdr["DESCRC"].value == 99999
                 with self.need("DESSHFT is XML"):
-                    assert subhdr["DESSHF"]["DESSHFT"].value == "XML"
+                    assert subhdr["DESSHFT"].value == "XML"
                 with self.need("DESSHSI specifies SIDD standard"):
                     expected = (
                         "SIDD Volume 1 Design & Implementation Description Document"
                     )
-                    assert subhdr["DESSHF"]["DESSHSI"].value == expected
+                    assert subhdr["DESSHSI"].value == expected
 
                 actual = {
-                    name: subhdr["DESSHF"][name].value
+                    name: subhdr[name].value
                     for name in ("DESSHSV", "DESSHSD", "DESSHTN")
                 }
 
@@ -366,7 +366,7 @@ class SiddConsistency(con.ConsistencyChecker):
                 def _parse_ll_pair(string):
                     return float(string[:12]), float(string[12:])
 
-                desshlpg = subhdr["DESSHF"]["DESSHLPG"].value
+                desshlpg = subhdr["DESSHLPG"].value
                 actual = [
                     _parse_ll_pair(desshlpg[pair * 25 : (pair + 1) * 25])
                     for pair in range(5)
@@ -388,7 +388,7 @@ class SiddConsistency(con.ConsistencyChecker):
                     assert found, f"{actual=}\n{icp_ll=}"
 
                 with self.need("DESSHLPT is space-filled"):
-                    assert subhdr["DESSHF"]["DESSHLPT"].value == ""
+                    assert subhdr["DESSHLPT"].isnull()
 
     @staticmethod
     def _im_segment_type(segment):

@@ -203,7 +203,7 @@ def test_check_des_subheader_desid(example_sicd_file):
 def test_check_des_subheader_desshft(example_sicd_file):
     sicdcon = SicdConsistency.from_file(example_sicd_file)
     des_header = sicdcon.ntf["DataExtensionSegments"][0]["subheader"]
-    des_header["DESSHF"]["DESSHFT"].value = "LXM"
+    des_header["DESSHFT"].value = "LXM"
 
     sicdcon.check("check_des_subheader")
     testing.assert_failures(sicdcon, "DESSHFT == XML")
@@ -212,7 +212,7 @@ def test_check_des_subheader_desshft(example_sicd_file):
 def test_check_des_subheader_desshsi(example_sicd_file):
     sicdcon = SicdConsistency.from_file(example_sicd_file)
     des_header = sicdcon.ntf["DataExtensionSegments"][0]["subheader"]
-    des_header["DESSHF"]["DESSHSI"].value = "SICD Volume 20"
+    des_header["DESSHSI"].value = "SICD Volume 20"
 
     sicdcon.check("check_des_subheader")
     testing.assert_failures(sicdcon, "DESSHSI == SICD Volume 1...")
@@ -221,7 +221,7 @@ def test_check_des_subheader_desshsi(example_sicd_file):
 def test_check_des_subheader_desshtn(example_sicd_file):
     sicdcon = SicdConsistency.from_file(example_sicd_file)
     des_header = sicdcon.ntf["DataExtensionSegments"][0]["subheader"]
-    des_header["DESSHF"]["DESSHTN"].value = "urn:SICD:10.20.10"
+    des_header["DESSHTN"].value = "urn:SICD:10.20.10"
 
     sicdcon.check("check_des_subheader")
     testing.assert_failures(sicdcon, "Consistent namespace")
@@ -230,7 +230,7 @@ def test_check_des_subheader_desshtn(example_sicd_file):
 def test_check_des_subheader_desshlpg(example_sicd_file):
     sicdcon = SicdConsistency.from_file(example_sicd_file)
     des_header = sicdcon.ntf["DataExtensionSegments"][0]["subheader"]
-    des_header["DESSHF"]["DESSHLPG"].value = "badcorners"
+    des_header["DESSHLPG"].value = "badcorners"
 
     sicdcon.check("check_des_subheader")
     testing.assert_failures(sicdcon, "DESSHLPG consistent with image corners")

@@ -151,7 +151,7 @@ def _compute_pfa_min_max_fx(xmlhelp):
 def _get_desdata_location(ntf):
     """Return the first SICD DES"""
     for deseg in ntf["DataExtensionSegments"]:
-        if deseg["subheader"]["DESSHF"]["DESSHTN"].value.startswith("urn:SICD"):
+        if deseg["subheader"]["DESSHTN"].encoded_value.startswith(b"urn:SICD"):
             return deseg["DESDATA"].get_offset(), deseg["DESDATA"].get_size()
     raise ValueError("Unable to find SICD DES")
 
@@ -401,15 +401,15 @@ class SicdConsistency(con.ConsistencyChecker):
                 with self.need("Valid image subheaders"):
                     assert idatim <= collect_start + datetime.timedelta(seconds=1)
                     assert idatim >= collect_start - datetime.timedelta(seconds=1)
-                    assert imhdr["PVTYPE"].value.rstrip() == pixel_info["pvtype"]
-                    assert imhdr["IREP"].value.rstrip() == "NODISPLY"
-                    assert imhdr["ICAT"].value.rstrip() == "SAR"
+                    assert imhdr["PVTYPE"].value == pixel_info["pvtype"]
+                    assert imhdr["IREP"].value == "NODISPLY"
+                    assert imhdr["ICAT"].value == "SAR"
                     assert imhdr["ABPP"].value == expected_nbpp
                     assert imhdr["PJUST"].value == "R"
                     assert imhdr["ICORDS"].value == "G"
                     assert imhdr["IC"].value in ["NC", "NM", "C7", "M7"]
                     assert imhdr["ISYNC"].value == 0
-                    assert imhdr["IMODE"].value.rstrip() == "P"
+                    assert imhdr["IMODE"].value == "P"
                     assert imhdr["NBPR"].value == 1
                     assert imhdr["NBPC"].value == 1
 
@@ -579,30 +579,28 @@ class SicdConsistency(con.ConsistencyChecker):
                 )
 
             with self.need("DESID == XML_DATA_CONTENT"):
-                assert des_header["DESID"].value.rstrip() == "XML_DATA_CONTENT"
+                assert des_header["DESID"].value == "XML_DATA_CONTENT"
 
             with self.need("DESSHFT == XML"):
-                assert des_header["DESSHF"]["DESSHFT"].value.rstrip() == "XML"
+                assert des_header["DESSHFT"].value == "XML"
 
             with self.need(
                 "DESSHSI == SICD Volume 1 Design & Implementation Description Document"
             ):
                 assert (
-                    des_header["DESSHF"]["DESSHSI"].value.rstrip()
+                    des_header["DESSHSI"].value
                     == "SICD Volume 1 Design & Implementation Description Document"
                 )
 
             instance_namespace = etree.QName(self.sicdroot).namespace
             with self.need("Consistent namespace"):
-                assert (
-                    des_header["DESSHF"]["DESSHTN"].value.rstrip() == instance_namespace
-                )
+                assert des_header["DESSHTN"].value == instance_namespace
 
             icp_nodes = self.xmlhelp.load("./{*}GeoData/{*}ImageCorners")
             icp_strs = [f"{lat:+012.8f}{lon:+013.8f}" for (lat, lon) in icp_nodes]
             icp_strs.append(icp_strs[0])
             with self.need("DESSHLPG consistent with image corners"):
-                assert des_header["DESSHF"]["DESSHLPG"].value == "".join(icp_strs)
+                assert des_header["DESSHLPG"].value == "".join(icp_strs)
 
     def check_grid_sign(self) -> None:
         """Grid signs match."""
