@@ -89,7 +89,6 @@ class SiddConsistency(con.ConsistencyChecker):
         Path to XML Schema. If None, tries to find a version-specific schema
     file : `file object`, optional
         SIDD NITF file; when specified, NITF headers are extracted during object instantiation
-
     """
 
     def __init__(self, xml_trees, schema_override=None, file=None):
@@ -1055,3 +1054,7 @@ def calc_expfeatures_geom(sidd_xml):
         "{*}Collection/{*}Phenomenology/{*}GroundTrack": angles.GroundTrack,
         "{*}Product/{*}North": angles.North,
     }
+
+
+# Improve rendered docstring
+con.modify_conchecker_docs(SiddConsistency)

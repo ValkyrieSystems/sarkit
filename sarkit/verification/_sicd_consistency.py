@@ -2068,3 +2068,7 @@ class SicdConsistency(con.ConsistencyChecker):
             with self.precondition():
                 assert poly_node is not None
                 self._assert_poly_2d(poly_node, poly)
+
+
+# Improve rendered docstring
+con.modify_conchecker_docs(SicdConsistency)

@@ -13,10 +13,9 @@ Python Interface
 
 .. autosummary::
    :toctree: generated/
-   :recursive:
 
-   CphdConsistency
    CrsdConsistency
+   CphdConsistency
    SicdConsistency
    SiddConsistency
 

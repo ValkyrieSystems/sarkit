@@ -2264,3 +2264,7 @@ class CrsdConsistency(con.ConsistencyChecker):
             llh_coord = iarp_llh.copy()
             llh_coord[:2] += uiax_ll * iac_coord[0] + uiay_ll * iac_coord[1]
             return sarkit.wgs84.geodetic_to_cartesian(llh_coord)
+
+
+# Improve rendered docstring
+con.modify_conchecker_docs(CrsdConsistency)
