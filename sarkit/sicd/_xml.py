@@ -153,6 +153,7 @@ class ImageCornersType(skxt.NdArrayType):
                 elem, ns + self.sub_tag, attrib={"index": label}
             )
             self.sub_type.set_elem(icp, coord)
+        self.parse_elem(elem)  # make sure result is parsable
 
 
 class XmlHelper(skxml.XmlHelper):

@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Option to use SIDD v1.0/2.0 image angle convention in `sarkit.sidd.compute_angles`
 - Support for Python 3.14
 - `sarkit.wgs84.GM` constant
+- Additional error checking in Transcoders and ElementWrappers
 
 ### Changed
 - `jbpy` dependency updated

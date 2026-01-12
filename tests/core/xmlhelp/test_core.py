@@ -130,6 +130,18 @@ def test_elementwrapper():
         is None
     )
 
+    # repeatable fields must be initialized with a list
+    with pytest.raises(ValueError):
+        wrapped_siddroot["ExploitationFeatures"]["Product"] = {"North": 1}
+    wrapped_siddroot["ExploitationFeatures"]["Product"] = [{"North": 1}]
+
+    # primitive types can only be set with compatable types
+    assert isinstance(
+        wrapped_siddroot["ExploitationFeatures"]["Product"][0]["North"], float
+    )
+    with pytest.raises(ValueError):
+        wrapped_siddroot["ExploitationFeatures"]["Product"][0]["North"] = "string"
+
 
 def test_elementwrapper_tofromdict():
     root_ns = "urn:SIDD:3.0.0"
