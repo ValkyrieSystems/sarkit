@@ -301,7 +301,9 @@ class ElementWrapper(collections.abc.MutableMapping):
             if isinstance(val, ElementWrapper):
                 return val.elem
             if transcoder is None:
-                return lxml.etree.Element(childdef.tag)
+                raise ValueError(
+                    f"can't initialize {childdef.tag} with value of '{val}'"
+                )
             return transcoder.make_elem(childdef.tag, val)
 
         for subelem in self.elem.findall("{*}" + localname):

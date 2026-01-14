@@ -214,6 +214,7 @@ class FilterCoefficientType(skxt.Type):
                 self.coef_y_name: str(coord[1]),
             }
             lxml.etree.SubElement(elem, ns + "Coef", attrib=attribs).text = str(coef)
+        self.parse_elem(elem)  # make sure result is parsable
 
 
 class IntListType(skxt.Type):
@@ -232,6 +233,7 @@ class IntListType(skxt.Type):
     ) -> None:
         """Sets ``elem`` node using the list of integers in ``val``."""
         elem.text = " ".join([str(entry) for entry in val])
+        self.parse_elem(elem)  # make sure result is parsable
 
 
 class LookupTableType(IntListType):
@@ -244,6 +246,7 @@ class LookupTableType(IntListType):
     ) -> None:
         super().set_elem(elem, val)
         elem.set("size", str(len(val)))
+        self.parse_elem(elem)  # make sure result is parsable
 
 
 class Lookup3TableType(skxt.Type):
@@ -266,6 +269,7 @@ class Lookup3TableType(skxt.Type):
         """Sets ``elem`` node using the sequence of integer-triplets in ``val``."""
         elem.text = " ".join(",".join(str(x) for x in triplet) for triplet in val)
         elem.set("size", str(len(val)))
+        self.parse_elem(elem)  # make sure result is parsable
 
 
 class ImageCornersType(skxt.NdArrayType):
@@ -321,6 +325,7 @@ class ImageCornersType(skxt.NdArrayType):
                 elem, icp_ns + self.sub_tag, attrib={"index": label}
             )
             self.sub_type.set_elem(icp, coord)
+        self.parse_elem(elem)  # make sure result is parsable
 
 
 class RangeAzimuthType(skxt.ArrayType):
@@ -428,6 +433,7 @@ class LUTInfoType(skxt.Type):
             subelem = lxml.etree.SubElement(elem, ns + "LUTValues")
             IntListType().set_elem(subelem, sub_val)
             subelem.set("lut", str(index + 1))
+        self.parse_elem(elem)  # make sure result is parsable
 
 
 class XmlHelper(skxml.XmlHelper):
