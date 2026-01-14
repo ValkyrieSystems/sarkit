@@ -37,7 +37,7 @@ test = [
     "nox>=2024.3.2",
 ]
 doc = [
-    "sphinx>=7.2.6",
+    "sphinx>=7.2.6,<9",  # v9 broke some autodoc features
     "numpydoc>=1.7.0",
     "sphinx-rtd-theme>=2.0.0",
     "sphinxcontrib-autoprogram>=0.1.9",
