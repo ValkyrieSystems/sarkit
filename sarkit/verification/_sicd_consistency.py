@@ -5,6 +5,7 @@ Functionality for verifying SICD files for internal consistency.
 import copy
 import datetime
 import functools
+import itertools
 import os
 from typing import Any, Optional
 
@@ -878,9 +879,9 @@ class SicdConsistency(con.ConsistencyChecker):
 
     def check_image_corners(self) -> None:
         """Checks that the image corner points (ICPs) are nominally correct."""
-        icp_nodes = self.xmlhelp.load("./{*}GeoData/{*}ImageCorners")
+        icp_ll = self.xmlhelp.load("./{*}GeoData/{*}ImageCorners")
         with self.need("Number of ICP is four"):
-            assert len(icp_nodes) == 4
+            assert len(icp_ll) == 4
 
         scp_ecf = self.xmlhelp.load("./{*}GeoData/{*}SCP/{*}ECF")
         scp_height = self.xmlhelp.load("./{*}GeoData/{*}SCP/{*}LLH/{*}HAE")
@@ -894,25 +895,24 @@ class SicdConsistency(con.ConsistencyChecker):
             [0, ncols - 1, ncols - 1, 0]
         )
         icp_coords = _grid_index_to_coord(self.xmlhelp, np.stack([row, col], axis=-1))
+        icp_converted_ecef = sarkit.wgs84.geodetic_to_cartesian(
+            np.concatenate((icp_ll, np.full((len(icp_ll), 1), scp_height)), axis=1)
+        )
         urow_gnd, ucol_gnd = _uvecs_in_ground(self.xmlhelp)
-
-        for (lat, lon), icp_coord in zip(icp_nodes, icp_coords):
-            icp_converted_ecf = sarkit.wgs84.geodetic_to_cartesian(
-                [
-                    lat,
-                    lon,
-                    scp_height,
-                ],
-            )
-            icp_computed_ecf = (
-                scp_ecf + urow_gnd * icp_coord[0] + ucol_gnd * icp_coord[1]
-            )
-
-            scp_dist = npl.norm(icp_converted_ecf - scp_ecf)
-            with self.need(f"Image corner {icp_coord} must align with ImageData"):
-                assert 0.1 * scp_dist > con.Approx(
-                    npl.norm(icp_converted_ecf - icp_computed_ecf)
-                )
+        icp_computed_ecef = (
+            scp_ecf + urow_gnd * icp_coords[..., :1] + ucol_gnd * icp_coords[..., 1:2]
+        )
+        chords = itertools.combinations(icp_converted_ecef, 2)
+        max_chord_length = max(np.linalg.norm(chord[1] - chord[0]) for chord in chords)
+        for index, (icp_reported, icp_predicted) in enumerate(
+            zip(icp_converted_ecef, icp_computed_ecef)
+        ):
+            icp_dist = np.linalg.norm(icp_predicted - icp_reported)
+            with self.want(
+                f"ICP{index + 1} must be consistent with with GeoData/SCP"
+                " and Grid unit vectors"
+            ):
+                assert icp_dist < 0.05 * max_chord_length
 
     def check_amptable(self) -> None:
         """AmpTable of correct size with accurate Amplitude indices."""
