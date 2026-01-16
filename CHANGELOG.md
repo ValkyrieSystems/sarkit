@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - SIDD v2.0 ANG_MAG types properly transcode to `AngleMagnitudeType`
+- SICDConsistency.check_image_corners and SIDDConsistency.check_geodata_image_corners made more robust
 
 
 ## [1.3.0] - 2025-11-11
