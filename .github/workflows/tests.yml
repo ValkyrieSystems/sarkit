@@ -24,6 +24,7 @@ jobs:
       uses: pdm-project/setup-pdm@v4
       with:
         python-version: 3.14
+        version: 2.26.2
     - name: Install dependencies
       run: |
         pdm lock -G :all
@@ -52,6 +53,7 @@ jobs:
       uses: pdm-project/setup-pdm@v4
       with:
         python-version: 3.11
+        version: 2.26.2
     - name: Install dependencies
       run: |
         pdm lock -G :all --strategy direct_minimal_versions
