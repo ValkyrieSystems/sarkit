@@ -52,6 +52,12 @@ autosummary_generate_overwrite = False
 autodoc_typehints = "none"
 add_module_names = False
 
+
+def skip_consistency_checks(app, obj_type, name, obj, skip, options):
+    if obj_type == "method" and "Consistency.check_" in obj.__qualname__:
+        return True
+
+
 # doctest
 doctest_test_doctest_blocks = ""  # don't test unmarked blocks
 doctest_global_setup = """
@@ -86,3 +92,7 @@ numpydoc_show_inherited_class_members = {
     "sarkit.sidd.ElementWrapper": False,
     "sarkit.xmlhelp.ElementWrapper": False,
 }
+
+
+def setup(app):
+    app.connect("autodoc-skip-member", skip_consistency_checks)
