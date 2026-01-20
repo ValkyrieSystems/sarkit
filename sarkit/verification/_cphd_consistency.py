@@ -2006,3 +2006,7 @@ def _get_root_path(node):
 
 def unit(vec, axis=-1):
     return vec / np.linalg.norm(vec, axis=axis, keepdims=True)
+
+
+# Improve rendered docstring
+con.modify_conchecker_docs(CphdConsistency)
