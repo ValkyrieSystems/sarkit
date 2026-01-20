@@ -994,21 +994,22 @@ class SiddConsistency(con.ConsistencyChecker):
         icp_from_measurement = sksidd.calculations.pixel_to_ecef(xml_tree, corners)
 
         icp_ll = _get_corners(xmlhelp)
-        scp = xmlhelp.load("./{*}Measurement//{*}ReferencePoint/{*}ECEF")
-        _, _, scp_height = wgs84.cartesian_to_geodetic(scp)
+        ref_pt = xmlhelp.load("./{*}Measurement//{*}ReferencePoint/{*}ECEF")
+        _, _, ref_height = wgs84.cartesian_to_geodetic(ref_pt)
         icp_ecef = wgs84.geodetic_to_cartesian(
-            np.concatenate((icp_ll, np.full((len(icp_ll), 1), scp_height)), axis=1)
+            np.concatenate((icp_ll, np.full((len(icp_ll), 1), ref_height)), axis=1)
         )
+        chords = itertools.combinations(icp_ecef, 2)
+        max_chord_length = max(np.linalg.norm(chord[1] - chord[0]) for chord in chords)
         for index, (icp_reported, icp_predicted) in enumerate(
             zip(icp_ecef, icp_from_measurement)
         ):
             icp_dist = np.linalg.norm(icp_predicted - icp_reported)
-            scp_dist = np.linalg.norm(icp_reported - scp)
-            with self.need(
+            with self.want(
                 f"Distance between reported and predicted ICP{index + 1} "
-                "< 0.1 * (distance between reported ICP and SCP)"
+                "< 0.05 * maximum chord length"
             ):
-                assert icp_dist < 0.1 * scp_dist
+                assert icp_dist < 0.05 * max_chord_length
 
 
 def calc_expfeatures_geom(sidd_xml):
