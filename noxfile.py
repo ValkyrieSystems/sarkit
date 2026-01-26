@@ -15,7 +15,7 @@ nox.options.sessions = (
 
 @nox.session
 def docs(session):
-    session.run_install("pdm", "sync", "-G", "all", "-G", "doc", external=True)
+    session.run_install("pdm", "sync", "-G", "doc", external=True)
     session.run(
         "sphinx-build",
         "docs/source",
@@ -45,7 +45,7 @@ def format(session):
 
 @nox.session
 def lint(session):
-    session.run_install("pdm", "sync", "-G", "dev-lint", "-G", "all", external=True)
+    session.run_install("pdm", "sync", "-G", "dev-lint", external=True)
     session.run("ruff", "check")
     session.run(
         "ruff",
@@ -63,7 +63,7 @@ def test(session):
 
 @nox.session
 def test_core(session):
-    session.run_install("pdm", "sync", external=True)
+    session.run_install("pdm", "sync", "-G", "dev-test", external=True)
     session.run("pytest", "tests/core", "tests/verification")
 
 
