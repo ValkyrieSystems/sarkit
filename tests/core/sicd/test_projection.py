@@ -288,8 +288,9 @@ def test_r_rdot_to_dem_surface(mdata_name, request):
         proj_metadata.LOOK,
         proj_metadata.SCP,
         proj_set,
-        ecef2dem_func=lambda x: sarkit.wgs84.cartesian_to_geodetic(x)[..., -1]
-        - proj_metadata.SCP_HAE,
+        ecef2dem_func=lambda x: (
+            sarkit.wgs84.cartesian_to_geodetic(x)[..., -1] - proj_metadata.SCP_HAE
+        ),
         hae_min=proj_metadata.SCP_HAE - 10.0,
         hae_max=proj_metadata.SCP_HAE + 10.0,
         delta_dist_dem=1.0,
