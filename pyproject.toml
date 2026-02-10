@@ -6,11 +6,11 @@ authors = [
 ]
 requires-python = ">=3.11"
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
+license-files = ["LICENSE"]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Science/Research",
-  "License :: OSI Approved :: MIT License",
   "Topic :: Scientific/Engineering",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3",
@@ -22,7 +22,7 @@ classifiers = [
 dynamic = ["version"]
 
 dependencies = [
-    "jbpy>=0.5.1, <0.6",
+    "jbpy>=0.5.1, <0.7",
     "lxml>=5.1.0",
     "numpy>=1.25.0",
     "shapely>=2.0.2",
