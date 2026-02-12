@@ -19,6 +19,7 @@ from sarkit.verification._crsdcheck import main
 
 from . import testing
 
+NUM_FILL_BYTES = 16
 DATAPATH = pathlib.Path(__file__).parents[2] / "data"
 
 good_crsd_xml_path = DATAPATH / "example-crsd-1.0.xml"
@@ -121,10 +122,69 @@ def example_crsdrcvcompressed_file(tmp_path_factory, example_crsdrcv_file):
         yield f
 
 
+@pytest.fixture(scope="session")
+def example_all_zero_crsd(tmp_path_factory, example_crsdrcv_file):
+    example_crsdrcv_file.seek(0)
+    with skcrsd.Reader(example_crsdrcv_file) as r:
+        pvps = r.read_pvps("the channel")
+        signal = r.read_signal("the channel")
+
+    zero_buffer = np.zeros(signal.shape, dtype=signal.dtype)
+    new_meta = r.metadata
+    tmp_crsd = tmp_path_factory.mktemp("data") / "faux-all-zero.crsd"
+    with tmp_crsd.open("wb") as f, skcrsd.Writer(f, new_meta) as w:
+        w.write_pvp("the channel", pvps)
+        w.write_signal("the channel", zero_buffer)
+
+    with tmp_crsd.open("rb") as f:
+        yield f
+
+
+@pytest.fixture(scope="session")
+def example_non_finite_crsd(tmp_path_factory, example_crsdrcv_file):
+    example_crsdrcv_file.seek(0)
+    with skcrsd.Reader(example_crsdrcv_file) as r:
+        pvps = r.read_pvps("the channel")
+        signal = r.read_signal("the channel")
+        new_meta = r.metadata
+
+    new_meta.xmltree.find("./{*}Data/{*}Receive/{*}SignalArrayFormat").text = "CF8"
+    signal = (signal["real"] + np.complex64(1j) * signal["imag"]).astype(np.complex64)
+    signal[0, :] = np.nan
+    tmp_crsd = tmp_path_factory.mktemp("data") / "faux-non-finite.crsd"
+    with tmp_crsd.open("wb") as f, skcrsd.Writer(f, new_meta) as w:
+        w.write_pvp("the channel", pvps)
+        w.write_signal("the channel", signal)
+
+    with tmp_crsd.open("rb") as f:
+        yield f
+
+
 @pytest.fixture(scope="session", params=("sar", "tx", "rcv"))
 def example_crsd_file(request):
     param = request.param
     yield request.getfixturevalue(f"example_crsd{param}_file")
+
+
+@pytest.fixture(scope="session")
+def example_crsd_with_header_fill(tmp_path_factory, example_crsd_file):
+    crsd_con = CrsdConsistency.from_file(example_crsd_file, thorough=True)
+    support_end = int(crsd_con.kvp_list["SUPPORT_BLOCK_BYTE_OFFSET"]) + int(
+        crsd_con.kvp_list["SUPPORT_BLOCK_SIZE"]
+    )
+
+    example_crsd_file.seek(0, os.SEEK_SET)
+    bytes_through_support = example_crsd_file.read(support_end)
+    rest_of_the_bytes = example_crsd_file.read()
+
+    tmp_crsd = tmp_path_factory.mktemp("data") / "with_fill.crsd"
+    with tmp_crsd.open("wb") as f:
+        f.write(bytes_through_support)
+        f.write(b"\xff" * NUM_FILL_BYTES)
+        f.write(rest_of_the_bytes)
+
+    with tmp_crsd.open("rb") as f:
+        yield f
 
 
 @pytest.fixture(scope="module")
@@ -140,6 +200,21 @@ def good_xml_root(good_xml):
 @pytest.fixture
 def crsd_con(example_crsd_file):
     return CrsdConsistency.from_file(example_crsd_file, thorough=True)
+
+
+@pytest.fixture
+def crsd_con_with_geoinfo(crsd_con):
+    ew = skcrsd.ElementWrapper(crsd_con.crsdroot)
+    ew.add("GeoInfo").add(
+        "Polygon",
+        [
+            [-0.0026191804573599776, 0.001821692610367564],
+            [0.0018339698998625154, 0.0026016466694818927],
+            [0.0026191804573599776, -0.001821692610367564],
+            [-0.0018339698998625154, -0.0026016466694818927],
+        ],
+    )
+    return crsd_con
 
 
 def copy_xml(elem):
@@ -747,7 +822,7 @@ def test_check_ant_gain_phase(ant_patched_crsd_con, name, val):
     assert_failures(crsd_con, f"has zero {name}")
 
 
-@pytest.mark.parametrize("name,val", [("Gain", (1.0, 0.0)), ("Phase", (0.0, 1.0))])
+@pytest.mark.parametrize("name, val", [("Gain", (1.0, 0.0)), ("Phase", (0.0, 1.0))])
 def test_check_ant_gain_phase_nodata(ant_patched_crsd_con, name, val):
     crsd_con, data_value = ant_patched_crsd_con(data=val)
     elem_ns = etree.QName(crsd_con.crsdroot).namespace
@@ -1007,6 +1082,27 @@ def test_rcvposveltime_matched(crsd_con):
     assert_failures(crsd_con, "matched set")
 
 
+def test_check_rcvstart_finite(example_crsdrcv_file):
+    crsd_con = CrsdConsistency.from_file(example_crsdrcv_file, thorough=True)
+    crsd_con.pvps["the channel"]["RcvStart"]["Frac"] = np.nan
+    crsd_con.check("check_rcvposveltime", allow_prefix=True)
+    testing.assert_failures(crsd_con, "RcvStart PVPs are finite")
+
+
+@pytest.mark.parametrize(
+    "param, err_txt",
+    [
+        ("RcvPos", "RcvPos PVPs are finite"),
+        ("RcvVel", "RcvVel PVPs are finite"),
+    ],
+)
+def test_check_rcvposvel_finite(example_crsdrcv_file, param, err_txt):
+    crsd_con = CrsdConsistency.from_file(example_crsdrcv_file, thorough=True)
+    crsd_con.pvps["the channel"][param][0, ...] = np.nan
+    crsd_con.check("check_rcvposveltime", allow_prefix=True)
+    testing.assert_failures(crsd_con, err_txt)
+
+
 def test_refphi0_intfrac_negative(crsd_con):
     if crsd_con.crsd_type == "CRSDtx":
         pytest.skip("Test not applicable to CRSDtx")
@@ -1228,6 +1324,42 @@ def test_check_num_coddwell_times(example_crsdsar_file, name):
     crsd_con.crsdroot.find(f"{{*}}DwellPolynomials/{{*}}Num{name}Times").text = "2"
     crsd_con.check(f"check_num{name.lower()}times")
     assert_failures(crsd_con, "Num.* is correct")
+
+
+def test_check_channel_dwell_exist(example_crsdsar_file):
+    crsd_con = CrsdConsistency.from_file(example_crsdsar_file)
+    crsd_con.crsdroot.find(
+        "./{*}Channel/{*}Parameters/{*}SARImage/{*}DwellTimes/{*}Polynomials/{*}DwellId"
+    ).text += "NOT"
+    crsd_con.check("check_against_schema", allow_prefix=True)
+    assert_failures(crsd_con, "XML passes schema")
+
+
+def test_check_channel_cod_exist(example_crsdsar_file):
+    crsd_con = CrsdConsistency.from_file(example_crsdsar_file)
+    crsd_con.crsdroot.find(
+        "./{*}Channel/{*}Parameters/{*}SARImage/{*}DwellTimes/{*}Polynomials/{*}CODId"
+    ).text += "NOT"
+    crsd_con.check("check_against_schema", allow_prefix=True)
+    assert_failures(crsd_con, "XML passes schema")
+
+
+def test_geoinfo_polygon_clockwise(crsd_con_with_geoinfo):
+    geoinfo_polygon = crsd_con_with_geoinfo.xmlhelp.load("./{*}GeoInfo/{*}Polygon")
+    crsd_con_with_geoinfo.xmlhelp.set(
+        "./{*}GeoInfo/{*}Polygon", geoinfo_polygon[[2, 1, 0, 3]]
+    )
+    crsd_con_with_geoinfo.check("check_geoinfo_polygons", allow_prefix=True)
+    assert_failures(crsd_con_with_geoinfo, "GeoInfo polygon is clockwise")
+
+
+def test_geoinfo_polygon_simple(crsd_con_with_geoinfo):
+    geoinfo_polygon = crsd_con_with_geoinfo.xmlhelp.load("./{*}GeoInfo/{*}Polygon")
+    crsd_con_with_geoinfo.xmlhelp.set(
+        "./{*}GeoInfo/{*}Polygon", geoinfo_polygon[[0, 2, 1, 3]]
+    )
+    crsd_con_with_geoinfo.check("check_geoinfo_polygons", allow_prefix=True)
+    assert_failures(crsd_con_with_geoinfo, "GeoInfo polygon is simple")
 
 
 def test_scene_iarp_ecf_llh_mismatch(crsd_con):
@@ -1546,6 +1678,19 @@ def test_imagearea_polygon_bounded(crsd_con, path, name):
     assert_failures(crsd_con, "bounded")
 
 
+def test_check_imagegrid(example_crsdsar_file):
+    crsd_con = CrsdConsistency.from_file(example_crsdsar_file)
+    image_area_x2y2 = crsd_con.xmlhelp.load(
+        "./{*}SceneCoordinates/{*}ImageArea/{*}X2Y2"
+    )
+    crsd_con.xmlhelp.set(
+        "./{*}SceneCoordinates/{*}ImageArea/{*}X1Y1",
+        image_area_x2y2,
+    )
+    crsd_con.check("check_imagegrid")
+    assert_failures(crsd_con, "Grid Extent to match ImageArea")
+
+
 # SegmentList is only in CRSDsar
 def test_segment_list_num_segments(example_crsdsar_file):
     crsd_con = CrsdConsistency.from_file(example_crsdsar_file)
@@ -1611,6 +1756,33 @@ def test_segment_list_polygon_clockwise(example_crsdsar_file):
     crsd_con.xmlhelp.set(".//{*}SegmentList//{*}SegmentPolygon", polygon[::-1])
     crsd_con.check("check_segment_list")
     assert_failures(crsd_con, "is clockwise")
+
+
+def test_check_segment_list_sv_indices(example_crsdsar_file):
+    crsd_con = CrsdConsistency.from_file(example_crsdsar_file)
+    seg_poly = crsd_con.crsdroot.find(
+        "./{*}SceneCoordinates/{*}ImageGrid/{*}SegmentList/{*}Segment/{*}SegmentPolygon"
+    )
+    assert seg_poly is not None
+    seg_poly.find("./{*}SV").set("index", "0")
+    crsd_con.check("check_segment_list")
+    testing.assert_failures(
+        crsd_con,
+        "Segment the segment Polygon size attribute matches SV elements",
+    )
+
+
+def test_check_segment_list_polygon_size(example_crsdsar_file):
+    crsd_con = CrsdConsistency.from_file(example_crsdsar_file)
+    seg_poly = crsd_con.crsdroot.find(
+        "./{*}SceneCoordinates/{*}ImageGrid/{*}SegmentList/{*}Segment/{*}SegmentPolygon"
+    )
+    assert seg_poly is not None
+    seg_poly.set("size", seg_poly.get("size") + "1")
+    crsd_con.check("check_segment_list")
+    testing.assert_failures(
+        crsd_con, "Segment the segment Polygon size attribute matches SV elements"
+    )
 
 
 def test_num_support_arrays(crsd_con):
@@ -2076,3 +2248,60 @@ def test_smart_open_contract(example_crsdsar, monkeypatch):
     monkeypatch.setattr(sarkit.verification._crsdcheck, "open", mock_open)
     assert not main([str(example_crsdsar), "--thorough"])
     mock_open.assert_called_once_with(str(example_crsdsar), "rb")
+
+
+def test_antenna_non_matching_acfids(good_xml_root):
+    root = copy_xml(good_xml_root)
+    antenna_node = root.find("./{*}Antenna")
+    antenna_node.find("./{*}AntPhaseCenter/{*}ACFId").text += "_wrong"
+    crsd_con = CrsdConsistency(root)
+    crsd_con.check("check_against_schema")
+    testing.assert_failures(crsd_con, "XML passes schema")
+
+
+@pytest.mark.parametrize(
+    "xy, err_txt",
+    [
+        (
+            "X1Y1",
+            "Extended X1Y1 less than or equal image area X1Y1",
+        ),
+        (
+            "X2Y2",
+            "Extended X2Y2 greater than or equal image area X2Y2",
+        ),
+    ],
+)
+def test_check_extendedarea_contains_imagearea(good_xml_root, xy, err_txt):
+    root = copy_xml(good_xml_root)
+    crsd_con = CrsdConsistency(root)
+    image_x1y1 = crsd_con.xmlhelp.load(
+        f"./{{*}}SceneCoordinates/{{*}}ImageArea/{{*}}{xy}"
+    )
+    crsd_con.xmlhelp.set(
+        f"./{{*}}SceneCoordinates/{{*}}ExtendedArea/{{*}}{xy}", image_x1y1 / 2.0
+    )
+    crsd_con.check("check_extendedarea_contains_imagearea")
+    testing.assert_failures(crsd_con, err_txt)
+
+
+def test_channel_signal_0_data(example_all_zero_crsd):
+    crsd_con = CrsdConsistency.from_file(example_all_zero_crsd, thorough=True)
+    crsd_con.check("check_channel_signal_data", allow_prefix=True)
+    testing.assert_failures(crsd_con, "Signal samples are not all zeroes")
+
+
+def test_channel_signal_nan_data(example_non_finite_crsd):
+    crsd_con = CrsdConsistency.from_file(example_non_finite_crsd, thorough=True)
+    crsd_con.check("check_channel_signal_data", allow_prefix=True)
+    testing.assert_failures(crsd_con, "All signal samples are finite and not NaN")
+
+
+def test_check_channel_signal_data_with_signal_pvp(example_crsdrcv_file):
+    crsd_con = CrsdConsistency.from_file(example_crsdrcv_file, thorough=True)
+    crsd_con.pvps["the channel"]["SIGNAL"][0] = 0
+    crsd_con.check("check_channel_signal_data", allow_prefix=True)
+    testing.assert_failures(
+        crsd_con,
+        "Vectors contain only zeroes where SIGNAL PVP is 0",
+    )
