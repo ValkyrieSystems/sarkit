@@ -7,7 +7,7 @@ import sarkit._iohelp as skio
 @pytest.mark.parametrize("dtype", (np.dtype(np.float64), np.dtype(np.int64)))
 def test_compare_fromfile(tmp_path, dtype):
     temp_file = tmp_path / "temp.bin"
-    num_items = 2.5 * skio.BUFFER_SIZE // dtype.itemsize
+    num_items = 2.5 * skio.MAX_READ_SIZE // dtype.itemsize
     cube_root = int(num_items ** (1 / 3))
     shape = (cube_root // 2, cube_root, 2 * cube_root)
 

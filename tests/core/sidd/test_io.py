@@ -466,7 +466,29 @@ def test_roundtrip(force_segmentation, with_ded, sidd_xml, tmp_path, monkeypatch
             assert len(read_metadata.sicd_xmls) == 2
             assert len(read_metadata.product_support_xmls) == 2
             read_array0 = reader.read_image(0)
+
+            # test `out=` argument
+            read_array0_2 = np.empty_like(read_array0)
+            read_array0_3 = reader.read_image(0, out=read_array0_2)
+            assert read_array0_2.ctypes.data == read_array0_3.ctypes.data
+            assert np.array_equal(read_array0, read_array0_2)
+            with pytest.raises(ValueError, match="must have shape"):
+                reader.read_image(0, out=read_array0_2[0, 0])
+            with pytest.raises(ValueError, match="must have dtype"):
+                reader.read_image(0, out=read_array0_2.astype(np.complex64))
+
             read_legend0 = reader.read_legend(0, 0)
+
+            # test `out=` argument
+            read_legend0_2 = np.empty_like(read_legend0)
+            read_legend0_3 = reader.read_legend(0, 0, out=read_legend0_2)
+            assert read_legend0_2.ctypes.data == read_legend0_3.ctypes.data
+            assert np.array_equal(read_legend0, read_legend0_2)
+            with pytest.raises(ValueError, match="must have shape"):
+                reader.read_legend(0, 0, out=read_legend0_2[0, 0])
+            with pytest.raises(ValueError, match="must have dtype"):
+                reader.read_legend(0, 0, out=read_legend0_2.astype(np.complex64))
+
             read_array1 = reader.read_image(1)
             read_legend1_0 = reader.read_legend(1, 0)
             read_legend1_1 = reader.read_legend(1, 1)
@@ -485,6 +507,15 @@ def test_roundtrip(force_segmentation, with_ded, sidd_xml, tmp_path, monkeypatch
 
             if with_ded:
                 read_ded_array = reader.read_ded()
+                # test 'out=' argument
+                read_ded_array_2 = np.empty_like(read_ded_array)
+                read_ded_array_3 = reader.read_ded(out=read_ded_array_2)
+                assert read_ded_array_2.ctypes.data == read_ded_array_3.ctypes.data
+                assert np.array_equal(read_ded_array, read_ded_array_2)
+                with pytest.raises(ValueError, match="must have shape"):
+                    reader.read_ded(out=read_ded_array_2[0, 0])
+                with pytest.raises(ValueError, match="must have dtype"):
+                    reader.read_ded(out=read_ded_array_2.astype(np.complex64))
             else:
                 with pytest.raises(RuntimeError, match="no DED to read"):
                     read_ded_array = reader.read_ded()
