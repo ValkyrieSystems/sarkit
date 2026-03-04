@@ -166,7 +166,48 @@ def test_roundtrip(tmp_path, with_support_block):
         for sa_id in reader.metadata.xmltree.findall(
             "./{*}SupportArray/*/{*}Identifier"
         ):
-            read_support_arrays[sa_id.text] = reader.read_support_array(sa_id.text)
+            read_sa = reader.read_support_array(sa_id.text)
+            read_support_arrays[sa_id.text] = read_sa
+
+            # test 'out=' argument
+            read_sa2 = np.empty_like(read_sa)
+            read_sa3 = reader.read_support_array(sa_id.text, out=read_sa2)
+            assert read_sa2.ctypes.data == read_sa3.ctypes.data
+            assert np.array_equal(read_sa, read_sa2)
+            with pytest.raises(ValueError, match="must have shape"):
+                reader.read_support_array(sa_id.text, out=read_sa2[0, 0])
+            with pytest.raises(ValueError, match="must have dtype"):
+                bad_dtype = np.dtype(
+                    [
+                        (key, f"V{value[0].itemsize}")
+                        for key, value in read_sa2.dtype.fields.items()
+                    ]
+                )
+                reader.read_support_array(sa_id.text, out=read_sa2.view(bad_dtype))
+
+        # test 'out=' arguments
+        read_sig2 = np.empty_like(read_sig)
+        read_pvp2 = np.empty_like(read_pvp)
+        read_sig3, read_pvp3 = reader.read_channel(
+            channel_ids[0], out_signal=read_sig2, out_pvp=read_pvp2
+        )
+        assert read_sig2.ctypes.data == read_sig3.ctypes.data
+        assert np.array_equal(read_sig, read_sig2)
+        assert read_pvp2.ctypes.data == read_pvp3.ctypes.data
+        assert np.array_equal(read_pvp, read_pvp2)
+        with pytest.raises(ValueError, match="must have shape"):
+            reader.read_channel(channel_ids[0], out_pvp=read_pvp2[0:1])
+        with pytest.raises(ValueError, match="must have dtype"):
+            reader.read_channel(
+                channel_ids[0], out_pvp=read_pvp2.view(f"V{read_pvp2.dtype.itemsize}")
+            )
+        with pytest.raises(ValueError, match="must have shape"):
+            reader.read_channel(channel_ids[0], out_signal=read_sig2[0:1])
+        with pytest.raises(ValueError, match="must have dtype"):
+            reader.read_channel(
+                channel_ids[0],
+                out_signal=read_sig2.view(f"V{read_sig2.dtype.itemsize}"),
+            )
 
     assert cphd_metadata.file_header_part == reader.metadata.file_header_part
     assert np.array_equal(basis_signal, read_sig)
@@ -221,8 +262,12 @@ def test_roundtrip_compressed(tmp_path):
 
     with open(out_cphd, "rb") as f, skcphd.Reader(f) as reader:
         sig_array = reader.read_signal(ch_id)
+        assert sig_array.tobytes().decode() == ch_id
 
-    assert sig_array.tobytes().decode() == ch_id
+        sig_array2 = np.empty_like(sig_array)
+        sig_array3 = reader.read_signal(ch_id, out=sig_array2)
+        assert sig_array3.data == sig_array2.data
+        assert np.array_equal(sig_array, sig_array2)
 
 
 @pytest.mark.parametrize("is_masked", (True, False))
@@ -295,6 +340,12 @@ def test_write_support_array(is_masked, nodata_in_xml, tmp_path):
     with open(out_cphd, "rb") as f, skcphd.Reader(f) as reader:
         read_sa = reader.read_support_array(sa_id)
         assert np.array_equal(mx, read_sa)
+        if is_masked:
+            read_sa_2 = np.empty_like(read_sa)
+            read_sa_3 = reader.read_support_array(sa_id, out=read_sa_2)
+            assert read_sa_2.ctypes.data == read_sa_3.ctypes.data
+            assert read_sa_2.mask.ctypes.data == read_sa_3.mask.ctypes.data
+            assert np.array_equal(mx, read_sa_2)
 
 
 INDICES_TO_CHECK = [None, 0, 7, 9, -9, -7, -1_000_000_000, 1_000_000_000_000]

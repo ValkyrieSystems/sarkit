@@ -151,6 +151,17 @@ def test_roundtrip(tmp_path, sicd_xml, pixel_type):
 
     with out_sicd.open("rb") as f, sksicd.NitfReader(f) as reader:
         read_array = reader.read_image()
+
+        # test out= argument
+        read_array2 = np.empty_like(read_array)
+        read_array3 = reader.read_image(out=read_array2)
+        assert read_array3.ctypes.data == read_array3.ctypes.data
+        assert np.array_equal(read_array, read_array2)
+        with pytest.raises(ValueError, match="must have shape"):
+            reader.read_image(out=read_array2[0, 0])
+        with pytest.raises(ValueError, match="must have dtype"):
+            reader.read_image(out=read_array2.view(f"i{read_array2.dtype.itemsize}"))
+
         assert reader.jbp["FileHeader"]["UDHD"][0]["CETAG"].value == "SECTGA"
 
     schema.assertValid(reader.metadata.xmltree)
