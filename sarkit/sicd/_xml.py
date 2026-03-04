@@ -194,42 +194,46 @@ class XsdHelper(skxml.XsdHelper):
             "{http://www.w3.org/2001/XMLSchema}string": TxtType(),
         }
         typedef = self.xsdtypes[typename]
-        sicd_110 = {
-            "<UNNAMED>-{urn:SICD:1.1.0}DirParamType/{urn:SICD:1.1.0}WgtFunct": skxt.NdArrayType(
+        sicd_101 = {
+            "<UNNAMED>-{urn:SICD:1.0.1}DirParamType/{urn:SICD:1.0.1}WgtFunct": skxt.NdArrayType(
                 "Wgt", DblType()
             ),
-            "<UNNAMED>-{urn:SICD:1.1.0}GeoDataType/{urn:SICD:1.1.0}ImageCorners": ImageCornersType(),
-            "<UNNAMED>-{urn:SICD:1.1.0}ImageDataType/{urn:SICD:1.1.0}AmpTable": skxt.NdArrayType(
+            "<UNNAMED>-{urn:SICD:1.0.1}GeoDataType/{urn:SICD:1.0.1}ImageCorners": ImageCornersType(),
+            "<UNNAMED>-{urn:SICD:1.0.1}ImageDataType/{urn:SICD:1.0.1}AmpTable": skxt.NdArrayType(
                 "Amplitude", DblType(), index_start=0
             ),
-            "<UNNAMED>-{urn:SICD:1.1.0}ImageDataType/{urn:SICD:1.1.0}ValidData": skxt.NdArrayType(
+            "<UNNAMED>-{urn:SICD:1.0.1}ImageDataType/{urn:SICD:1.0.1}ValidData": skxt.NdArrayType(
                 "Vertex", RowColType()
             ),
-            "<UNNAMED>-{urn:SICD:1.1.0}LineType/{urn:SICD:1.1.0}Endpoint": LatLonType(),
-            "<UNNAMED>-{urn:SICD:1.1.0}PolygonType/{urn:SICD:1.1.0}Vertex": LatLonType(),
-            "<UNNAMED>-{urn:SICD:1.1.0}PositionType/{urn:SICD:1.1.0}RcvAPC": skxt.ListType(
+            "<UNNAMED>-{urn:SICD:1.0.1}LineType/{urn:SICD:1.0.1}Endpoint": LatLonType(),
+            "<UNNAMED>-{urn:SICD:1.0.1}PolygonType/{urn:SICD:1.0.1}Vertex": LatLonType(),
+            "<UNNAMED>-{urn:SICD:1.0.1}PositionType/{urn:SICD:1.0.1}RcvAPC": skxt.ListType(
                 "RcvAPCPoly", XyzPolyType()
             ),
             (
-                "<UNNAMED>-{urn:SICD:1.1.0}RadarCollectionType"
-                "/{urn:SICD:1.1.0}Area"
-                "/{urn:SICD:1.1.0}Corner"
+                "<UNNAMED>-{urn:SICD:1.0.1}RadarCollectionType"
+                "/{urn:SICD:1.0.1}Area"
+                "/{urn:SICD:1.0.1}Corner"
             ): skxt.NdArrayType("ACP", LatLonHaeType(), include_size_attr=False),
-            "{urn:SICD:1.1.0}ComplexType": CmplxType(),
-            "{urn:SICD:1.1.0}LatLonCornerStringType": LatLonType(),
-            "{urn:SICD:1.1.0}LatLonHAECornerRestrictType": LatLonHaeType(),
-            "{urn:SICD:1.1.0}LatLonHAERestrictionType": LatLonHaeType(),
-            "{urn:SICD:1.1.0}LatLonRestrictionType": LatLonType(),
-            "{urn:SICD:1.1.0}LineType": skxt.NdArrayType("Endpoint", LatLonType()),
-            "{urn:SICD:1.1.0}ParameterType": ParameterType(),
-            "{urn:SICD:1.1.0}Poly1DType": PolyType(),
-            "{urn:SICD:1.1.0}Poly2DType": Poly2dType(),
-            "{urn:SICD:1.1.0}PolygonType": skxt.NdArrayType("Vertex", LatLonType()),
-            "{urn:SICD:1.1.0}RowColType": RowColType(),
-            "{urn:SICD:1.1.0}RowColvertexType": RowColType(),
-            "{urn:SICD:1.1.0}XYZPolyAttributeType": XyzPolyType(),
-            "{urn:SICD:1.1.0}XYZPolyType": XyzPolyType(),
-            "{urn:SICD:1.1.0}XYZType": XyzType(),
+            "{urn:SICD:1.0.1}ComplexType": CmplxType(),
+            "{urn:SICD:1.0.1}LatLonCornerStringType": LatLonType(),
+            "{urn:SICD:1.0.1}LatLonHAECornerRestrictType": LatLonHaeType(),
+            "{urn:SICD:1.0.1}LatLonHAERestrictionType": LatLonHaeType(),
+            "{urn:SICD:1.0.1}LatLonRestrictionType": LatLonType(),
+            "{urn:SICD:1.0.1}LineType": skxt.NdArrayType("Endpoint", LatLonType()),
+            "{urn:SICD:1.0.1}ParameterType": ParameterType(),
+            "{urn:SICD:1.0.1}Poly1DType": PolyType(),
+            "{urn:SICD:1.0.1}Poly2DType": Poly2dType(),
+            "{urn:SICD:1.0.1}PolygonType": skxt.NdArrayType("Vertex", LatLonType()),
+            "{urn:SICD:1.0.1}RowColType": RowColType(),
+            "{urn:SICD:1.0.1}RowColvertexType": RowColType(),
+            "{urn:SICD:1.0.1}XYZPolyAttributeType": XyzPolyType(),
+            "{urn:SICD:1.0.1}XYZPolyType": XyzPolyType(),
+            "{urn:SICD:1.0.1}XYZType": XyzType(),
+        }
+        sicd_110 = {
+            k.replace("urn:SICD:1.0.1", "urn:SICD:1.1.0"): v
+            for k, v in sicd_101.items()
         }
         sicd_121 = {
             k.replace("urn:SICD:1.1.0", "urn:SICD:1.2.1"): v
@@ -255,7 +259,7 @@ class XsdHelper(skxml.XsdHelper):
             ),
             "{urn:SICD:1.4.0}Matrix6x6Type": MtxType((6, 6)),
         }
-        easy = sicd_110 | sicd_121 | sicd_130 | sicd_140
+        easy = sicd_101 | sicd_110 | sicd_121 | sicd_130 | sicd_140
         if tag is not None and lxml.etree.QName(tag).localname == "CalibrationDate":
             return skxt.XdtType(force_utc=False)
         if typename.startswith("{http://www.w3.org/2001/XMLSchema}"):
