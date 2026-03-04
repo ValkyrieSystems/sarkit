@@ -534,13 +534,17 @@ class NitfReader:
         else:
             raise RuntimeError(f"Failed to find image segment with IDLVL={idlvl}")
 
-    def read_image(self, image_number: int) -> npt.NDArray:
+    def read_image(
+        self, image_number: int, *, out: npt.NDArray | None = None
+    ) -> npt.NDArray:
         """Read the entire pixel array
 
         Parameters
         ----------
         image_number : int
             index of SIDD Product image to read
+        out : ndarray or None, optional
+            Array to read into.  If None, a new array will be created.
 
         Returns
         -------
@@ -559,21 +563,20 @@ class NitfReader:
         ]
         imsegs = [self.jbp["ImageSegments"][idx] for idx in imseg_indices]
 
-        image_pixels = np.empty(shape, dtype)
+        out = _iohelp.ensure_array(out, shape, dtype)
         imseg_sizes = np.asarray([imseg["Data"].size for imseg in imsegs])
         imseg_offsets = np.asarray([imseg["Data"].get_offset() for imseg in imsegs])
         splits = np.cumsum(imseg_sizes // (shape[-1] * dtype.itemsize))[:-1]
-        for split, offset in zip(
-            np.array_split(image_pixels, splits, axis=0), imseg_offsets
-        ):
+        for split, offset in zip(np.array_split(out, splits, axis=0), imseg_offsets):
             self._file_object.seek(offset)
-            split[...] = _iohelp.fromfile(
-                self._file_object, dtype, np.prod(split.shape)
-            ).reshape(split.shape)
+            _iohelp.fromfile(
+                self._file_object, dtype, np.prod(split.shape), out=split.reshape(-1)
+            )
+        return out
 
-        return image_pixels
-
-    def read_legend(self, image_number: int, legend_number: int) -> npt.NDArray:
+    def read_legend(
+        self, image_number: int, legend_number: int, *, out: npt.NDArray | None = None
+    ) -> npt.NDArray:
         """Read a legend
 
         Parameters
@@ -582,6 +585,8 @@ class NitfReader:
             index of SIDD Product image associated with the legend
         legend_number : int
             index of legend to read
+        out : ndarray or None, optional
+            Array to read into.  If None a new array will be created.
 
         Returns
         -------
@@ -602,12 +607,22 @@ class NitfReader:
         ].newbyteorder(">")
 
         self._file_object.seek(imseg["Data"].get_offset(), os.SEEK_SET)
-        return _iohelp.fromfile(
-            self._file_object, dtype=dtype, count=np.prod(shape)
-        ).reshape(shape)
+        out = _iohelp.ensure_array(out, shape, dtype)
+        _iohelp.fromfile(
+            self._file_object,
+            dtype=dtype,
+            count=np.prod(shape),
+            out=out.reshape(-1),
+        )
+        return out
 
-    def read_ded(self):
+    def read_ded(self, *, out: npt.NDArray | None = None):
         """Read Digital Elevation Data (DED)
+
+        Parameters
+        ----------
+        out : ndarray or None, optional
+            Array to read into.  If None, a new array will be created.
 
         Returns
         -------
@@ -620,9 +635,11 @@ class NitfReader:
         shape = (self.metadata.ded.nrows, self.metadata.ded.ncols)
         dtype = np.dtype(">i2")
         self._file_object.seek(self._ded_segment["Data"].get_offset())
-        return _iohelp.fromfile(
-            self._file_object, dtype=dtype, count=np.prod(shape)
-        ).reshape(shape)
+        out = _iohelp.ensure_array(out, shape, dtype)
+        _iohelp.fromfile(
+            self._file_object, dtype=dtype, count=np.prod(shape), out=out.reshape(-1)
+        )
+        return out
 
     def __enter__(self):
         return self

@@ -310,13 +310,19 @@ class Reader:
         """Size of the Support block"""
         return int(self._kvp_list["SUPPORT_BLOCK_SIZE"])
 
-    def read_signal(self, channel_identifier: str) -> npt.NDArray:
+    def read_signal(
+        self,
+        channel_identifier: str,
+        out: npt.NDArray | None = None,
+    ) -> npt.NDArray:
         """Read signal data from a CRSD file
 
         Parameters
         ----------
         channel_identifier : str
             Channel unique identifier
+        out : ndarray or None, optional
+            Array to store signal data.  If None, a new array will be created.
 
         Returns
         -------
@@ -347,10 +353,22 @@ class Reader:
         self._file_object.seek(signal_offset + self._signal_block_byte_offset)
         shape, dtype = _describe_signal(self.metadata.xmltree, channel_identifier)
         dtype = dtype.newbyteorder(">")
-        return _iohelp.fromfile(self._file_object, dtype, np.prod(shape)).reshape(shape)
 
-    def read_signal_compressed(self) -> npt.NDArray:
+        out = _iohelp.ensure_array(out, shape, dtype)
+        _iohelp.fromfile(self._file_object, dtype, np.prod(shape), out=out.reshape(-1))
+        return out
+
+    def read_signal_compressed(
+        self,
+        *,
+        out: npt.NDArray | None = None,
+    ) -> npt.NDArray:
         """Read signal data from a CRSD file with signal arrays stored in compressed format
+
+        Parameters
+        ----------
+        out : ndarray or None, optional
+            Array to store compressed signal data.  If None, a new array will be created.
 
         Returns
         -------
@@ -378,15 +396,24 @@ class Reader:
         self._file_object.seek(self._signal_block_byte_offset)
         dtype = np.dtype("uint8")
         nbytes = int(compressed_size_str)
-        return _iohelp.fromfile(self._file_object, dtype, nbytes)
+        out = _iohelp.ensure_array(out, (nbytes,), dtype)
+        _iohelp.fromfile(self._file_object, dtype, nbytes, out=out)
+        return out
 
-    def read_pvps(self, channel_identifier: str) -> npt.NDArray:
+    def read_pvps(
+        self,
+        channel_identifier: str,
+        *,
+        out: npt.NDArray | None = None,
+    ) -> npt.NDArray:
         """Read pvp data from a CRSD file
 
         Parameters
         ----------
         channel_identifier : str
             Channel unique identifier
+        out : ndarray or None, optional
+            Array to store read data.  If None, a new array will be created.
 
         Returns
         -------
@@ -404,15 +431,27 @@ class Reader:
         self._file_object.seek(pvp_offset + self._pvp_block_byte_offset)
 
         pvp_dtype = get_pvp_dtype(self.metadata.xmltree).newbyteorder("B")
-        return _iohelp.fromfile(self._file_object, pvp_dtype, num_vect)
+        out = _iohelp.ensure_array(out, (num_vect,), pvp_dtype)
+        _iohelp.fromfile(self._file_object, pvp_dtype, num_vect, out=out)
+        return out
 
-    def read_channel(self, channel_identifier: str) -> tuple[npt.NDArray, npt.NDArray]:
+    def read_channel(
+        self,
+        channel_identifier: str,
+        *,
+        out_signal: npt.NDArray | None = None,
+        out_pvp: npt.NDArray | None = None,
+    ) -> tuple[npt.NDArray, npt.NDArray]:
         """Read signal and pvp data from a CRSD file channel
 
         Parameters
         ----------
         channel_identifier : str
             Channel unique identifier
+        out_signal : ndarray or None, optional
+            Array to store signal data.  If None, a new array will be created.
+        out_pvp : ndarray or None, optional
+            Array to store PVP data.  If None, a new array will be created.
 
         Returns
         -------
@@ -422,15 +461,24 @@ class Reader:
             PVP array for channel = channel_identifier
 
         """
-        return self.read_signal(channel_identifier), self.read_pvps(channel_identifier)
+        return self.read_signal(channel_identifier, out=out_signal), self.read_pvps(
+            channel_identifier, out=out_pvp
+        )
 
-    def read_ppps(self, sequence_identifier: str) -> npt.NDArray:
+    def read_ppps(
+        self,
+        sequence_identifier: str,
+        *,
+        out: npt.NDArray | None = None,
+    ) -> npt.NDArray:
         """Read ppp data from a CRSD file
 
         Parameters
         ----------
         sequence_identifier : str
             Transmit sequence unique identifier
+        out_pvp : ndarray or None, optional
+            Array to store PPP data.  If None, a new array will be created.
 
         Returns
         -------
@@ -448,9 +496,11 @@ class Reader:
         self._file_object.seek(ppp_offset + self._ppp_block_byte_offset)
 
         ppp_dtype = get_ppp_dtype(self.metadata.xmltree).newbyteorder("B")
-        return _iohelp.fromfile(self._file_object, ppp_dtype, num_pulse)
+        out = _iohelp.ensure_array(out, (num_pulse,), ppp_dtype)
+        _iohelp.fromfile(self._file_object, ppp_dtype, num_pulse, out=out)
+        return out
 
-    def _read_support_array(self, sa_identifier):
+    def _read_support_array(self, sa_identifier, out):
         shape, dtype, _ = describe_support_array(self.metadata.xmltree, sa_identifier)
         dtype = dtype.newbyteorder("B")
         sa_info = self.metadata.xmltree.find(
@@ -459,11 +509,18 @@ class Reader:
         sa_offset = int(sa_info.find("./{*}ArrayByteOffset").text)
         self._file_object.seek(sa_offset + self._support_block_byte_offset)
         assert dtype.itemsize == int(sa_info.find("./{*}BytesPerElement").text)
-        return _iohelp.fromfile(self._file_object, dtype, np.prod(shape)).reshape(shape)
+        out = _iohelp.ensure_array(out, shape, dtype)
+        _iohelp.fromfile(
+            self._file_object,
+            dtype,
+            np.prod(shape),
+            out=np.asarray(out, copy=False).reshape(-1),
+        )
+        return out
 
-    def read_support_array(self, sa_identifier, masked=True):
+    def read_support_array(self, sa_identifier, masked=True, *, out=None):
         """Read SupportArray"""
-        array = self._read_support_array(sa_identifier)
+        array = self._read_support_array(sa_identifier, out)
         if not masked:
             return array
         nodata = self.metadata.xmltree.findtext(

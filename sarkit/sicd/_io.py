@@ -383,15 +383,24 @@ class NitfReader:
             de_subheader_part=nitf_de_fields,
         )
 
-    def read_image(self) -> npt.NDArray:
+    def read_image(
+        self,
+        *,
+        out: npt.NDArray | None = None,
+    ) -> npt.NDArray:
         """Read the entire pixel array
+
+        Parameters
+        ----------
+        out : ndarray or None, optional
+            Array to store the image.  If None, a new array will be created.
 
         Returns
         -------
         ndarray
             SICD image array
         """
-        return self.read_sub_image()[0]
+        return self.read_sub_image(out=out)[0]
 
     def read_sub_image(
         self,
@@ -399,6 +408,8 @@ class NitfReader:
         start_col: int | None = None,
         stop_row: int | None = None,
         stop_col: int | None = None,
+        *,
+        out: npt.NDArray | None = None,
     ) -> tuple[npt.NDArray, lxml.etree.ElementTree]:
         """Read a 2D slice / sub-image from the file
 
@@ -412,6 +423,8 @@ class NitfReader:
             Highest row index to retrieve (exclusive). If None, defaults to one after last row.
         stop_col : int or None
             Highest col index to retrieve (exclusive). If None, defaults to one after last column.
+        out : ndarray or None, optional
+            Array to store the sub-image.  If None, a new array will be created.
 
         Returns
         -------
@@ -437,7 +450,7 @@ class NitfReader:
         if np.any(np.less(out_shape, 1)):
             raise ValueError(f"Invalid shape requested: ({out_shape})")
 
-        out = np.empty(out_shape, dtype)
+        out = _iohelp.ensure_array(out, out_shape, dtype)
 
         out_xmltree = _update_sicd_subimage_xml(
             self.metadata.xmltree, start_row, start_col, out_nrows, out_ncols
