@@ -427,6 +427,24 @@ Use :py:meth:`~sarkit.xmlhelp.ElementWrapper.add` to add repeatable children.
    >>> wrappedsicd["CollectionInfo"]["CountryCode"]
    ('AB', 'CD', 'EF')
 
+
+:py:meth:`~sarkit.xmlhelp.ElementWrapper.findall` and :py:meth:`~sarkit.xmlhelp.ElementWrapper.find` can find children with specific traits.  This is particularly helpful for CPHD and CRSD when a lot of Identifier references exist.
+
+.. doctest::
+
+   >>> wrappedsicd["ImageFormation"].find("Processing", Type="inscription")
+   ElementWrapper({'Type': 'inscription', 'Applied': True, 'Parameter': (('krange', 'fixed'), ('kazimuth', 'fixed'))})
+   >>> wrappedsicd["ImageFormation"].findall("Processing", Applied=True)
+   [ElementWrapper({'Type': 'inscription', 'Applied': True, ..., ElementWrapper({'Type': 'Valkyrie Systems Sage ...]
+   >>> wrappedsicd["ImageFormation"].find("Processing", Applied=True)
+   ElementWrapper({'Type': 'inscription', 'Applied': True, 'Parameter': (('krange', 'fixed'), ('kazimuth', 'fixed'))})
+   >>> wrappedsicd["ImageFormation"].find("Processing", Applied=False) is None
+   True
+
+   >>> wrappedsicd['GeoData']['GeoInfo'][0].find('GeoInfo', **{'@name': 'target0'}).to_dict()
+   {'@name': 'target0', 'Desc': (('ecef', '[6378137.0, -1500.0000000000002, 1499.9999999999998]'),)}
+
+
 To serialize and deserialize ElementWrappers, use :py:meth:`~sarkit.xmlhelp.ElementWrapper.to_dict` and
 :py:meth:`~sarkit.xmlhelp.ElementWrapper.from_dict`:
 
