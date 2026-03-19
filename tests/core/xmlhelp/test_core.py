@@ -142,6 +142,38 @@ def test_elementwrapper():
     with pytest.raises(ValueError):
         wrapped_siddroot["ExploitationFeatures"]["Product"][0]["North"] = "string"
 
+    # Find works
+    wrapped_siddroot["ExploitationFeatures"]["Product"] = [
+        {
+            "North": 1,
+            "Ellipticity": 0.5,
+            "Polarization": [{"TxPolarizationProc": "V", "RcvPolarizationProc": "H"}],
+        },
+        {"North": 1, "Ellipticity": 0.25},
+        {"North": 2, "Ellipticity": 0.75},
+    ]
+    assert (
+        len(wrapped_siddroot["ExploitationFeatures"].findall("Product", North=1)) == 2
+    )
+    assert (
+        len(wrapped_siddroot["ExploitationFeatures"].findall("Product", North=2)) == 1
+    )
+    assert (
+        wrapped_siddroot["ExploitationFeatures"].find("Product", North=1)["Ellipticity"]
+        == 0.5
+    )
+    assert (
+        wrapped_siddroot["ExploitationFeatures"].find("Product", North=2)["Ellipticity"]
+        == 0.75
+    )
+    assert (
+        wrapped_siddroot["ExploitationFeatures"].find(
+            "Product",
+            Polarization=[{"TxPolarizationProc": "V", "RcvPolarizationProc": "H"}],
+        )
+        is not None
+    )
+
 
 def test_elementwrapper_tofromdict():
     root_ns = "urn:SIDD:3.0.0"
