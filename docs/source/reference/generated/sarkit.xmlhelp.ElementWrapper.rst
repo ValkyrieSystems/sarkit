@@ -14,5 +14,7 @@
       
          ElementWrapper.add
          ElementWrapper.get
+         ElementWrapper.find
+         ElementWrapper.findall
          ElementWrapper.from_dict
          ElementWrapper.to_dict
