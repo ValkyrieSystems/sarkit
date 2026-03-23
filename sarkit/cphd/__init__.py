@@ -57,12 +57,16 @@ XML Metadata
    ImageAreaCornerPointsType
    ParameterType
 
-Reference Geometry Computations
-===============================
+Scene Coordinates  & Collection Geometry
+========================================
 
 .. autosummary::
    :toctree: generated/
 
+   planar_ecf_to_iac
+   planar_iac_to_ecf
+   ecf_to_iac
+   iac_to_ecf
    compute_reference_geometry
 
 Constants
@@ -130,6 +134,12 @@ from ._io import (
 from ._refgeom import (
     compute_reference_geometry,
 )
+from ._scenecoords import (
+    ecf_to_iac,
+    iac_to_ecf,
+    planar_ecf_to_iac,
+    planar_iac_to_ecf,
+)
 from ._xml import (
     AddedPvpType,
     BoolType,
@@ -188,7 +198,11 @@ __all__ = [
     "binary_format_string_to_dtype",
     "compute_reference_geometry",
     "dtype_to_binary_format_string",
+    "ecf_to_iac",
     "get_pvp_dtype",
+    "iac_to_ecf",
     "mask_support_array",
+    "planar_ecf_to_iac",
+    "planar_iac_to_ecf",
     "read_file_header",
 ]
