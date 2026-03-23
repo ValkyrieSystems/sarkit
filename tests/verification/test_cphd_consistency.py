@@ -236,6 +236,20 @@ def test_check_count_mismatch(good_xml, tag_to_invalidate, check, err_txt):
     testing.assert_failures(cphd_con, err_txt)
 
 
+def test_check_support_arrays_have_data(good_xml):
+    bad_xml = copy_xml(good_xml)
+    sa_id = bad_xml.findtext("{*}SupportArray/*/{*}Identifier")
+    remove_nodes(
+        bad_xml.find(f'{{*}}Data/{{*}}SupportArray[{{*}}Identifier="{sa_id}"]')
+    )
+    cphd_con = CphdConsistency(bad_xml)
+    cphd_con.check("check_support_arrays_have_data")
+    testing.assert_failures(
+        cphd_con,
+        f"Support array with identifier {sa_id} has an entry in /Data/SupportArray",
+    )
+
+
 @pytest.mark.parametrize(
     "bad_num_bytes_pvp, err_txt",
     [("0", "NumBytesPVP > 0"), ("23", "NumBytesPVP is a multiple of 8")],
@@ -397,6 +411,37 @@ def test_check_antenna_array_element_antgpid(good_xml_root, em):
     testing.assert_failures(
         cphd_con,
         "Array/AntGPId and Element/AntGPId, when present, are included together in /Antenna/AntPattern",
+    )
+
+
+def test_check_antenna_array_element_antgpid_exist(good_xml, em):
+    bad_xml = copy_xml(good_xml)
+    gpid = "mock-antgpid"
+    bad_xml.find("./{*}Antenna/{*}AntPattern/{*}Element/{*}PhasePoly").addnext(
+        em.AntGPId(gpid)
+    )
+    cphd_con = CphdConsistency(bad_xml)
+    cphd_con.check("check_antenna_array_element_antgpid_exist")
+    testing.assert_failures(
+        cphd_con,
+        f"GainPhase array {gpid} exists",
+    )
+
+
+@pytest.mark.parametrize("kind", ["Array", "Element"])
+def test_check_antenna_arrayid_elementid_exist(good_xml, em, kind):
+    bad_xml = copy_xml(good_xml)
+    mock_gpid = "mock-antgpid"
+    gpid_node = bad_xml.find(
+        f"{{*}}Antenna/{{*}}AntPattern/{{*}}GainPhaseArray/{{*}}{kind}Id"
+    )
+    gpid_node.text = mock_gpid
+
+    cphd_con = CphdConsistency(bad_xml)
+    cphd_con.check("check_antenna_arrayid_elementid_exist")
+    testing.assert_failures(
+        cphd_con,
+        f"GainPhase array {mock_gpid} exists",
     )
 
 
@@ -1219,6 +1264,24 @@ def test_channel_dwell_usedta(cphd_con_from_file, em):
     testing.assert_failures(
         cphd_con,
         "UseDTA only included when DTAId is also included",
+    )
+
+
+def test_channel_dtaid(cphd_con_from_file, em):
+    cphd_con = cphd_con_from_file
+    assert (
+        cphd_con.cphdroot.find("./{*}Channel/{*}Parameters/{*}DwellTimes/{*}DTAId")
+        is None
+    )
+    mock_dtaid = "dummy_id"
+    cphd_con.cphdroot.find("{*}Channel/{*}Parameters/{*}DwellTimes").append(
+        em.DTAId(mock_dtaid)
+    )
+
+    cphd_con.check("check_channel_dtaid", allow_prefix=True)
+    testing.assert_failures(
+        cphd_con,
+        f"Dwell Time support array with ID {mock_dtaid}.*exists",
     )
 
 
