@@ -57,16 +57,34 @@ XML Metadata
    ImageAreaCornerPointsType
    ParameterType
 
-Scene Coordinates  & Collection Geometry
-========================================
+Scene Coordinates & Collection Geometry
+=======================================
+
+Image Reference Surface
 
 .. autosummary::
    :toctree: generated/
 
    planar_ecf_to_iac
    planar_iac_to_ecf
+   hae_llh_to_iac
+   hae_iac_to_llh
+
+Convenience functions that operate on parsed XML trees:
+
+.. autosummary::
+   :toctree: generated/
+
    ecf_to_iac
    iac_to_ecf
+   llh_to_iac
+   iac_to_llh
+
+Reference Geometry Parameters
+
+.. autosummary::
+   :toctree: generated/
+
    compute_reference_geometry
 
 Constants
@@ -136,7 +154,11 @@ from ._refgeom import (
 )
 from ._scenecoords import (
     ecf_to_iac,
+    hae_iac_to_llh,
+    hae_llh_to_iac,
     iac_to_ecf,
+    iac_to_llh,
+    llh_to_iac,
     planar_ecf_to_iac,
     planar_iac_to_ecf,
 )
@@ -200,7 +222,11 @@ __all__ = [
     "dtype_to_binary_format_string",
     "ecf_to_iac",
     "get_pvp_dtype",
+    "hae_iac_to_llh",
+    "hae_llh_to_iac",
     "iac_to_ecf",
+    "iac_to_llh",
+    "llh_to_iac",
     "mask_support_array",
     "planar_ecf_to_iac",
     "planar_iac_to_ecf",

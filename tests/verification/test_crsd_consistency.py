@@ -166,27 +166,6 @@ def example_crsd_file(request):
     yield request.getfixturevalue(f"example_crsd{param}_file")
 
 
-@pytest.fixture(scope="session")
-def example_crsd_with_header_fill(tmp_path_factory, example_crsd_file):
-    crsd_con = CrsdConsistency.from_file(example_crsd_file, thorough=True)
-    support_end = int(crsd_con.kvp_list["SUPPORT_BLOCK_BYTE_OFFSET"]) + int(
-        crsd_con.kvp_list["SUPPORT_BLOCK_SIZE"]
-    )
-
-    example_crsd_file.seek(0, os.SEEK_SET)
-    bytes_through_support = example_crsd_file.read(support_end)
-    rest_of_the_bytes = example_crsd_file.read()
-
-    tmp_crsd = tmp_path_factory.mktemp("data") / "with_fill.crsd"
-    with tmp_crsd.open("wb") as f:
-        f.write(bytes_through_support)
-        f.write(b"\xff" * NUM_FILL_BYTES)
-        f.write(rest_of_the_bytes)
-
-    with tmp_crsd.open("rb") as f:
-        yield f
-
-
 @pytest.fixture(scope="module")
 def good_xml():
     return etree.parse(good_crsd_xml_path)
@@ -1416,30 +1395,7 @@ def test_scene_planar_axes_iaz(crsd_con):
 
 
 def _replace_plane_with_hae(crsd_con):
-    plane_iax = crsd_con.xmlhelp.load(
-        "{*}SceneCoordinates/{*}ReferenceSurface/{*}Planar/{*}uIAX"
-    )
-    plane_iay = crsd_con.xmlhelp.load(
-        "{*}SceneCoordinates/{*}ReferenceSurface/{*}Planar/{*}uIAY"
-    )
-    iarp_ecf = crsd_con.xmlhelp.load("{*}SceneCoordinates/{*}IARP/{*}ECF")
-    iarp_llh = crsd_con.xmlhelp.load("{*}SceneCoordinates/{*}IARP/{*}LLH")
-    hae_iax = np.deg2rad(
-        (sarkit.wgs84.cartesian_to_geodetic(iarp_ecf + plane_iax) - iarp_llh)[:2]
-    )
-    hae_iay = np.deg2rad(
-        (sarkit.wgs84.cartesian_to_geodetic(iarp_ecf + plane_iay) - iarp_llh)[:2]
-    )
-    elem_ns = etree.QName(crsd_con.crsdroot).namespace
-    hae_node = etree.Element(f"{{{elem_ns}}}HAE")
-    hae_node.append(etree.Element(f"{{{elem_ns}}}uIAXLL"))
-    hae_node.append(etree.Element(f"{{{elem_ns}}}uIAYLL"))
-    crsd_con.crsdroot.find("{*}SceneCoordinates/{*}ReferenceSurface/{*}Planar").addnext(
-        hae_node
-    )
-    _remove(crsd_con.crsdroot, "{*}SceneCoordinates/{*}ReferenceSurface/{*}Planar")
-    crsd_con.xmlhelp.set_elem(hae_node.find("{*}uIAXLL"), hae_iax)
-    crsd_con.xmlhelp.set_elem(hae_node.find("{*}uIAYLL"), hae_iay)
+    tests.utils.replace_planar_with_hae(skcrsd.ElementWrapper(crsd_con.crsdroot))
     crsd_con.check("check_against_schema")
     assert crsd_con.passes() and not crsd_con.failures()
 
@@ -2066,7 +2022,7 @@ def test_check_post_header_pad(crsd_con):
         int(crsd_con.kvp_list["XML_BLOCK_BYTE_OFFSET"]) + 1
     )
     crsd_con.check("check_post_header_section_terminator_and_pad")
-    assert crsd_con.failures()
+    assert_failures(crsd_con, "pad between header and XML is zeros")
 
 
 def test_check_post_xml_section_terminator(crsd_con):
