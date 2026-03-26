@@ -410,6 +410,23 @@ class CphdConsistency(con.ConsistencyChecker):
         """/Data/NumSupportArrays matches #{/Data/SupportArray} nodes"""
         self._check_count("./{*}Data/{*}NumSupportArrays", "./{*}Data/{*}SupportArray")
 
+    def check_support_arrays_have_data(self):
+        """Each /SupportArray array has a corresponding /Data/SupportArray"""
+        sa_id_nodes = self.cphdroot.findall("{*}SupportArray/*/{*}Identifier")
+        with self.precondition():
+            assert sa_id_nodes
+            for sa_id_node in sa_id_nodes:
+                sa_id = sa_id_node.text
+                with self.need(
+                    f"Support array with identifier {sa_id} has an entry in /Data/SupportArray"
+                ):
+                    assert (
+                        self.cphdroot.find(
+                            f"{{*}}Data/{{*}}SupportArray[{{*}}Identifier='{sa_id}']"
+                        )
+                        is not None
+                    )
+
     def check_dwell_num_cod_times(self):
         """/Dwell/NumCODTimes matches #{/Dwell/CODTime} nodes"""
         self._check_count("./{*}Dwell/{*}NumCODTimes", "./{*}Dwell/{*}CODTime")
@@ -456,6 +473,22 @@ class CphdConsistency(con.ConsistencyChecker):
                 f"UseDTA only included when DTAId is also included.  For channel={channel_id}"
             ):
                 assert channel_node.find("./{*}DwellTimes/{*}DTAId") is not None
+
+    @per_channel
+    def check_channel_dtaid(self, channel_id, channel_node):
+        """If a DTAId is specified, the support array exists"""
+        with self.precondition():
+            dtaid = channel_node.findtext("./{*}DwellTimes/{*}DTAId")
+            assert dtaid is not None
+            with self.need(
+                f"Dwell Time support array with ID {dtaid} (used by channel {channel_id}) exists."
+            ):
+                assert (
+                    self.cphdroot.find(
+                        f"{{*}}SupportArray/{{*}}DwellTimeArray[{{*}}Identifier='{dtaid}']"
+                    )
+                    is not None
+                )
 
     @per_channel
     def check_channel_dwell_polys(self, channel_id, channel_node):
@@ -585,6 +618,41 @@ class CphdConsistency(con.ConsistencyChecker):
                     "Array/AntGPId and Element/AntGPId, when present, are included together in /Antenna/AntPattern"
                 ):
                     assert has_array_ant_gp_id == has_element_ant_gp_id
+
+    def check_antenna_array_element_antgpid_exist(self):
+        """Check that used GPIds exist"""
+        gpid_nodes = self.cphdroot.findall("{*}Antenna/{*}AntPattern/*/{*}AntGPId")
+        with self.precondition():
+            assert gpid_nodes
+            for gpid_node in gpid_nodes:
+                gpid = gpid_node.text
+                with self.need(f"GainPhase array {gpid} exists"):
+                    assert (
+                        self.cphdroot.find(
+                            f"{{*}}SupportArray/{{*}}AntGainPhase[{{*}}Identifier='{gpid}']"
+                        )
+                        is not None
+                    )
+
+    def check_antenna_arrayid_elementid_exist(self):
+        """Check that used gain phase arrays exist"""
+        array_id_nodes = self.cphdroot.findall(
+            "{*}Antenna/{*}AntPattern/{*}GainPhaseArray/{*}ArrayId"
+        )
+        element_id_nodes = self.cphdroot.findall(
+            "{*}Antenna/{*}AntPattern/{*}GainPhaseArray/{*}ElementId"
+        )
+        with self.precondition():
+            assert array_id_nodes + element_id_nodes
+            for gpid_node in array_id_nodes + element_id_nodes:
+                gpid = gpid_node.text
+                with self.need(f"GainPhase array {gpid} exists"):
+                    assert (
+                        self.cphdroot.find(
+                            f"{{*}}SupportArray/{{*}}AntGainPhase[{{*}}Identifier='{gpid}']"
+                        )
+                        is not None
+                    )
 
     @per_channel
     def check_channel_antenna_exist(self, channel_id, channel_node):
