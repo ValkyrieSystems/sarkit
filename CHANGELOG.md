@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `ElementWrapper.findall` and `ElementWrapper.find` methods
 - Additional CPHD consistency checks for Support Arrays and associated unit tests
+- Methods for converting to & from image area coordinates in `sarkit.cphd`
 
 
 ## [1.5.0] - 2026-03-04
