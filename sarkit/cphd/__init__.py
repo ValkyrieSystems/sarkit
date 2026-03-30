@@ -57,6 +57,15 @@ XML Metadata
    ImageAreaCornerPointsType
    ParameterType
 
+CPHD Signal Model
+=================
+
+.. autosummary::
+   :toctree: generated/
+
+   compute_t_ref
+   compute_t_ref_from_pvps
+
 Scene Coordinates & Collection Geometry
 =======================================
 
@@ -162,6 +171,10 @@ from ._scenecoords import (
     planar_ecf_to_iac,
     planar_iac_to_ecf,
 )
+from ._sigmodel import (
+    compute_t_ref,
+    compute_t_ref_from_pvps,
+)
 from ._xml import (
     AddedPvpType,
     BoolType,
@@ -219,6 +232,8 @@ __all__ = [
     "XyzType",
     "binary_format_string_to_dtype",
     "compute_reference_geometry",
+    "compute_t_ref",
+    "compute_t_ref_from_pvps",
     "dtype_to_binary_format_string",
     "ecf_to_iac",
     "get_pvp_dtype",
