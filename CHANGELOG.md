@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `--txsequences` argument to `crsdinfo` for listing transmit pulse sequences
+
 
 ## [1.6.0] - 2026-03-30
 
