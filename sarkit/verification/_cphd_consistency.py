@@ -172,7 +172,7 @@ class CphdConsistency(con.ConsistencyChecker):
             import sarkit.cphd as skcphd
             import lxml.etree
             meta = skcphd.Metadata(
-                xmltree=lxml.etree.parse("data/example-cphd-1.0.1.xml"),
+                xmltree=lxml.etree.parse("data/example-cphd-1.1.0.xml"),
             )
             file = tmppath / "example.cphd"
             with file.open("wb") as f, skcphd.Writer(f, meta) as w:
@@ -187,7 +187,7 @@ class CphdConsistency(con.ConsistencyChecker):
 
             >>> import sarkit.verification as skver
 
-            >>> with open("data/example-cphd-1.0.1.xml", "r") as f:
+            >>> with open("data/example-cphd-1.1.0.xml", "r") as f:
             ...     con = skver.CphdConsistency.from_file(f)
             >>> con.check()
             >>> bool(con.passes())
@@ -275,7 +275,7 @@ class CphdConsistency(con.ConsistencyChecker):
 
             >>> import lxml.etree
             >>> import sarkit.verification as skver
-            >>> cphd_xmltree = lxml.etree.parse("data/example-cphd-1.0.1.xml")
+            >>> cphd_xmltree = lxml.etree.parse("data/example-cphd-1.1.0.xml")
             >>> con = skver.CphdConsistency.from_parts(cphd_xmltree)
             >>> con.check()
             >>> bool(con.passes())
@@ -634,6 +634,66 @@ class CphdConsistency(con.ConsistencyChecker):
                         is not None
                     )
 
+    def check_antenna_useacfpvp(self):
+        """UseACFPVP only included when PVP TxAntenna & RcvAntenna are included."""
+        with self.precondition():
+            assert (
+                self.cphdroot.find("{*}Antenna/{*}AntCoordFrame/{*}UseACFPVP")
+                is not None
+            )
+            with self.need(
+                "UseACFPVP only included when PVP TxAntenna & RcvAntenna are included"
+            ):
+                assert self.cphdroot.find("{*}PVP/{*}TxAntenna") is not None
+                assert self.cphdroot.find("{*}PVP/{*}RcvAntenna") is not None
+
+    def check_antenna_useebpvp(self):
+        """UseEBPVP only included when PVP TxAntenna & RcvAntenna are included."""
+        with self.precondition():
+            assert (
+                self.cphdroot.find("{*}Antenna/{*}AntPattern/{*}EB/{*}UseEBPVP")
+                is not None
+            )
+            with self.need(
+                "UseEBPVP only included when PVP TxAntenna & RcvAntenna are included"
+            ):
+                assert self.cphdroot.find("{*}PVP/{*}TxAntenna") is not None
+                assert self.cphdroot.find("{*}PVP/{*}RcvAntenna") is not None
+
+    def check_antenna_ebfreqshiftsf(self):
+        """AntPattern/EBFreqShiftSF only included for EBFreqShift = true"""
+        ebfreqshiftsf_elems = self.cphdroot.findall(
+            "{*}Antenna/{*}AntPattern/{*}EBFreqShiftSF"
+        )
+        with self.precondition():
+            assert ebfreqshiftsf_elems
+            for elem in ebfreqshiftsf_elems:
+                apat = elem.getparent()
+                apat_id = apat.findtext("{*}Identifier")
+                ebfs_elem = apat.find("{*}EBFreqShift")
+                with self.need(
+                    f"EBFreqShiftSF only included for EBFreqShift = true for APAT_ID={apat_id}"
+                ):
+                    assert ebfs_elem is not None
+                    assert self.xmlhelp.load_elem(ebfs_elem) is True
+
+    def check_antenna_mlfreqdilationsf(self):
+        """AntPattern/MLFreqDilationSF only included for MLFreqDilation = true"""
+        mlfreqdilationsf_elems = self.cphdroot.findall(
+            "{*}Antenna/{*}AntPattern/{*}MLFreqDilationSF"
+        )
+        with self.precondition():
+            assert mlfreqdilationsf_elems
+            for elem in mlfreqdilationsf_elems:
+                apat = elem.getparent()
+                apat_id = apat.findtext("{*}Identifier")
+                mlfd_elem = apat.find("{*}MLFreqDilation")
+                with self.need(
+                    f"MLFreqDilationSF only included for MLFreqDilation = true for APAT_ID={apat_id}"
+                ):
+                    assert mlfd_elem is not None
+                    assert self.xmlhelp.load_elem(mlfd_elem) is True
+
     def check_antenna_arrayid_elementid_exist(self):
         """Check that used gain phase arrays exist"""
         array_id_nodes = self.cphdroot.findall(
@@ -803,6 +863,54 @@ class CphdConsistency(con.ConsistencyChecker):
                         assert all(
                             set_finiteness.max(axis=-1) == set_finiteness.min(axis=-1)
                         )
+
+    @per_channel
+    def check_tx_acxy(self, channel_id, channel_node):
+        """TxACX and TxACY PVPs are orthonormal"""
+        with self.precondition():
+            pvp = self._get_channel_pvps(channel_id)
+            assert {"TxACX", "TxACY"}.issubset(pvp.dtype.names)
+            with self.need("TxACX is unit length"):
+                assert np.linalg.norm(pvp["TxACX"], axis=-1) == con.Approx(1.0)
+            with self.need("TxACY is unit length"):
+                assert np.linalg.norm(pvp["TxACY"], axis=-1) == con.Approx(1.0)
+            with self.need("TxACX and TxACY are orthogonal"):
+                assert np.vecdot(pvp["TxACX"], pvp["TxACY"]) == con.Approx(
+                    0.0, atol=1e-6
+                )
+
+    @per_channel
+    def check_txeb(self, channel_id, channel_node):
+        """TxEB composed of valid direction cosines"""
+        with self.precondition():
+            pvp = self._get_channel_pvps(channel_id)
+            assert "TxEB" in pvp.dtype.names
+            with self.need("TxEB is less than unit length"):
+                assert np.linalg.norm(pvp["TxEB"], axis=-1) <= con.Approx(1.0)
+
+    @per_channel
+    def check_rcv_acxy(self, channel_id, channel_node):
+        """RcvACX and RcvACY PVPs are orthonormal"""
+        with self.precondition():
+            pvp = self._get_channel_pvps(channel_id)
+            assert {"RcvACX", "RcvACY"}.issubset(pvp.dtype.names)
+            with self.need("RcvACX is unit length"):
+                assert np.linalg.norm(pvp["RcvACX"], axis=-1) == con.Approx(1.0)
+            with self.need("RcvACY is unit length"):
+                assert np.linalg.norm(pvp["RcvACY"], axis=-1) == con.Approx(1.0)
+            with self.need("RcvACX and RcvACY are orthogonal"):
+                assert np.vecdot(pvp["RcvACX"], pvp["RcvACY"]) == con.Approx(
+                    0.0, atol=1e-6
+                )
+
+    @per_channel
+    def check_rcveb(self, channel_id, channel_node):
+        """RcvEB composed of valid direction cosines"""
+        with self.precondition():
+            pvp = self._get_channel_pvps(channel_id)
+            assert "RcvEB" in pvp.dtype.names
+            with self.need("RcvEB is less than unit length"):
+                assert np.linalg.norm(pvp["RcvEB"], axis=-1) <= con.Approx(1.0)
 
     @per_channel
     def check_channel_fxfixed(self, channel_id, channel_node):

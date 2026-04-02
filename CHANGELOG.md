@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Additional CPHD consistency checks for optional antenna fields introduced in v1.1.0
+
 
 ## [1.6.0] - 2026-03-30
 

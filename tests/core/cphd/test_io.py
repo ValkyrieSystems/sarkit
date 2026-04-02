@@ -62,7 +62,7 @@ def _last_field(structured_dtype):
 
 
 def test_get_pvp_dtype():
-    etree = lxml.etree.parse(DATAPATH / "example-cphd-1.0.1.xml")
+    etree = lxml.etree.parse(DATAPATH / "example-cphd-1.1.0.xml")
     num_bytes_pvp = int(etree.find("./{*}Data/{*}NumBytesPVP").text)
     pvp_dtype = skcphd.get_pvp_dtype(etree)
 
@@ -109,9 +109,13 @@ def _random_support_array(cphd_xmltree, sa_id):
     )
 
 
+@pytest.mark.parametrize(
+    "basis_xml",
+    (DATAPATH / "example-cphd-1.0.1.xml", DATAPATH / "example-cphd-1.1.0.xml"),
+)
 @pytest.mark.parametrize("with_support_block", (True, False))
-def test_roundtrip(tmp_path, with_support_block):
-    basis_etree = lxml.etree.parse(DATAPATH / "example-cphd-1.0.1.xml")
+def test_roundtrip(tmp_path, with_support_block, basis_xml):
+    basis_etree = lxml.etree.parse(basis_xml)
     basis_version = lxml.etree.QName(basis_etree.getroot()).namespace
     schema = lxml.etree.XMLSchema(file=skcphd.VERSION_INFO[basis_version]["schema"])
     schema.assertValid(basis_etree)
@@ -223,7 +227,7 @@ def test_roundtrip(tmp_path, with_support_block):
 
 
 def test_roundtrip_compressed(tmp_path):
-    basis_etree = lxml.etree.parse(DATAPATH / "example-cphd-1.0.1.xml")
+    basis_etree = lxml.etree.parse(DATAPATH / "example-cphd-1.1.0.xml")
     basis_version = lxml.etree.QName(basis_etree.getroot()).namespace
     assert basis_etree.find("{*}Data/{*}SignalCompressionID") is None
     channel_ids = [
@@ -273,7 +277,7 @@ def test_roundtrip_compressed(tmp_path):
 @pytest.mark.parametrize("is_masked", (True, False))
 @pytest.mark.parametrize("nodata_in_xml", (True, False))
 def test_write_support_array(is_masked, nodata_in_xml, tmp_path):
-    basis_etree = lxml.etree.parse(DATAPATH / "example-cphd-1.0.1.xml")
+    basis_etree = lxml.etree.parse(DATAPATH / "example-cphd-1.1.0.xml")
     elem_ns = lxml.etree.QName(basis_etree.getroot()).namespace
     em = lxml.builder.ElementMaker(namespace=elem_ns, nsmap={None: elem_ns})
     sa_id = str(uuid.uuid4())
