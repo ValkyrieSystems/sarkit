@@ -13,7 +13,7 @@ from sarkit import _constants
 
 DATAPATH = pathlib.Path(__file__).parents[1] / "data"
 
-good_cphd_xml_path = DATAPATH / "example-cphd-1.0.1.xml"
+good_cphd_xml_path = DATAPATH / "example-cphd-1.1.0.xml"
 good_crsd_xml_path = DATAPATH / "example-crsd-1.0.xml"
 good_sicd_xml_path = DATAPATH / "example-sicd-1.2.1.xml"
 good_sidd_xml_path = DATAPATH / "example-sidd-3.0.0.xml"
@@ -80,6 +80,22 @@ def example_cphd(tmp_path_factory):
     pvps["SRPPos"] = srp
 
     pvps["SIGNAL"] = 1
+
+    def unit(x):
+        return x / np.linalg.norm(x, axis=-1, keepdims=True)
+
+    tx_acz = unit(srp - pvps["TxPos"])
+    tx_acx = unit(np.cross(pvps["TxVel"], tx_acz))
+    tx_acy = unit(np.cross(tx_acz, tx_acx))
+    rcv_acz = unit(srp - pvps["RcvPos"])
+    rcv_acx = unit(np.cross(pvps["RcvVel"], rcv_acz))
+    rcv_acy = unit(np.cross(rcv_acz, rcv_acx))
+    pvps["TxACX"] = tx_acx
+    pvps["TxACY"] = tx_acy
+    pvps["TxEB"] = 0
+    pvps["RcvACX"] = rcv_acx
+    pvps["RcvACY"] = rcv_acy
+    pvps["RcvEB"] = 0
 
     tmp_cphd = (
         tmp_path_factory.mktemp("data") / good_cphd_xml_path.with_suffix(".cphd").name

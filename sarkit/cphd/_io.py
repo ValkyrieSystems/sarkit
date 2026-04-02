@@ -359,7 +359,7 @@ class Reader:
 
         import sarkit.cphd as skcphd
         import lxml.etree
-        meta = skcphd.Metadata(xmltree=lxml.etree.parse("data/example-cphd-1.0.1.xml"))
+        meta = skcphd.Metadata(xmltree=lxml.etree.parse("data/example-cphd-1.1.0.xml"))
 
         file = pathlib.Path(tmpdir.name) / "foo"
         with file.open("wb") as f, skcphd.Writer(f, meta) as w:
@@ -680,7 +680,7 @@ class Writer:
 
         >>> import lxml.etree
 
-        >>> xmltree = lxml.etree.parse("data/example-cphd-1.0.1.xml")
+        >>> xmltree = lxml.etree.parse("data/example-cphd-1.1.0.xml")
         >>> first_channel = xmltree.find("{*}Data/{*}Channel")
         >>> ch_id = first_channel.findtext("{*}Identifier")
         >>> num_v = int(first_channel.findtext("{*}NumVectors"))
