@@ -4,6 +4,7 @@ import unittest.mock
 
 import lxml.builder
 import numpy as np
+import numpy.lib.recfunctions as rfn
 import pytest
 import shapely.affinity
 import shapely.geometry as shg
@@ -19,7 +20,7 @@ from . import testing
 
 DATAPATH = pathlib.Path(__file__).parents[2] / "data"
 
-good_cphd_xml_path = DATAPATH / "example-cphd-1.0.1.xml"
+good_cphd_xml_path = DATAPATH / "example-cphd-1.1.0.xml"
 
 
 @pytest.fixture(scope="session")
@@ -324,7 +325,7 @@ def test_check_pvp_set_finiteness(example_cphd_file):
 
 
 def test_txrcv_lfmrate():
-    cphd_con = CphdConsistency.from_file(str(good_cphd_xml_path))
+    cphd_con = CphdConsistency.from_file(str(DATAPATH / "example-cphd-1.0.1.xml"))
     cphd_con.cphdroot.find("./{*}TxRcv/{*}TxWFParameters/{*}LFMRate").text = "0.0"
     cphd_con.check("check_txrcv_lfmrate")
     testing.assert_failures(
@@ -1738,3 +1739,113 @@ def test_smart_open_contract(example_cphd, monkeypatch):
     monkeypatch.setattr(sarkit.verification._cphdcheck, "open", mock_open)
     assert not main([str(example_cphd), "--thorough"])
     mock_open.assert_called_once_with(str(example_cphd), "rb")
+
+
+@pytest.mark.parametrize("txrcv", ["Tx", "Rcv"])
+@pytest.mark.parametrize("axis", ["X", "Y"])
+def test_txrcv_acxy_not_unit(cphd_con_from_file, axis, txrcv):
+    cphd_con = cphd_con_from_file
+    ch_id = cphd_con.cphdroot.findtext(".//{*}RefChId")
+    pvp = cphd_con._get_channel_pvps(ch_id)
+    pvp[f"{txrcv}AC{axis}"][0] *= 3
+    cphd_con.check(f"check_{txrcv.lower()}_acxy", allow_prefix=True)
+    testing.assert_failures(cphd_con, f"{txrcv}AC{axis} is unit length")
+
+
+@pytest.mark.parametrize("txrcv", ["Tx", "Rcv"])
+def test_txrcv_acxy_not_ortho(cphd_con_from_file, txrcv):
+    cphd_con = cphd_con_from_file
+    ch_id = cphd_con.cphdroot.findtext(".//{*}RefChId")
+    pvp = cphd_con._get_channel_pvps(ch_id)
+    pvp[f"{txrcv}ACX"][0] = pvp[f"{txrcv}ACY"][0]
+    cphd_con.check(f"check_{txrcv.lower()}_acxy", allow_prefix=True)
+    testing.assert_failures(cphd_con, "are orthogonal")
+
+
+def test_txrcv_antenna_pvps_not_present(cphd_con_from_file):
+    cphd_con = cphd_con_from_file
+    remove_nodes(*cphd_con.cphdroot.findall("{*}PVP/{*}TxAntenna"))
+    remove_nodes(*cphd_con.cphdroot.findall("{*}PVP/{*}RcvAntenna"))
+    ch_id = cphd_con.cphdroot.findtext(".//{*}RefChId")
+    pvp = cphd_con._get_channel_pvps(ch_id)
+    cphd_con.pvps[ch_id] = rfn.drop_fields(
+        pvp, ("TxACX", "TxACY", "TxEB", "RcvACX", "RcvACY", "RcvEB")
+    )
+    cphd_con.check(
+        ["check_tx_acxy", "check_txeb", "check_rcv_acxy", "check_rcveb"],
+        allow_prefix=True,
+    )
+    assert not cphd_con.failures()
+    assert cphd_con.skips()
+
+
+@pytest.mark.parametrize("txrcv", ["Tx", "Rcv"])
+def test_txrcv_eb(cphd_con_from_file, txrcv):
+    cphd_con = cphd_con_from_file
+    ch_id = cphd_con.cphdroot.findtext(".//{*}RefChId")
+    pvp = cphd_con._get_channel_pvps(ch_id)
+    pvp[f"{txrcv}EB"][0] = [0.8, 0.8]
+    cphd_con.check(f"check_{txrcv.lower()}eb", allow_prefix=True)
+    testing.assert_failures(cphd_con, "unit length")
+
+
+def test_check_antenna_useacfpvp(cphd_con):
+    ew = skcphd.ElementWrapper(cphd_con.cphdroot)
+    assert all(x in ew["PVP"] for x in ("TxAntenna", "RcvAntenna"))
+    ew["Antenna"]["AntCoordFrame"][0]["UseACFPVP"] = True
+    cphd_con.check("check_antenna_useacfpvp")
+    assert cphd_con.passes() and not cphd_con.failures()
+    del ew["PVP"]["TxAntenna"]
+    cphd_con.check("check_antenna_useacfpvp")
+    testing.assert_failures(cphd_con, "UseACFPVP only included")
+
+
+def test_check_antenna_useebpvp(cphd_con):
+    ew = skcphd.ElementWrapper(cphd_con.cphdroot)
+    assert all(x in ew["PVP"] for x in ("TxAntenna", "RcvAntenna"))
+    ew["Antenna"]["AntPattern"][0]["EB"]["UseEBPVP"] = True
+    cphd_con.check("check_antenna_useebpvp")
+    assert cphd_con.passes() and not cphd_con.failures()
+    del ew["PVP"]["TxAntenna"]
+    cphd_con.check("check_antenna_useebpvp")
+    testing.assert_failures(cphd_con, "UseEBPVP only included")
+
+
+def test_check_antenna_ebfreqshiftsf(cphd_con):
+    remove_nodes(*cphd_con.cphdroot.findall("{*}Antenna/{*}AntPattern/{*}EBFreqShift"))
+    ew = skcphd.ElementWrapper(cphd_con.cphdroot)
+    apat_ew = ew["Antenna"]["AntPattern"][0]
+    apat_ew["EBFreqShiftSF"] = {"DCXSF": 0.0, "DCYSF": 0.0}
+    cphd_con.check("check_antenna_ebfreqshiftsf")
+    testing.assert_failures(
+        cphd_con, "EBFreqShiftSF only included for EBFreqShift = true"
+    )
+    apat_ew["EBFreqShift"] = False
+    cphd_con.check("check_antenna_ebfreqshiftsf")
+    testing.assert_failures(
+        cphd_con, "EBFreqShiftSF only included for EBFreqShift = true"
+    )
+    apat_ew["EBFreqShift"] = True
+    cphd_con.check("check_antenna_ebfreqshiftsf")
+    assert cphd_con.passes() and not cphd_con.failures()
+
+
+def test_check_antenna_mlfreqdilationsf(cphd_con):
+    remove_nodes(
+        *cphd_con.cphdroot.findall("{*}Antenna/{*}AntPattern/{*}MLFreqDilation")
+    )
+    ew = skcphd.ElementWrapper(cphd_con.cphdroot)
+    apat_ew = ew["Antenna"]["AntPattern"][0]
+    apat_ew["MLFreqDilationSF"] = {"DCXSF": 0.0, "DCYSF": 0.0}
+    cphd_con.check("check_antenna_mlfreqdilationsf")
+    testing.assert_failures(
+        cphd_con, "MLFreqDilationSF only included for MLFreqDilation = true"
+    )
+    apat_ew["MLFreqDilation"] = False
+    cphd_con.check("check_antenna_mlfreqdilationsf")
+    testing.assert_failures(
+        cphd_con, "MLFreqDilationSF only included for MLFreqDilation = true"
+    )
+    apat_ew["MLFreqDilation"] = True
+    cphd_con.check("check_antenna_mlfreqdilationsf")
+    assert cphd_con.passes() and not cphd_con.failures()

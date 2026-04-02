@@ -26,7 +26,7 @@ Consistency objects should be instantiated using ``from_parts`` when data compon
 
    >>> import sarkit.verification as skver
 
-   >>> with open("data/example-cphd-1.0.1.xml", "r") as f:
+   >>> with open("data/example-cphd-1.1.0.xml", "r") as f:
    ...     con = skver.CphdConsistency.from_file(f)
    >>> con.check()
    >>> bool(con.passes())
@@ -35,7 +35,7 @@ Consistency objects should be instantiated using ``from_parts`` when data compon
    False
 
    >>> import lxml.etree
-   >>> cphd_xmltree = lxml.etree.parse("data/example-cphd-1.0.1.xml")
+   >>> cphd_xmltree = lxml.etree.parse("data/example-cphd-1.1.0.xml")
    >>> con = skver.CphdConsistency.from_parts(cphd_xmltree)
    >>> con.check()
    >>> bool(con.passes())

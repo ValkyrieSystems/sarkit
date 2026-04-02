@@ -66,7 +66,7 @@ def test_hae_llh_tofrom_iac():
 
 
 def get_planar_xmltree():
-    return lxml.etree.parse(DATAPATH / "example-cphd-1.0.1.xml")
+    return lxml.etree.parse(DATAPATH / "example-cphd-1.1.0.xml")
 
 
 def get_hae_xmltree():
