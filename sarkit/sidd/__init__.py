@@ -9,6 +9,15 @@ documents that define the Sensor Independent Derived Data (SIDD) format.
 Supported Versions
 ==================
 
+.. note:: As of 2025-09-26, there is only a single link for SIDD schema files on the NSG standards registry.
+   The page has a name (SIDD XML Schema version 1.1.0) that does not match the contents (SIDD v3.0 schemas) and schemas
+   for the ``urn:us:gov:ic:ism:13`` namespace are omitted.
+
+   To get around these limitations, SARkit pulled SIDD schemas from other sources.
+   Consult READMEs in the `SIDD schema source directory <https://github.com/ValkyrieSystems/sarkit/tree/main/sarkit/sidd/schemas>`_
+   for information on their provenance.
+
+* `SIDD 1.0`_
 * `SIDD 2.0`_
 * `SIDD 3.0`_
 
@@ -55,6 +64,8 @@ XML Metadata
    IntListType
    SfaPointType
    LUTInfoType
+   LookupTableType
+   Lookup3TableType
 
 Transcoders with children in the ``urn:SICommon:1.0`` namespace.
 
@@ -109,6 +120,19 @@ CLI Utilities
 
 References
 ==========
+
+SIDD 1.0
+--------
+.. [NGA.STND.0025-1_1.0] National Center for Geospatial Intelligence Standards,
+   "Sensor Independent Derived Data (SIDD), Vol. 1, Design & Implementation Description Document,
+   Version 1.0", 2011.
+   https://nsgreg.nga.mil/doc/view?i=2203
+
+.. [NGA.STND.0025-2_1.0] National Center for Geospatial Intelligence Standards,
+   "Sensor Independent Derived Data (SIDD), Vol. 2, NITF File Format Description Document,
+   Version 1.0", 2011.
+   https://nsgreg.nga.mil/doc/view?i=2204
+
 
 SIDD 2.0
 --------
@@ -171,6 +195,8 @@ from ._xml import (
     IntListType,
     IntType,
     LatLonType,
+    Lookup3TableType,
+    LookupTableType,
     LUTInfoType,
     ParameterType,
     PolyCoef1dType,
@@ -209,6 +235,8 @@ __all__ = [
     "IntType",
     "LUTInfoType",
     "LatLonType",
+    "Lookup3TableType",
+    "LookupTableType",
     "NitfDeSubheaderPart",
     "NitfDedMetadata",
     "NitfFileHeaderPart",

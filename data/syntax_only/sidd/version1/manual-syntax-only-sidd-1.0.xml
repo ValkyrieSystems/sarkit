@@ -1,0 +1,558 @@
+<SIDD xmlns="urn:SIDD:1.0.0"
+  xmlns:sicommon="urn:SICommon:0.1"
+  xmlns:sfa="urn:SFA:1.2.0"
+  xmlns:ism="urn:us:gov:ic:ism">
+  <ProductCreation>
+    <ProcessorInformation>
+      <Application>nga_sar_processing 1.2.0</Application>
+      <ProcessingDateTime>2025-09-23T16:22:59.939106Z</ProcessingDateTime>
+      <Site>Unknown</Site>
+      <Profile>the profile</Profile>
+    </ProcessorInformation>
+    <Classification ism:DESVersion="4" ism:resourceElement="true" ism:createDate="2025-09-23" ism:classification="U" ism:ownerProducer="USA">
+      <SecurityExtension name="n1">v1</SecurityExtension>
+      <SecurityExtension name="n2">v2</SecurityExtension>
+    </Classification>
+    <ProductName>Detected Image</ProductName>
+    <ProductClass>Detected Image</ProductClass>
+    <ProductType>the type</ProductType>
+    <ProductCreationExtension name="n1">v1</ProductCreationExtension>
+    <ProductCreationExtension name="n2">v2</ProductCreationExtension>
+  </ProductCreation>
+  <Display>
+    <PixelType>MONO8I</PixelType>
+    <RemapInformation>
+      <MonochromeDisplayRemap>
+        <RemapType>remap type</RemapType>
+        <RemapLUT size="3">0 1 2</RemapLUT>
+        <RemapParameter name="n1">v1</RemapParameter>
+        <RemapParameter name="n2">v2</RemapParameter>
+      </MonochromeDisplayRemap>
+    </RemapInformation>
+    <MagnificationMethod>BILINEAR</MagnificationMethod>
+    <DecimationMethod>LAGRANGE</DecimationMethod>
+    <DRAHistogramOverrides>
+      <ClipMin>8</ClipMin>
+      <ClipMax>24</ClipMax>
+    </DRAHistogramOverrides>
+    <MonitorCompensationApplied>
+      <Gamma>8.0</Gamma>
+      <XMin>24.0</XMin>
+    </MonitorCompensationApplied>
+    <DisplayExtension name="n1">v1</DisplayExtension>
+    <DisplayExtension name="n2">v2</DisplayExtension>
+  </Display>
+  <GeographicAndTarget>
+    <GeographicCoverage>
+      <GeoregionIdentifier name="n1">v1</GeoregionIdentifier>
+      <GeoregionIdentifier name="n2">v2</GeoregionIdentifier>
+      <Footprint size="4">
+        <Vertex index="1">
+          <sicommon:Lat>0.0026148693456123483</sicommon:Lat>
+          <sicommon:Lon>-0.0018276522714230081</sicommon:Lon>
+        </Vertex>
+        <Vertex index="2">
+          <sicommon:Lat>0.0018257736264529673</sicommon:Lat>
+          <sicommon:Lon>0.0026175733520944137</sicommon:Lon>
+        </Vertex>
+        <Vertex index="3">
+          <sicommon:Lat>-0.0026306745860156687</sicommon:Lat>
+          <sicommon:Lon>0.0018370416849164547</sicommon:Lon>
+        </Vertex>
+        <Vertex index="4">
+          <sicommon:Lat>-0.0018415788668926139</sicommon:Lat>
+          <sicommon:Lon>-0.0026081839386108904</sicommon:Lon>
+        </Vertex>
+      </Footprint>
+      <SubRegion>
+        <GeoregionIdentifier name="sub-n1">sub-v1</GeoregionIdentifier>
+        <GeoregionIdentifier name="sub-n2">sub-v2</GeoregionIdentifier>
+        <Footprint size="4">
+          <Vertex index="1">
+            <sicommon:Lat>0.0026148693456123483</sicommon:Lat>
+            <sicommon:Lon>-0.0018276522714230081</sicommon:Lon>
+          </Vertex>
+          <Vertex index="2">
+            <sicommon:Lat>0.0018257736264529673</sicommon:Lat>
+            <sicommon:Lon>0.0026175733520944137</sicommon:Lon>
+          </Vertex>
+          <Vertex index="3">
+            <sicommon:Lat>-0.0026306745860156687</sicommon:Lat>
+            <sicommon:Lon>0.0018370416849164547</sicommon:Lon>
+          </Vertex>
+          <Vertex index="4">
+            <sicommon:Lat>-0.0018415788668926139</sicommon:Lat>
+            <sicommon:Lon>-0.0026081839386108904</sicommon:Lon>
+          </Vertex>
+        </Footprint>
+        <GeographicInfo>
+          <CountryCode>A</CountryCode>
+          <CountryCode>B</CountryCode>
+          <SecurityInfo>none</SecurityInfo>
+          <GeographicInfoExtension name="n1">v1</GeographicInfoExtension>
+          <GeographicInfoExtension name="extensions">everywhere</GeographicInfoExtension>
+        </GeographicInfo>
+      </SubRegion>
+    </GeographicCoverage>
+    <TargetInformation>
+      <Identifier name="n1">v1</Identifier>
+      <Identifier name="n2">v2</Identifier>
+      <Footprint size="4">
+        <Vertex index="1">
+          <sicommon:Lat>0.0026148693456123483</sicommon:Lat>
+          <sicommon:Lon>-0.0018276522714230081</sicommon:Lon>
+        </Vertex>
+        <Vertex index="2">
+          <sicommon:Lat>0.0018257736264529673</sicommon:Lat>
+          <sicommon:Lon>0.0026175733520944137</sicommon:Lon>
+        </Vertex>
+        <Vertex index="3">
+          <sicommon:Lat>-0.0026306745860156687</sicommon:Lat>
+          <sicommon:Lon>0.0018370416849164547</sicommon:Lon>
+        </Vertex>
+        <Vertex index="4">
+          <sicommon:Lat>-0.0018415788668926139</sicommon:Lat>
+          <sicommon:Lon>-0.0026081839386108904</sicommon:Lon>
+        </Vertex>
+      </Footprint>
+      <TargetInformationExtension name="n1">v1</TargetInformationExtension>
+      <TargetInformationExtension name="n2">v2</TargetInformationExtension>
+    </TargetInformation>
+    <TargetInformation>
+      <Identifier name="n1">v1</Identifier>
+      <Footprint size="4">
+        <Vertex index="1">
+          <sicommon:Lat>0.0026148693456123483</sicommon:Lat>
+          <sicommon:Lon>-0.0018276522714230081</sicommon:Lon>
+        </Vertex>
+        <Vertex index="2">
+          <sicommon:Lat>0.0018257736264529673</sicommon:Lat>
+          <sicommon:Lon>0.0026175733520944137</sicommon:Lon>
+        </Vertex>
+        <Vertex index="3">
+          <sicommon:Lat>-0.0026306745860156687</sicommon:Lat>
+          <sicommon:Lon>0.0018370416849164547</sicommon:Lon>
+        </Vertex>
+        <Vertex index="4">
+          <sicommon:Lat>-0.0018415788668926139</sicommon:Lat>
+          <sicommon:Lon>-0.0026081839386108904</sicommon:Lon>
+        </Vertex>
+      </Footprint>
+    </TargetInformation>
+  </GeographicAndTarget>
+  <Measurement>
+    <PlaneProjection>
+      <ReferencePoint name="foo">
+        <sicommon:ECEF>
+          <sicommon:X>6378137</sicommon:X>
+          <sicommon:Y>0</sicommon:Y>
+          <sicommon:Z>0</sicommon:Z>
+        </sicommon:ECEF>
+        <sicommon:Point>
+          <sicommon:Row>162</sicommon:Row>
+          <sicommon:Col>188</sicommon:Col>
+        </sicommon:Point>
+      </ReferencePoint>
+      <SampleSpacing>
+        <sicommon:Row>1.5396008719969376</sicommon:Row>
+        <sicommon:Col>1.3328221795055135</sicommon:Col>
+      </SampleSpacing>
+      <TimeCOAPoly order1="0" order2="0">
+        <sicommon:Coef exponent1="0" exponent2="0">0.88683635292592233</sicommon:Coef>
+      </TimeCOAPoly>
+      <ProductPlane>
+        <RowUnitVector>
+          <sicommon:X>0</sicommon:X>
+          <sicommon:Y>-0.17364817766693033</sicommon:Y>
+          <sicommon:Z>-0.98480775301220813</sicommon:Z>
+        </RowUnitVector>
+        <ColUnitVector>
+          <sicommon:X>0</sicommon:X>
+          <sicommon:Y>0.98480775301220813</sicommon:Y>
+          <sicommon:Z>-0.17364817766693033</sicommon:Z>
+        </ColUnitVector>
+      </ProductPlane>
+    </PlaneProjection>
+    <PixelFootprint>
+      <sicommon:Row>325</sicommon:Row>
+      <sicommon:Col>377</sicommon:Col>
+    </PixelFootprint>
+    <ARPPoly>
+      <sicommon:X order1="1">
+        <sicommon:Coef exponent1="0">7228404.811503545</sicommon:Coef>
+        <sicommon:Coef exponent1="1">346.84829637761965</sicommon:Coef>
+      </sicommon:X>
+      <sicommon:Y order1="1">
+        <sicommon:Coef exponent1="0">262323.8621818392</sicommon:Coef>
+        <sicommon:Coef exponent1="1">-7332.590937252358</sicommon:Coef>
+      </sicommon:Y>
+      <sicommon:Z order1="1">
+        <sicommon:Coef exponent1="0">1451209.4380581959</sicommon:Coef>
+        <sicommon:Coef exponent1="1">-402.23122351918136</sicommon:Coef>
+      </sicommon:Z>
+    </ARPPoly>
+  </Measurement>
+  <ExploitationFeatures>
+    <Collection identifier="SyntheticCore">
+      <Information>
+        <SensorName>Synthetic</SensorName>
+        <RadarMode>
+          <sicommon:ModeType>SPOTLIGHT</sicommon:ModeType>
+          <sicommon:ModeID>mode-id</sicommon:ModeID>
+        </RadarMode>
+        <CollectionDateTime>2025-09-23T15:58:33.000000Z</CollectionDateTime>
+        <LocalDateTime>2025-09-23T15:58:33.000000Z</LocalDateTime>
+        <CollectionDuration>1.8818218481278524</CollectionDuration>
+        <Resolution>
+          <sicommon:Range>1.9941177368164062</sicommon:Range>
+          <sicommon:Azimuth>1.994041804212616</sicommon:Azimuth>
+        </Resolution>
+        <InputROI>
+          <Size>
+            <sicommon:Row>8</sicommon:Row>
+            <sicommon:Col>24</sicommon:Col>
+          </Size>
+          <UpperLeft>
+            <sicommon:Row>8</sicommon:Row>
+            <sicommon:Col>24</sicommon:Col>
+          </UpperLeft>
+        </InputROI>
+        <Polarization>
+          <TxPolarization>V</TxPolarization>
+          <RcvPolarization>V</RcvPolarization>
+          <RcvPolarizationOffset>0.1</RcvPolarizationOffset>
+          <Processed>false</Processed>
+        </Polarization>
+        <Polarization>
+          <TxPolarization>H</TxPolarization>
+          <RcvPolarization>H</RcvPolarization>
+        </Polarization>
+      </Information>
+      <Geometry>
+        <Azimuth>9.9998687024360056</Azimuth>
+        <Slope>31.195141668073123</Slope>
+        <Squint>76.589822638771778</Squint>
+        <Graze>30.000027599903614</Graze>
+        <Tilt>8.98085253449735</Tilt>
+        <Extension name="n1">v1</Extension>
+        <Extension name="n2">v2</Extension>
+      </Geometry>
+      <Phenomenology>
+        <Shadow>
+          <sicommon:Angle>0.00013129756399393467</sicommon:Angle>
+          <sicommon:Magnitude>1.7320488807337198</sicommon:Magnitude>
+        </Shadow>
+        <Layover>
+          <sicommon:Angle>-162.45898206640172</sicommon:Angle>
+          <sicommon:Magnitude>0.60550563857030382</sicommon:Magnitude>
+        </Layover>
+        <MultiPath>-175.48168703169617</MultiPath>
+        <GroundTrack>-76.850313677425561</GroundTrack>
+        <Extension name="n1">v1</Extension>
+        <Extension name="n2">v2</Extension>
+      </Phenomenology>
+    </Collection>
+    <Collection identifier="collection2!">
+      <Information>
+        <SensorName>Synthetic</SensorName>
+        <RadarMode>
+          <sicommon:ModeType>SPOTLIGHT</sicommon:ModeType>
+        </RadarMode>
+        <CollectionDateTime>2025-09-23T15:58:33.000000Z</CollectionDateTime>
+        <CollectionDuration>1.8818218481278524</CollectionDuration>
+      </Information>
+    </Collection>
+    <Product>
+      <Resolution>
+        <sicommon:Row>2.3026098816448664</sicommon:Row>
+        <sicommon:Col>2.0269747534018392</sicommon:Col>
+      </Resolution>
+      <North>-170</North>
+      <Extension name="wow">even</Extension>
+      <Extension name="more">extensions</Extension>
+    </Product>
+  </ExploitationFeatures>
+  <ProductProcessing>
+    <ProcessingModule>
+      <ModuleName name="inscription"/>
+      <ModuleParameter name="krange">fixed</ModuleParameter>
+      <ModuleParameter name="kazimuth">fixed</ModuleParameter>
+    </ProcessingModule>
+    <ProcessingModule>
+      <ModuleName name="nested-outer"/>
+      <ProcessingModule>
+        <ModuleName name="nested-inner"/>
+      </ProcessingModule>
+    </ProcessingModule>
+  </ProductProcessing>
+  <DownstreamReprocessing>
+    <GeometricChip>
+      <ChipSize>
+        <sicommon:Row>8</sicommon:Row>
+        <sicommon:Col>24</sicommon:Col>
+      </ChipSize>
+      <OriginalUpperLeftCoordinate>
+        <sicommon:Row>8.1</sicommon:Row>
+        <sicommon:Col>24.1</sicommon:Col>
+      </OriginalUpperLeftCoordinate>
+      <OriginalUpperRightCoordinate>
+        <sicommon:Row>8.2</sicommon:Row>
+        <sicommon:Col>24.2</sicommon:Col>
+      </OriginalUpperRightCoordinate>
+      <OriginalLowerLeftCoordinate>
+        <sicommon:Row>8.3</sicommon:Row>
+        <sicommon:Col>24.3</sicommon:Col>
+      </OriginalLowerLeftCoordinate>
+      <OriginalLowerRightCoordinate>
+        <sicommon:Row>8.4</sicommon:Row>
+        <sicommon:Col>24.4</sicommon:Col>
+      </OriginalLowerRightCoordinate>
+    </GeometricChip>
+    <ProcessingEvent>
+      <ApplicationName>foo</ApplicationName>
+      <AppliedDateTime>2025-09-23T16:22:58Z</AppliedDateTime>
+      <InterpolationMethod>yes</InterpolationMethod>
+      <Descriptor name="wow">even</Descriptor>
+      <Descriptor name="more">extensions</Descriptor>
+    </ProcessingEvent>
+    <ProcessingEvent>
+      <ApplicationName>bar</ApplicationName>
+      <AppliedDateTime>2025-09-23T16:22:59Z</AppliedDateTime>
+    </ProcessingEvent>
+  </DownstreamReprocessing>
+  <ErrorStatistics>
+    <CompositeSCP xmlns="urn:SICommon:0.1">
+      <RgAzErr>
+        <Rg>0.0</Rg>
+        <Az>0.1</Az>
+        <RgAz>0.2</RgAz>
+      </RgAzErr>
+    </CompositeSCP>
+    <Components xmlns="urn:SICommon:0.1">
+      <PosVelErr>
+        <Frame>ECF</Frame>
+        <P1>0.1</P1>
+        <P2>0.2</P2>
+        <P3>0.3</P3>
+        <V1>1.1</V1>
+        <V2>1.2</V2>
+        <V3>1.3</V3>
+        <CorrCoefs>
+          <P1P2>0.12</P1P2>
+          <P1P3>0.13</P1P3>
+          <P1V1>0.111</P1V1>
+          <P1V2>0.112</P1V2>
+          <P1V3>0.113</P1V3>
+          <P2P3>0.23</P2P3>
+          <P2V1>0.211</P2V1>
+          <P2V2>0.212</P2V2>
+          <P2V3>0.213</P2V3>
+          <P3V1>0.311</P3V1>
+          <P3V2>0.312</P3V2>
+          <P3V3>0.313</P3V3>
+          <V1V2>0.1112</V1V2>
+          <V1V3>0.1113</V1V3>
+          <V2V3>0.1213</V2V3>
+        </CorrCoefs>
+        <PositionDecorr>
+          <CorrCoefZero>0.123</CorrCoefZero>
+          <DecorrRate>0.456</DecorrRate>
+        </PositionDecorr>
+      </PosVelErr>
+      <RadarSensor>
+        <RangeBias>111.111</RangeBias>
+        <ClockFreqSF>222.222</ClockFreqSF>
+        <TransmitFreqSF>333.333</TransmitFreqSF>
+        <RangeBiasDecorr>
+          <CorrCoefZero>0.1234</CorrCoefZero>
+          <DecorrRate>0.4567</DecorrRate>
+        </RangeBiasDecorr>
+      </RadarSensor>
+      <TropoError>
+        <TropoRangeVertical>1111.11</TropoRangeVertical>
+        <TropoRangeSlant>2222.22</TropoRangeSlant>
+        <TropoRangeDecorr>
+          <CorrCoefZero>0.12345</CorrCoefZero>
+          <DecorrRate>0.45678</DecorrRate>
+        </TropoRangeDecorr>
+      </TropoError>
+      <IonoError>
+        <IonoRangeVertical>11111.1</IonoRangeVertical>
+        <IonoRangeRateVertical>22222.2</IonoRangeRateVertical>
+        <IonoRgRgRateCC>0.333333</IonoRgRgRateCC>
+        <IonoRangeVertDecorr>
+          <CorrCoefZero>0.123456</CorrCoefZero>
+          <DecorrRate>0.456789</DecorrRate>
+        </IonoRangeVertDecorr>
+      </IonoError>
+    </Components>
+    <AdditionalParms xmlns="urn:SICommon:0.1">
+      <Parameter name="foo-errorstats">added to error stats</Parameter>
+      <Parameter name="bar-errorstats">24</Parameter>
+    </AdditionalParms>
+  </ErrorStatistics>
+  <Radiometric>
+    <sicommon:NoisePoly order1="0" order2="0">
+      <sicommon:Coef exponent1="0" exponent2="0">-47.698407849729996</sicommon:Coef>
+    </sicommon:NoisePoly>
+    <sicommon:RCSSFPoly order1="5" order2="6">
+      <sicommon:Coef exponent1="0" exponent2="0">234.567891</sicommon:Coef>
+      <sicommon:Coef exponent1="0" exponent2="1">0.0123456789</sicommon:Coef>
+      <sicommon:Coef exponent1="5" exponent2="6">2.34567891e-36</sicommon:Coef>
+    </sicommon:RCSSFPoly>
+    <sicommon:BetaZeroSFPoly order1="0" order2="0">
+      <sicommon:Coef exponent1="0" exponent2="0">234.567891</sicommon:Coef>
+    </sicommon:BetaZeroSFPoly>
+    <sicommon:SigmaZeroSFPoly order1="0" order2="1">
+      <sicommon:Coef exponent1="0" exponent2="0">234.567891</sicommon:Coef>
+      <sicommon:Coef exponent1="0" exponent2="1">0.0123456789</sicommon:Coef>
+    </sicommon:SigmaZeroSFPoly>
+    <sicommon:SigmaZeroSFIncidenceMap>NOT_APPLIED</sicommon:SigmaZeroSFIncidenceMap>
+    <sicommon:GammaZeroSFPoly order1="1" order2="0">
+      <sicommon:Coef exponent1="0" exponent2="0">234.567891</sicommon:Coef>
+      <sicommon:Coef exponent1="1" exponent2="0">0.0123456789</sicommon:Coef>
+    </sicommon:GammaZeroSFPoly>
+    <sicommon:GammaZeroSFIncidenceMap>APPLIED</sicommon:GammaZeroSFIncidenceMap>
+  </Radiometric>
+  <Annotations>
+    <Annotation>
+      <Identifier>proj-coordsys</Identifier>
+      <SpatialReferenceSystem>
+        <sfa:GeocentricCoordinateSystem>
+          <sfa:Csname>a1_inner</sfa:Csname>
+          <sfa:Datum>
+            <sfa:Spheroid>
+              <sfa:SpheriodName>yes... spherIod?</sfa:SpheriodName>
+              <sfa:SemiMajorAxis>24.8</sfa:SemiMajorAxis>
+              <sfa:InverseFlattening>8.42</sfa:InverseFlattening>
+            </sfa:Spheroid>
+          </sfa:Datum>
+          <sfa:PrimeMeridian>
+            <sfa:Name>pm</sfa:Name>
+            <sfa:Longitude>0.1</sfa:Longitude>
+          </sfa:PrimeMeridian>
+          <sfa:LinearUnit>lu</sfa:LinearUnit>
+        </sfa:GeocentricCoordinateSystem>
+        <sfa:AxisName>a1</sfa:AxisName>
+        <sfa:AxisName>a2</sfa:AxisName>
+      </SpatialReferenceSystem>
+      <Object>
+        <Point>
+          <sfa:X>1.1</sfa:X>
+          <sfa:Y>1.2</sfa:Y>
+          <sfa:Z>1.3</sfa:Z>
+        </Point>
+      </Object>
+      <Object>
+        <Line>
+          <sfa:Vertex>
+            <sfa:X>1.1</sfa:X>
+            <sfa:Y>1.2</sfa:Y>
+            <sfa:Z>1.3</sfa:Z>
+          </sfa:Vertex>
+          <sfa:Vertex>
+            <sfa:X>1.3</sfa:X>
+            <sfa:Y>1.4</sfa:Y>
+            <sfa:Z>1.3</sfa:Z>
+          </sfa:Vertex>
+        </Line>
+      </Object>
+      <Object>
+        <LinearRing>
+          <sfa:Vertex>
+            <sfa:X>1.1</sfa:X>
+            <sfa:Y>1.2</sfa:Y>
+            <sfa:Z>1.3</sfa:Z>
+          </sfa:Vertex>
+          <sfa:Vertex>
+            <sfa:X>1.3</sfa:X>
+            <sfa:Y>1.4</sfa:Y>
+            <sfa:Z>1.3</sfa:Z>
+          </sfa:Vertex>
+        </LinearRing>
+      </Object>
+      <Object>
+        <Polygon>
+          <sfa:Ring>
+            <sfa:Vertex>
+              <sfa:X>1.1</sfa:X>
+              <sfa:Y>1.2</sfa:Y>
+              <sfa:Z>1.3</sfa:Z>
+            </sfa:Vertex>
+            <sfa:Vertex>
+              <sfa:X>1.3</sfa:X>
+              <sfa:Y>1.4</sfa:Y>
+              <sfa:Z>1.3</sfa:Z>
+            </sfa:Vertex>
+          </sfa:Ring>
+        </Polygon>
+      </Object>
+      <Object>
+        <PolyhedralSurface>
+          <sfa:Patch>
+            <sfa:Ring>
+              <sfa:Vertex>
+                <sfa:X>1.1</sfa:X>
+                <sfa:Y>1.2</sfa:Y>
+                <sfa:Z>1.3</sfa:Z>
+              </sfa:Vertex>
+              <sfa:Vertex>
+                <sfa:X>1.3</sfa:X>
+                <sfa:Y>1.4</sfa:Y>
+                <sfa:Z>1.3</sfa:Z>
+              </sfa:Vertex>
+            </sfa:Ring>
+          </sfa:Patch>
+        </PolyhedralSurface>
+      </Object>
+      <Object>
+        <MultiPolygon>
+          <sfa:Element>
+            <sfa:Ring>
+              <sfa:Vertex>
+                <sfa:X>1.1</sfa:X>
+                <sfa:Y>1.2</sfa:Y>
+                <sfa:Z>1.3</sfa:Z>
+              </sfa:Vertex>
+              <sfa:Vertex>
+                <sfa:X>1.3</sfa:X>
+                <sfa:Y>1.4</sfa:Y>
+                <sfa:Z>1.3</sfa:Z>
+              </sfa:Vertex>
+            </sfa:Ring>
+          </sfa:Element>
+        </MultiPolygon>
+      </Object>
+      <Object>
+        <MultiLineString>
+          <sfa:Element>
+            <sfa:Vertex>
+              <sfa:X>1.1</sfa:X>
+              <sfa:Y>1.2</sfa:Y>
+              <sfa:Z>1.3</sfa:Z>
+            </sfa:Vertex>
+            <sfa:Vertex>
+              <sfa:X>1.3</sfa:X>
+              <sfa:Y>1.4</sfa:Y>
+              <sfa:Z>1.3</sfa:Z>
+            </sfa:Vertex>
+          </sfa:Element>
+        </MultiLineString>
+      </Object>
+      <Object>
+        <MultiPoint>
+          <sfa:Vertex>
+            <sfa:X>1.1</sfa:X>
+            <sfa:Y>1.2</sfa:Y>
+            <sfa:Z>1.3</sfa:Z>
+          </sfa:Vertex>
+          <sfa:Vertex>
+            <sfa:X>1.3</sfa:X>
+            <sfa:Y>1.4</sfa:Y>
+            <sfa:Z>1.3</sfa:Z>
+          </sfa:Vertex>
+        </MultiPoint>
+      </Object>
+    </Annotation>
+  </Annotations>
+</SIDD>

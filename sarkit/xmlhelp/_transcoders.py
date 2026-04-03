@@ -32,6 +32,7 @@ class Type:
     def set_elem(self, elem, val):
         """Set ``elem.text`` to the string version of ``val``."""
         elem.text = str(val)
+        self.parse_elem(elem)  # make sure result is parsable
 
     def make_elem(self, tag, val):
         """Create a new XML element."""
@@ -53,6 +54,7 @@ class TxtType(Type):
     def set_elem(self, elem, val: str) -> None:
         """Set ``elem.text`` to ``val``."""
         elem.text = val or None
+        self.parse_elem(elem)  # make sure result is parsable
 
 
 class EnuType(TxtType):
@@ -80,6 +82,7 @@ class BoolType(Type):
     def set_elem(self, elem: lxml.etree.Element, val: bool) -> None:
         """Set ``elem.text`` to a string representation of the boolean ``val``."""
         elem.text = str(val).lower()
+        self.parse_elem(elem)  # make sure result is parsable
 
 
 class IntType(Type):
@@ -99,6 +102,11 @@ class DblType(Type):
 
     """
 
+    def set_elem(self, elem, val):
+        """Set ``elem.text`` to the string version of ``val``."""
+        elem.text = str(float(val))  # cast to float to force integer->float promotion
+        self.parse_elem(elem)  # make sure result is parsable
+
     def parse_elem(self, elem: lxml.etree.Element) -> float:
         """Returns a floating point number constructed from the string ``elem.text``."""
         return float(elem.text)
@@ -117,6 +125,7 @@ class HexType(Type):
     def set_elem(self, elem: lxml.etree.Element, val: bytes) -> None:
         """Set ``elem.text`` to a hex string representation of the byte string ``val``."""
         elem.text = val.hex().upper()
+        self.parse_elem(elem)  # make sure result is parsable
 
 
 class XdtType(Type):
@@ -156,6 +165,7 @@ class XdtType(Type):
         if self.force_utc and is_aware:
             val = val.astimezone(datetime.UTC)
         elem.text = val.strftime(format_str)
+        self.parse_elem(elem)  # make sure result is parsable
 
 
 class PolyNdType(Type):
@@ -224,6 +234,7 @@ class PolyNdType(Type):
         for coord, coef in np.ndenumerate(coefs):
             attribs = {f"exponent{d + 1}": str(c) for d, c in enumerate(coord)}
             lxml.etree.SubElement(elem, ns + "Coef", attrib=attribs).text = str(coef)
+        self.parse_elem(elem)  # make sure result is parsable
 
 
 class PolyType(PolyNdType):
@@ -298,6 +309,7 @@ class XyzPolyType(Type):
         for index, tag in enumerate("XYZ"):
             subelem = lxml.etree.SubElement(elem, ns + tag)
             PolyType().set_elem(subelem, coefs[:, index])
+        self.parse_elem(elem)  # make sure result is parsable
 
 
 class SequenceType(abc.ABC, Type):
@@ -351,6 +363,7 @@ class SequenceType(abc.ABC, Type):
         for e_name, e_type in self.subelements.items():
             subelem = lxml.etree.SubElement(elem, ns + e_name)
             e_type.set_elem(subelem, val[e_name])
+        self.parse_subelements(elem)  # make sure result is parsable
 
 
 class ArrayType(SequenceType):
@@ -381,6 +394,7 @@ class ArrayType(SequenceType):
         super().set_subelements(
             elem, dict((k, v) for k, v in zip(self.subelements, val, strict=True))
         )
+        self.parse_elem(elem)  # make sure result is parsable
 
 
 class XyType(ArrayType):
@@ -508,6 +522,7 @@ class CmplxType(SequenceType):
     def set_elem(self, elem: lxml.etree.Element, val: complex) -> None:
         """Set ``elem`` node to the complex number ``val``."""
         super().set_subelements(elem, {"Real": val.real, "Imag": val.imag})
+        self.parse_elem(elem)  # make sure result is parsable
 
 
 class SizedType(abc.ABC, Type):
@@ -572,6 +587,7 @@ class SizedType(abc.ABC, Type):
             subelem = lxml.etree.SubElement(elem, ns + self.sub_tag)
             self.sub_type.set_elem(subelem, sub_val)
             subelem.set("index", str(index + self.index_start))
+        self.parse_elem(elem)  # make sure result is parsable
 
 
 class ListType(SizedType):
@@ -611,6 +627,7 @@ class ParameterType(Type):
         """Set ``elem``'s name and value from a tuple of strings: (``name``, ``text``)"""
         elem.set("name", val[0])
         TxtType().set_elem(elem, val[1])
+        self.parse_elem(elem)  # make sure result is parsable
 
 
 class MtxType(Type):
@@ -659,3 +676,4 @@ class MtxType(Type):
         for indices, entry in np.ndenumerate(mtx):
             attribs = {f"index{d + 1}": str(c + 1) for d, c in enumerate(indices)}
             lxml.etree.SubElement(elem, ns + "Entry", attrib=attribs).text = str(entry)
+        self.parse_elem(elem)  # make sure result is parsable

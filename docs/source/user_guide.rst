@@ -14,15 +14,21 @@ This is an overview of basic SARkit functionality. For details, see the :doc:`re
 
 Installation
 ============
-Basic SARkit functionality relies on a small set of dependencies.
-Some features require additional dependencies which can be installed using packaging extras:
+SARkit can be installed using pip:
 
 .. code-block:: shell-session
 
-   $ python -m pip install sarkit  # Install core dependencies
-   $ python -m pip install sarkit[verification]  # Install verification dependencies
-   $ python -m pip install sarkit[all]  # Install all dependencies
+   $ python -m pip install sarkit
 
+SARkit can also be installed using conda and the conda-forge channel:
+
+.. code-block:: shell-session
+
+   $ conda install --channel conda-forge sarkit
+
+.. note:: Earlier versions of SARkit provided some packaging extras for additional functionality.
+   The functionality and dependencies have since been moved to the core package, but the vestigial packaging extras are
+   maintained for compatibility.
 
 Reading and writing files
 =========================
@@ -347,11 +353,25 @@ Accessing keys that are not schema-valid raises a `KeyError`:
    Traceback (most recent call last):
    KeyError: 'NotValid'
 
+Unlike normal dictionaries, `KeyError` can still be raised by `get()` when the key is not schema-valid
+
+.. doctest::
+
+   >>> wrappedsicd.get("NotValid", default=None)
+   Traceback (most recent call last):
+   KeyError: 'NotValid'
+
 Accessing schema-valid keys that don't exist does not raise an exception.
 
 .. doctest::
 
    >>> wrappedsicd["RMA"]
+   ElementWrapper({})
+
+.. doctest::
+
+   >>> assert wrappedsicd.get("RMA", default=None) is None
+   >>> wrappedsicd.get("RMA")
    ElementWrapper({})
 
 Attributes are accessed using BadgerFish notation (e.g. @attr).
@@ -407,6 +427,24 @@ Use :py:meth:`~sarkit.xmlhelp.ElementWrapper.add` to add repeatable children.
    >>> wrappedsicd["CollectionInfo"]["CountryCode"]
    ('AB', 'CD', 'EF')
 
+
+:py:meth:`~sarkit.xmlhelp.ElementWrapper.findall` and :py:meth:`~sarkit.xmlhelp.ElementWrapper.find` can find children with specific traits.  This is particularly helpful for CPHD and CRSD when a lot of Identifier references exist.
+
+.. doctest::
+
+   >>> wrappedsicd["ImageFormation"].find("Processing", Type="inscription")
+   ElementWrapper({'Type': 'inscription', 'Applied': True, 'Parameter': (('krange', 'fixed'), ('kazimuth', 'fixed'))})
+   >>> wrappedsicd["ImageFormation"].findall("Processing", Applied=True)
+   [ElementWrapper({'Type': 'inscription', 'Applied': True, ..., ElementWrapper({'Type': 'Valkyrie Systems Sage ...]
+   >>> wrappedsicd["ImageFormation"].find("Processing", Applied=True)
+   ElementWrapper({'Type': 'inscription', 'Applied': True, 'Parameter': (('krange', 'fixed'), ('kazimuth', 'fixed'))})
+   >>> wrappedsicd["ImageFormation"].find("Processing", Applied=False) is None
+   True
+
+   >>> wrappedsicd['GeoData']['GeoInfo'][0].find('GeoInfo', **{'@name': 'target0'}).to_dict()
+   {'@name': 'target0', 'Desc': (('ecef', '[6378137.0, -1500.0000000000002, 1499.9999999999998]'),)}
+
+
 To serialize and deserialize ElementWrappers, use :py:meth:`~sarkit.xmlhelp.ElementWrapper.to_dict` and
 :py:meth:`~sarkit.xmlhelp.ElementWrapper.from_dict`:
 
@@ -433,8 +471,6 @@ To serialize and deserialize ElementWrappers, use :py:meth:`~sarkit.xmlhelp.Elem
 
 Consistency Checking
 ====================
-
-.. warning:: Consistency checkers require the ``verification`` :ref:`extra <installation>`.
 
 SARkit provides checkers that can be used to identify inconsistencies in SAR standards files.
 

@@ -25,6 +25,13 @@ def test_channel(example_crsdsar):
     assert proc.stdout.splitlines() == ["the channel"]
 
 
+def test_txsequence(example_crsdsar):
+    proc = subprocess.run(
+        ["crsdinfo", "-t", example_crsdsar], capture_output=True, text=True, check=True
+    )
+    assert proc.stdout.splitlines() == ["the sequence"]
+
+
 def test_raw(example_crsdsar):
     proc = subprocess.run(
         ["crsdinfo", "-x", example_crsdsar], stdout=subprocess.PIPE, check=True

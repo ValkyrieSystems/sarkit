@@ -1396,6 +1396,71 @@ def r_rdot_to_dem_surface(
     RuntimeError
         If number of bistatic contour points exceeds ``bistat_max_npts`` without computing a point above
         ``hae_max``.
+
+    Examples
+    --------
+    Example of a monostatic collect over the Grand Canyon with layover.
+    ``ecef2dem_func`` is defined using 3 arc-second SRTM via `Open Topo Data's <https://www.opentopodata.org/>`__ free
+    public API and a hard-coded, approximate geoid height.
+
+    .. doctest::
+
+        >>> import itertools
+        >>> import json
+        >>> import urllib.request
+        >>> import numpy as np
+        >>> import sarkit.wgs84
+        >>> import time
+
+        >>> geoid_height = -23.43  # from www.unavco.org
+
+        >>> def height_above_srtm90(ecf):
+        ...     llh = sarkit.wgs84.cartesian_to_geodetic(ecf)
+        ...     max_pts_api = 100
+        ...     haes = []
+        ...     for ll_strs in itertools.batched(
+        ...         (f"{lat:.5f},{lon:.5f}" for lat, lon in llh[:, :2]), max_pts_api
+        ...     ):
+        ...         url = f"https://api.opentopodata.org/v1/srtm90m?locations={'|'.join(ll_strs)}"
+        ...         with urllib.request.urlopen(url) as f:
+        ...             resp = json.load(f)
+        ...             time.sleep(1.05)  # opentopodata is rate limited
+        ...             assert resp["status"] == "OK"
+        ...             height_above_geoid = np.array([x["elevation"] for x in resp["results"]])
+        ...             haes.append(height_above_geoid + geoid_height)
+        ...     dem_hae = np.concatenate(haes)
+        ...     return llh[:, -1] - dem_hae
+
+    The DEM surface contour of the canyon wall intersects the R/Rdot contour in 3 places:
+
+    .. doctest::
+
+        >>> import sarkit.sicd.projection as sicdproj
+
+        >>> pset = sicdproj.ProjectionSetsMono(
+        ...     t_COA=0.611,
+        ...     ARP_COA=[-2.5413e6, -5.1217e6, 4.6498e6],
+        ...     VARP_COA=[7.0914e3, -1.3727e3, 2.3637e3],
+        ...     R_COA=1128574,
+        ...     Rdot_COA=-1.3197e3,
+        ... )
+        >>> scp_llh = [ 36.238989, -112.387843, 1000]
+
+        >>> s = sicdproj.r_rdot_to_dem_surface(
+        ...     look=-1,
+        ...     scp=sarkit.wgs84.geodetic_to_cartesian(scp_llh),
+        ...     projection_set=pset,
+        ...     ecef2dem_func=height_above_srtm90,
+        ...     hae_min=0,
+        ...     hae_max=2000,
+        ...     delta_dist_dem=90.0,
+        ... )
+        >>> s_llh = sarkit.wgs84.cartesian_to_geodetic(s)
+        >>> with np.printoptions(precision=4):
+        ...     print(s_llh)
+        [[  36.2442 -112.3905  650.9127]
+         [  36.2433 -112.39    709.8588]
+         [  36.234  -112.3858 1287.5452]]
     """
     if (
         getattr(

@@ -5,6 +5,7 @@ import json
 import re
 
 import lxml.etree
+import numpy.testing as npt
 
 
 @dataclasses.dataclass
@@ -124,6 +125,10 @@ class XsdHelper(abc.ABC):
         return self.get_transcoder(self.get_elem_typeinfo(elem)[0], tag=elem.tag)
 
 
+class _UNSET:
+    """Sentinel class indicating a value is not set.  Allows for `None` as a valid value."""
+
+
 class ElementWrapper(collections.abc.MutableMapping):
     """Wrapper for lxml.etree.Element that provides dictionary-ish interface
 
@@ -185,13 +190,25 @@ class ElementWrapper(collections.abc.MutableMapping):
         self.typename = typename
         self.typedef = xsdhelper.xsdtypes[typename]
 
+    def _getchilddef(self, localname):
+        childdef = self.typedef.get_childdef_from_localname(localname)
+        if childdef is None:
+            raise KeyError(localname)
+        return childdef
+
+    def _getattribname(self, localname):
+        attribname = self.typedef.get_attribute_from_localname(
+            localname.removeprefix("@")
+        )
+        if attribname is None or self.elem is None:
+            raise KeyError(localname)
+        return attribname
+
     def _getelem(
         self, localname: str
     ) -> "None | lxml.etree.Element | list[lxml.etree.Element]":
         """Return an element or tuple of elements given a localname."""
-        childdef = self.typedef.get_childdef_from_localname(localname)
-        if childdef is None:
-            raise KeyError(localname)
+        childdef = self._getchilddef(localname)
         if childdef.repeat:
             if self.elem is None:
                 return tuple()
@@ -205,17 +222,55 @@ class ElementWrapper(collections.abc.MutableMapping):
 
     def __getitem__(self, localname: str):
         if localname.startswith("@"):
-            attribname = self.typedef.get_attribute_from_localname(
-                localname.removeprefix("@")
-            )
-            if attribname is None or self.elem is None:
-                raise KeyError(localname)
+            attribname = self._getattribname(localname)
+            assert self.elem is not None  # for mypy.  Case handled by _getattribname()
             return self.elem.get(attribname)
 
         elem = self._getelem(localname)
         if isinstance(elem, tuple):
             return tuple(self._handle_subelem(x, localname) for x in elem)
         return self._handle_subelem(elem, localname)
+
+    def findall(self, localname: str, **kwargs) -> list:
+        """Returns a list of all children with given localname with children described by kwargs."""
+        childdef = self._getchilddef(localname)
+        if not childdef.repeat:
+            children = [self[localname]]
+        else:
+            children = self[localname]
+        found = []
+        for child in children:
+            for key, val in kwargs.items():
+                if key not in child:
+                    break
+                try:
+                    npt.assert_equal(val, child[key])
+                except AssertionError:
+                    break
+            else:
+                found.append(child)
+        return found
+
+    def find(self, localname: str, **kwargs):
+        """Returns first child with given localname with children described by kwargs or None if none exist."""
+        found = self.findall(localname, **kwargs)
+        if found:
+            return found[0]
+        return None
+
+    def get(self, localname: str, default=_UNSET):
+        """Return value from an ElementWrapper.
+
+        If the localname is not schema-valid a KeyError is raised.
+        Otherwise, return the value for localname if localname is in the ElementWrapper, else default.
+        If default is not given it defaults to the behavior of __getitem__.
+
+        """
+        # ElementWrapper.__getitem__ returns an empty ElementWrapper for valid, missing keys
+        if default is _UNSET or localname in self:
+            return self[localname]
+
+        return default
 
     def _handle_subelem(
         self, subelem: "lxml.etree.Element | None", subelem_localname: str
@@ -260,17 +315,11 @@ class ElementWrapper(collections.abc.MutableMapping):
             self.wrapped_parent[lxml.etree.QName(elemtag).localname] = self.elem
 
         if localname.startswith("@"):
-            attribname = self.typedef.get_attribute_from_localname(
-                localname.removeprefix("@")
-            )
-            if attribname is None:
-                raise KeyError(localname)
+            attribname = self._getattribname(localname)
             self.elem.set(attribname, str(value))
             return
 
-        childdef = self.typedef.get_childdef_from_localname(localname)
-        if childdef is None:
-            raise KeyError(localname)
+        childdef = self._getchilddef(localname)
 
         transcoder = self.xsdhelper.get_transcoder(childdef.typename, childdef.tag)
 
@@ -280,7 +329,9 @@ class ElementWrapper(collections.abc.MutableMapping):
             if isinstance(val, ElementWrapper):
                 return val.elem
             if transcoder is None:
-                return lxml.etree.Element(childdef.tag)
+                raise ValueError(
+                    f"can't initialize {childdef.tag} with value of '{val}'"
+                )
             return transcoder.make_elem(childdef.tag, val)
 
         for subelem in self.elem.findall("{*}" + localname):
@@ -297,6 +348,7 @@ class ElementWrapper(collections.abc.MutableMapping):
                     appendfunc(_val_to_elem(val))
         else:
             if isinstance(value, dict) and transcoder is None:
+                appendfunc(lxml.etree.Element(childdef.tag))
                 for k, v in value.items():
                     self[localname][k] = v
             else:
@@ -319,9 +371,7 @@ class ElementWrapper(collections.abc.MutableMapping):
         Any
             the new transcoded or wrapped subelement
         """
-        childdef = self.typedef.get_childdef_from_localname(localname)
-        if childdef is None:
-            raise KeyError(localname)
+        childdef = self._getchilddef(localname)
 
         setval = val if val is not None else {}
 
@@ -335,16 +385,10 @@ class ElementWrapper(collections.abc.MutableMapping):
 
     def __delitem__(self, localname):
         if localname.startswith("@"):
-            attribname = self.typedef.get_attribute_from_localname(
-                localname.removeprefix("@")
-            )
-            if attribname is None:
-                raise KeyError(localname)
+            attribname = self._getattribname(localname)
             del self.elem.attrib[attribname]
         else:
-            childdef = self.typedef.get_childdef_from_localname(localname)
-            if childdef is None:
-                raise KeyError(localname)
+            childdef = self._getchilddef(localname)
             for subelem in self.elem.findall(childdef.tag):
                 self.elem.remove(subelem)
 
@@ -372,6 +416,12 @@ class ElementWrapper(collections.abc.MutableMapping):
         return len(self._keys())
 
     def __contains__(self, localname):
+        # Make sure localname is valid
+        if localname.startswith("@"):
+            _ = self._getattribname(localname)
+        else:
+            _ = self._getchilddef(localname)
+
         return localname in self._keys()
 
     def to_dict(self) -> dict:

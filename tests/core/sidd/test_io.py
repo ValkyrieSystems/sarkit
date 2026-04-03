@@ -1,3 +1,4 @@
+import copy
 import itertools
 import pathlib
 import re
@@ -29,14 +30,16 @@ def _random_image(sidd_xmltree):
 
 
 @pytest.mark.parametrize("force_segmentation", [False, True])
+@pytest.mark.parametrize("with_ded", [False, True])
 @pytest.mark.parametrize(
     "sidd_xml",
     [
+        DATAPATH / "example-sidd-1.0.0.xml",
         DATAPATH / "example-sidd-2.0.0.xml",
         DATAPATH / "example-sidd-3.0.0.xml",
     ],
 )
-def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
+def test_roundtrip(force_segmentation, with_ded, sidd_xml, tmp_path, monkeypatch):
     out_sidd = tmp_path / "out.sidd"
     sicd_xmltree = lxml.etree.parse(DATAPATH / "example-sicd-1.4.0.xml")
     basis_etree0 = lxml.etree.parse(sidd_xml)
@@ -46,8 +49,39 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
     basis_etree1.find("./{*}Display/{*}PixelType").text = "MONO16I"
     basis_array1 = 2**16 - 1 - basis_array0.astype(np.uint16)
 
+    def _set_3_bands(tree):
+        ew = sksidd.ElementWrapper(tree.getroot())
+
+        try:
+            ew["Display"]["NumBands"] = 3
+        except KeyError:
+            # SIDD 1.0
+            return
+
+        ew["Display"].add(
+            "NonInteractiveProcessing",
+            copy.deepcopy(ew["Display"]["NonInteractiveProcessing"][0]),
+        )
+        ew["Display"].add(
+            "NonInteractiveProcessing",
+            copy.deepcopy(ew["Display"]["NonInteractiveProcessing"][0]),
+        )
+        ew["Display"]["NonInteractiveProcessing"][1]["@band"] = "2"
+        ew["Display"]["NonInteractiveProcessing"][2]["@band"] = "3"
+        ew["Display"].add(
+            "InteractiveProcessing",
+            copy.deepcopy(ew["Display"]["InteractiveProcessing"][0]),
+        )
+        ew["Display"].add(
+            "InteractiveProcessing",
+            copy.deepcopy(ew["Display"]["InteractiveProcessing"][0]),
+        )
+        ew["Display"]["InteractiveProcessing"][1]["@band"] = "2"
+        ew["Display"]["InteractiveProcessing"][2]["@band"] = "3"
+
     basis_etree2 = lxml.etree.parse(sidd_xml)
     basis_etree2.find("./{*}Display/{*}PixelType").text = "RGB24I"
+    _set_3_bands(basis_etree2)
     basis_array2 = np.empty(basis_array0.shape, sksidd.PIXEL_TYPES["RGB24I"]["dtype"])
     basis_array2["R"] = basis_array0
     basis_array2["G"] = basis_array0 + 1
@@ -56,6 +90,7 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
     basis_etree3 = lxml.etree.parse(sidd_xml)
     basis_array3 = _random_image(basis_etree3)
     basis_etree3.find("./{*}Display/{*}PixelType").text = "RGB8LU"
+    _set_3_bands(basis_etree3)
     lookup_table3 = np.asarray(
         [
             np.arange(256, dtype=np.uint8),
@@ -85,6 +120,20 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
         monkeypatch.setattr(
             sarkit.sidd._constants, "LI_MAX", basis_array0.nbytes // 5
         )  # reduce the segment size limit to force segmentation
+
+    basis_ded_array = np.random.default_rng().integers(
+        -32768, 32767, size=(1000, 2000), dtype=np.int16
+    )
+
+    basis_legend_array = np.random.default_rng().integers(
+        0, 255, size=(33, 44), dtype=np.uint8, endpoint=True
+    )
+    basis_legend_array_rgb = np.empty(
+        basis_legend_array.shape, sksidd.PIXEL_TYPES["RGB24I"]["dtype"]
+    )
+    basis_legend_array_rgb["R"] = basis_legend_array
+    basis_legend_array_rgb["G"] = basis_legend_array + 1
+    basis_legend_array_rgb["B"] = basis_legend_array - 1
 
     write_metadata = sksidd.NitfMetadata(
         file_header_part={
@@ -166,6 +215,21 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
                     "desshlin": "desshlin",
                     "desshabs": "desshabs",
                 },
+                legends=[
+                    sksidd.NitfLegendMetadata(
+                        attach_row=11,
+                        attach_col=22,
+                        nrows=basis_legend_array.shape[0],
+                        ncols=basis_legend_array.shape[1],
+                        im_subheader_part={
+                            "tgtid": "legtgt",
+                            "iid2": "legiid2",
+                            "security": {
+                                "clas": "U",
+                            },
+                        },
+                    )
+                ],
             ),
             sksidd.NitfProductImageMetadata(
                 xmltree=basis_etree1,
@@ -181,6 +245,34 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
                         "clas": "U",
                     },
                 },
+                legends=[
+                    sksidd.NitfLegendMetadata(
+                        attach_row=11,
+                        attach_col=22,
+                        nrows=basis_legend_array.shape[0],
+                        ncols=basis_legend_array.shape[1],
+                        im_subheader_part={
+                            "tgtid": "legtgt",
+                            "iid2": "first",
+                            "security": {
+                                "clas": "U",
+                            },
+                        },
+                    ),
+                    sksidd.NitfLegendMetadata(
+                        attach_row=basis_array1.shape[0] - 11,
+                        attach_col=basis_array1.shape[1] - 22,
+                        nrows=basis_legend_array.shape[0],
+                        ncols=basis_legend_array.shape[1],
+                        im_subheader_part={
+                            "tgtid": "legtgt",
+                            "iid2": "second",
+                            "security": {
+                                "clas": "U",
+                            },
+                        },
+                    ),
+                ],
             ),
             sksidd.NitfProductImageMetadata(
                 xmltree=basis_etree2,
@@ -196,6 +288,21 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
                         "clas": "U",
                     },
                 },
+                legends=[
+                    sksidd.NitfLegendMetadata(
+                        attach_row=11,
+                        attach_col=22,
+                        nrows=basis_legend_array_rgb.shape[0],
+                        ncols=basis_legend_array_rgb.shape[1],
+                        im_subheader_part={
+                            "tgtid": "legtgt",
+                            "iid2": "rgb",
+                            "security": {
+                                "clas": "U",
+                            },
+                        },
+                    ),
+                ],
             ),
             sksidd.NitfProductImageMetadata(
                 xmltree=basis_etree3,
@@ -275,6 +382,18 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
             ),
         ]
     )
+    if with_ded:
+        write_metadata.ded = sksidd.NitfDedMetadata(
+            nrows=basis_ded_array.shape[0],
+            ncols=basis_ded_array.shape[1],
+            im_subheader_part={
+                "tgtid": "dedtgt",
+                "iid2": "dediid2",
+                "security": {
+                    "clas": "U",
+                },
+            },
+        )
 
     with out_sidd.open("wb") as file:
         jbp = sksidd.jbp_from_nitf_metadata(write_metadata)
@@ -282,17 +401,32 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
         jbp["FileHeader"]["UDHD"].append(jbpy.tre_factory("SECTGA"))
         with sksidd.NitfWriter(file, write_metadata, jbp_override=jbp) as writer:
             writer.write_image(0, basis_array0)
+            writer.write_legend(0, 0, basis_legend_array)
             writer.write_image(1, basis_array1)
+            writer.write_legend(1, 0, basis_legend_array)
+            writer.write_legend(1, 1, basis_legend_array)
             writer.write_image(2, basis_array2)
+            writer.write_legend(2, 0, basis_legend_array_rgb)
             writer.write_image(3, basis_array3)
             writer.write_image(4, basis_array4)
             writer.write_image(5, basis_array5)
+
+            with pytest.raises(IndexError):
+                writer.write_image(99, basis_array0)
+            with pytest.raises(IndexError):
+                writer.write_legend(0, 99, basis_legend_array)
+
+            if with_ded:
+                writer.write_ded(basis_ded_array)
+            else:
+                with pytest.raises(RuntimeError, match="Metadata must describe DED"):
+                    writer.write_ded(basis_ded_array)
 
     def _num_imseg(array):
         rows_per_seg = int(np.floor(sarkit.sidd._constants.LI_MAX / array[0].nbytes))
         return int(np.ceil(array.shape[0] / rows_per_seg))
 
-    num_expected_imseg = (
+    num_expected_product_imseg = (
         _num_imseg(basis_array0)
         + _num_imseg(basis_array1)
         + _num_imseg(basis_array2)
@@ -300,69 +434,145 @@ def test_roundtrip(force_segmentation, sidd_xml, tmp_path, monkeypatch):
         + _num_imseg(basis_array4)
         + _num_imseg(basis_array5)
     )
+    num_images = len(write_metadata.images)
+    num_legends = sum(len(image.legends) for image in write_metadata.images)
+    num_expected_imseg = num_expected_product_imseg + num_legends
+    if with_ded:
+        num_expected_imseg += 1
+
     if force_segmentation:
-        assert num_expected_imseg > 2  # make sure the monkeypatch caused segmentation
+        assert (
+            num_expected_product_imseg > num_images
+        )  # make sure the monkeypatch caused segmentation
     with out_sidd.open("rb") as file:
         ntf = jbpy.Jbp()
         ntf.load(file)
         assert num_expected_imseg == len(ntf["ImageSegments"])
 
         mapping = sksidd.product_image_segment_mapping(ntf)
-        assert len(mapping) == 6
-        assert sum(len(indices) for indices in mapping.values()) == num_expected_imseg
+        assert len(mapping) == num_images
+        assert (
+            sum(len(indices) for indices in mapping.values())
+            == num_expected_product_imseg
+        )
 
     with out_sidd.open("rb") as file:
         with sksidd.NitfReader(file) as reader:
             read_metadata = reader.metadata
+            read_jbp = reader.jbp
             assert reader.jbp["FileHeader"]["UDHD"][0]["CETAG"].value == "SECTGA"
             assert len(reader.jbp["ImageSegments"]) == num_expected_imseg
             assert len(read_metadata.images) == 6
             assert len(read_metadata.sicd_xmls) == 2
             assert len(read_metadata.product_support_xmls) == 2
             read_array0 = reader.read_image(0)
+
+            # test `out=` argument
+            read_array0_2 = np.empty_like(read_array0)
+            read_array0_3 = reader.read_image(0, out=read_array0_2)
+            assert read_array0_2.ctypes.data == read_array0_3.ctypes.data
+            assert np.array_equal(read_array0, read_array0_2)
+            with pytest.raises(ValueError, match="must have shape"):
+                reader.read_image(0, out=read_array0_2[0, 0])
+            with pytest.raises(ValueError, match="must have dtype"):
+                reader.read_image(0, out=read_array0_2.astype(np.complex64))
+
+            read_legend0 = reader.read_legend(0, 0)
+
+            # test `out=` argument
+            read_legend0_2 = np.empty_like(read_legend0)
+            read_legend0_3 = reader.read_legend(0, 0, out=read_legend0_2)
+            assert read_legend0_2.ctypes.data == read_legend0_3.ctypes.data
+            assert np.array_equal(read_legend0, read_legend0_2)
+            with pytest.raises(ValueError, match="must have shape"):
+                reader.read_legend(0, 0, out=read_legend0_2[0, 0])
+            with pytest.raises(ValueError, match="must have dtype"):
+                reader.read_legend(0, 0, out=read_legend0_2.astype(np.complex64))
+
             read_array1 = reader.read_image(1)
+            read_legend1_0 = reader.read_legend(1, 0)
+            read_legend1_1 = reader.read_legend(1, 1)
             read_array2 = reader.read_image(2)
+            read_legend2 = reader.read_legend(2, 0)
             read_array3 = reader.read_image(3)
             read_array4 = reader.read_image(4)
             read_array5 = reader.read_image(5)
-            read_xmltree = read_metadata.images[0].xmltree
-            read_sicd_xmltree = read_metadata.sicd_xmls[-1].xmltree
-            read_ps_xmltree0 = read_metadata.product_support_xmls[0].xmltree
-            read_ps_xmltree1 = read_metadata.product_support_xmls[1].xmltree
+
+            with pytest.raises(IndexError):
+                reader.read_image(99)
+            with pytest.raises(IndexError):
+                reader.read_legend(99, 0)
+            with pytest.raises(IndexError):
+                reader.read_legend(0, 99)
+
+            if with_ded:
+                read_ded_array = reader.read_ded()
+                # test 'out=' argument
+                read_ded_array_2 = np.empty_like(read_ded_array)
+                read_ded_array_3 = reader.read_ded(out=read_ded_array_2)
+                assert read_ded_array_2.ctypes.data == read_ded_array_3.ctypes.data
+                assert np.array_equal(read_ded_array, read_ded_array_2)
+                with pytest.raises(ValueError, match="must have shape"):
+                    reader.read_ded(out=read_ded_array_2[0, 0])
+                with pytest.raises(ValueError, match="must have dtype"):
+                    reader.read_ded(out=read_ded_array_2.astype(np.complex64))
+            else:
+                with pytest.raises(RuntimeError, match="no DED to read"):
+                    read_ded_array = reader.read_ded()
 
     def _normalized(xmltree):
         return lxml.etree.tostring(xmltree, method="c14n")
 
-    assert _normalized(read_xmltree) == _normalized(basis_etree0)
-    assert _normalized(read_ps_xmltree0) == _normalized(ps_xmltree0)
-    assert _normalized(read_ps_xmltree1) == _normalized(ps_xmltree1)
-    assert _normalized(read_sicd_xmltree) == _normalized(sicd_xmltree)
-
+    # metadata structure should roundtrip (may have different, equivalent XML encodings)
     assert write_metadata.file_header_part == read_metadata.file_header_part
-    assert (
-        write_metadata.images[0].im_subheader_part
-        == read_metadata.images[0].im_subheader_part
-    )
-    assert (
-        write_metadata.images[0].de_subheader_part
-        == read_metadata.images[0].de_subheader_part
-    )
+    for w_image, r_image in zip(
+        write_metadata.images, read_metadata.images, strict=True
+    ):
+        assert _normalized(w_image.xmltree) == _normalized(r_image.xmltree)
+        assert w_image.im_subheader_part == r_image.im_subheader_part
+        assert w_image.de_subheader_part == r_image.de_subheader_part
+        for w_legend, r_legend in zip(w_image.legends, r_image.legends, strict=True):
+            assert w_legend == r_legend
+        assert np.all(w_image.lookup_table == r_image.lookup_table)
+    assert write_metadata.ded == read_metadata.ded
+    for w_psxml, r_psxml in zip(
+        write_metadata.product_support_xmls,
+        read_metadata.product_support_xmls,
+        strict=True,
+    ):
+        assert _normalized(w_psxml.xmltree) == _normalized(r_psxml.xmltree)
+        assert w_psxml.de_subheader_part == r_psxml.de_subheader_part
+    for w_sicdxml, r_sicdxml in zip(
+        write_metadata.product_support_xmls,
+        read_metadata.product_support_xmls,
+        strict=True,
+    ):
+        assert _normalized(w_sicdxml.xmltree) == _normalized(r_sicdxml.xmltree)
+        assert w_sicdxml.de_subheader_part == r_sicdxml.de_subheader_part
+
     assert np.array_equal(basis_array0, read_array0)
+    assert np.array_equal(basis_legend_array, read_legend0)
     assert np.array_equal(basis_array1, read_array1)
+    assert np.array_equal(basis_legend_array, read_legend1_0)
+    assert np.array_equal(basis_legend_array, read_legend1_1)
     assert np.array_equal(basis_array2, read_array2)
+    assert np.array_equal(basis_legend_array_rgb, read_legend2)
     assert np.array_equal(basis_array3, read_array3)
     assert np.array_equal(basis_array4, read_array4)
     assert np.array_equal(basis_array5, read_array5)
+    if with_ded:
+        assert np.array_equal(basis_ded_array, read_ded_array)
+        assert write_metadata.ded == read_metadata.ded
 
-    assert np.array_equal(
-        read_metadata.images[3].lookup_table, write_metadata.images[3].lookup_table
-    )
-    assert np.array_equal(
-        read_metadata.images[4].lookup_table, write_metadata.images[4].lookup_table
-    )
-    assert np.array_equal(
-        read_metadata.images[5].lookup_table, write_metadata.images[5].lookup_table
-    )
+    idlvls = [seg["subheader"]["IDLVL"].value for seg in read_jbp["ImageSegments"]]
+    ialvls = [seg["subheader"]["IALVL"].value for seg in read_jbp["ImageSegments"]]
+    iid1s = [seg["subheader"]["IID1"].value for seg in read_jbp["ImageSegments"]]
+    assert sorted(idlvls) == sorted(range(1, len(read_jbp["ImageSegments"]) + 1))
+    assert set(ialvls) <= set(idlvls) | set([0])
+    if with_ded:
+        assert iid1s[-1] == "DED001"
+        iid1s.pop()
+    assert iid1s == sorted(iid1s)
 
 
 def test_segmentation():
@@ -430,6 +640,7 @@ def test_segmentation():
             nrows=iloc_max,
             ncols=num_cols,
             igeolo="",
+            icat="SAR",
         ),
         sksidd.SegmentationImhdr(
             iid1="SIDD001002",
@@ -439,6 +650,7 @@ def test_segmentation():
             nrows=iloc_max,
             ncols=num_cols,
             igeolo="",
+            icat="SAR",
         ),
         sksidd.SegmentationImhdr(
             iid1="SIDD001003",
@@ -448,6 +660,7 @@ def test_segmentation():
             nrows=last_rows,
             ncols=num_cols,
             igeolo="",
+            icat="SAR",
         ),
         sksidd.SegmentationImhdr(
             iid1="SIDD002001",
@@ -457,6 +670,7 @@ def test_segmentation():
             nrows=iloc_max,
             ncols=num_cols,
             igeolo="",
+            icat="SAR",
         ),
         sksidd.SegmentationImhdr(
             iid1="SIDD002002",
@@ -466,6 +680,7 @@ def test_segmentation():
             nrows=iloc_max,
             ncols=num_cols,
             igeolo="",
+            icat="SAR",
         ),
         sksidd.SegmentationImhdr(
             iid1="SIDD002003",
@@ -475,6 +690,7 @@ def test_segmentation():
             nrows=last_rows,
             ncols=num_cols,
             igeolo="",
+            icat="SAR",
         ),
     ]
     expected_fhdr_li = [imhdr.nrows * imhdr.ncols for imhdr in expected_imhdrs]

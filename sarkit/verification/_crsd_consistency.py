@@ -5,26 +5,18 @@ Functionality for verifying CRSD files for internal consistency.
 import collections.abc
 import copy
 import functools
-import logging
 import numbers
 import os
 import re
 from typing import Any, Optional
 
 import numpy as np
+import shapely.geometry as shg
 from lxml import etree
 
 import sarkit.crsd as skcrsd
 import sarkit.verification._consistency as con
 import sarkit.wgs84
-
-logger = logging.getLogger(__name__)
-
-try:
-    import shapely.geometry as shg
-except ImportError as ie:
-    logger.warning("'shapely' package not found. Some features may not work correctly.")
-    shg = con._ExceptionOnUse(ie)
 
 INVALID_CHAR_REGEX = re.compile(r"\W")
 
@@ -1271,6 +1263,11 @@ class CrsdConsistency(con.ConsistencyChecker):
         """RcvPos, RcvVel, RcvStart seem normal"""
         with self.precondition():
             pvp = self._get_channel_pvps(channel_id)
+            with self.need("RcvStart PVPs are finite"):
+                assert np.all(np.isfinite(pvp["RcvStart"]["Frac"]))
+            for parameter in ("RcvPos", "RcvVel"):
+                with self.need(f"{parameter} PVPs are finite"):
+                    assert np.all(np.isfinite(pvp[parameter]))
             rcvtime_float = pvp["RcvStart"]["Int"] + pvp["RcvStart"]["Frac"]
             with self.want("RcvPos, RcvVel, RcvStart are a matched set"):
                 assert np.diff(pvp["RcvPos"], axis=0) == con.Approx(
@@ -1425,6 +1422,19 @@ class CrsdConsistency(con.ConsistencyChecker):
                 "{*}DwellPolynomials/{*}DwellTime",
             )
 
+    def check_geoinfo_polygons(self):
+        """GeoInfo polygons are simple polygons in clockwise order."""
+        geo_polygons = self.crsdroot.findall(".//{*}GeoInfo/{*}Polygon")
+        with self.precondition():
+            assert geo_polygons
+            for geo_polygon in geo_polygons:
+                vertices = self.xmlhelp.load_elem(geo_polygon)
+                shg_polygon = shg.Polygon(vertices)
+                with self.need("GeoInfo polygon is simple"):
+                    assert shg_polygon.is_simple
+                with self.need("GeoInfo polygon is clockwise"):
+                    assert not shg_polygon.exterior.is_ccw
+
     def check_scene_iarp(self):
         """IARP is consistent and near Earth's surface"""
         iarp_ecf = self.xmlhelp.load("{*}SceneCoordinates/{*}IARP/{*}ECF")
@@ -1545,6 +1555,55 @@ class CrsdConsistency(con.ConsistencyChecker):
                 channel_param_elem.find("{*}SARImage/{*}ImageArea/{*}Polygon")
             )
 
+    def check_imagegrid(self):
+        """SceneCoordinates/ImageGrid is consistent with ImageArea"""
+        with self.precondition():
+            assert self.crsd_type == "CRSDsar"
+            assert self.crsdroot.find("./{*}SceneCoordinates/{*}ImageGrid") is not None
+
+            iarp_line = self.xmlhelp.load(
+                "./{*}SceneCoordinates/{*}ImageGrid/{*}IARPLocation/{*}Line"
+            )
+            line_spacing = self.xmlhelp.load(
+                "./{*}SceneCoordinates/{*}ImageGrid/{*}IAXExtent/{*}LineSpacing"
+            )
+            first_line = self.xmlhelp.load(
+                "./{*}SceneCoordinates/{*}ImageGrid/{*}IAXExtent/{*}FirstLine"
+            )
+            num_lines = self.xmlhelp.load(
+                "./{*}SceneCoordinates/{*}ImageGrid/{*}IAXExtent/{*}NumLines"
+            )
+            grid_x1 = (first_line - iarp_line - 0.5) * line_spacing
+            grid_x2 = (first_line + num_lines - iarp_line - 0.5) * line_spacing
+
+            iarp_sample = self.xmlhelp.load(
+                "./{*}SceneCoordinates/{*}ImageGrid/{*}IARPLocation/{*}Sample"
+            )
+            sample_spacing = self.xmlhelp.load(
+                "./{*}SceneCoordinates/{*}ImageGrid/{*}IAYExtent/{*}SampleSpacing"
+            )
+            first_sample = self.xmlhelp.load(
+                "./{*}SceneCoordinates/{*}ImageGrid/{*}IAYExtent/{*}FirstSample"
+            )
+            num_samples = self.xmlhelp.load(
+                "./{*}SceneCoordinates/{*}ImageGrid/{*}IAYExtent/{*}NumSamples"
+            )
+            grid_y1 = (first_sample - iarp_sample - 0.5) * sample_spacing
+            grid_y2 = (first_sample + num_samples - iarp_sample - 0.5) * sample_spacing
+
+            image_area_x1y1 = self.xmlhelp.load(
+                "./{*}SceneCoordinates/{*}ImageArea/{*}X1Y1"
+            )
+            image_area_x2y2 = self.xmlhelp.load(
+                "./{*}SceneCoordinates/{*}ImageArea/{*}X2Y2"
+            )
+
+            with self.want("Grid Extent to match ImageArea"):
+                assert grid_x1 == con.Approx(image_area_x1y1[0], atol=line_spacing)
+                assert grid_x2 == con.Approx(image_area_x2y2[0], atol=line_spacing)
+                assert grid_y1 == con.Approx(image_area_x1y1[1], atol=sample_spacing)
+                assert grid_y2 == con.Approx(image_area_x2y2[1], atol=sample_spacing)
+
     def check_segment_list(self):
         """Segments are within the grid"""
         with self.precondition():
@@ -1588,6 +1647,7 @@ class CrsdConsistency(con.ConsistencyChecker):
                 start_sample = int(segment_node.findtext("{*}StartSample"))
                 end_line = int(segment_node.findtext("{*}EndLine"))
                 end_sample = int(segment_node.findtext("{*}EndSample"))
+                segment_polygon_node = segment_node.find("{*}SegmentPolygon")
                 with self.need(f"{identifier}: StartLine is within grid"):
                     assert first_line <= start_line <= first_line + num_lines - 1
                 with self.need(f"{identifier}: StartSample is within grid"):
@@ -1602,7 +1662,8 @@ class CrsdConsistency(con.ConsistencyChecker):
                     assert first_line <= end_line <= first_line + num_lines - 1
                 with self.need(f"{identifier}: EndSample is within grid"):
                     assert first_sample <= end_sample <= first_sample + num_samples - 1
-                polygon = self.xmlhelp.load_elem(segment_node.find("{*}SegmentPolygon"))
+
+                polygon = self.xmlhelp.load_elem(segment_polygon_node)
                 with self.need(f"{identifier}: Polygon is bounded by segment limits"):
                     assert np.all(
                         polygon.min(axis=0) >= [start_line - 0.5, start_sample - 0.5]
@@ -1615,6 +1676,18 @@ class CrsdConsistency(con.ConsistencyChecker):
                     assert shg_polygon.is_simple
                 with self.need(f"{identifier}: Polygon is clockwise"):
                     assert not shg_polygon.exterior.is_ccw
+
+                index_attributes = [
+                    int(sv.get("index"))
+                    for sv in segment_polygon_node.findall("./{*}SV")
+                ]
+                with self.need(
+                    f"Segment {identifier} Polygon size attribute matches SV elements"
+                ):
+                    assert np.array_equal(
+                        sorted(index_attributes),
+                        np.arange(int(segment_polygon_node.get("size"))) + 1,
+                    )
 
     def check_numsupportarrays(self):
         """SupportArrays are properly counted"""
@@ -1997,6 +2070,104 @@ class CrsdConsistency(con.ConsistencyChecker):
             with self.need("section terminator at end of XML block"):
                 assert self.file.read(2) == skcrsd.SECTION_TERMINATOR
 
+    def check_extendedarea_contains_imagearea(self):
+        """Extended image area contains the image area."""
+        with self.precondition():
+            assert (
+                self.crsdroot.find("./{*}SceneCoordinates/{*}ExtendedArea") is not None
+            )
+            extended_x1y1 = self.xmlhelp.load(
+                "./{*}SceneCoordinates/{*}ExtendedArea/{*}X1Y1"
+            )
+            extended_x2y2 = self.xmlhelp.load(
+                "./{*}SceneCoordinates/{*}ExtendedArea/{*}X2Y2"
+            )
+            image_x1y1 = self.xmlhelp.load("./{*}SceneCoordinates/{*}ImageArea/{*}X1Y1")
+            image_x2y2 = self.xmlhelp.load("./{*}SceneCoordinates/{*}ImageArea/{*}X2Y2")
+            with self.need("Extended X1Y1 less than or equal image area X1Y1"):
+                assert np.all(extended_x1y1 <= image_x1y1)
+            with self.need("Extended X2Y2 greater than or equal image area X2Y2"):
+                assert np.all(extended_x2y2 >= image_x2y2)
+
+    def _get_signal_array_parameters(self, channel_id):
+        format_string = self.crsdroot.findtext(
+            "./{*}Data/{*}Receive/{*}SignalArrayFormat"
+        )
+        channel_data_node = self.crsdroot.find(
+            f'./{{*}}Data/{{*}}Receive/{{*}}Channel[{{*}}ChId="{channel_id}"]'
+        )
+        signal_offset = int(channel_data_node.findtext("./{*}SignalArrayByteOffset"))
+        return {
+            "array_format": format_string,
+            "signal_dtype": skcrsd.binary_format_string_to_dtype(format_string),
+            "signal_offset": signal_offset,
+            "num_vectors": int(channel_data_node.findtext("./{*}NumVectors")),
+            "num_samples": int(channel_data_node.findtext("./{*}NumSamples")),
+            "signal_file_offset": int(self.kvp_list["SIGNAL_BLOCK_BYTE_OFFSET"])
+            + signal_offset,
+        }
+
+    @per_channel
+    def check_channel_signal_data(self, channel_id, channel_node):
+        """Signal array samples are valid and consistent with SIGNAL PVP."""
+        with self.precondition():
+            pvp = self._get_channel_pvps(channel_id)
+            assert self.kvp_list is not None
+            assert self.file is not None
+            assert self.crsdroot.find("{*}Data/{*}Receive/{*}SignalCompression") is None
+
+            sig_arr_params = self._get_signal_array_parameters(channel_id)
+            self.file.seek(sig_arr_params["signal_file_offset"], os.SEEK_SET)
+            samples_remaining = (
+                sig_arr_params["num_vectors"] * sig_arr_params["num_samples"]
+            )
+            max_read_bytes = 2**20
+            max_read_samples = max_read_bytes // sig_arr_params["signal_dtype"].itemsize
+            num_vectors_read = max(1, max_read_samples // sig_arr_params["num_samples"])
+            max_whole_vector_read_samples = (
+                num_vectors_read * sig_arr_params["num_samples"]
+            )
+            vector_start = 0
+            vector_end = num_vectors_read
+            overall_signal_mask = (
+                pvp["SIGNAL"] == 0
+            )  # only check vectors with SIGNAL == 0
+            non_zeros = 0
+            while samples_remaining:
+                data = self.file.read(
+                    sig_arr_params["signal_dtype"].itemsize
+                    * min(max_whole_vector_read_samples, samples_remaining)
+                )
+                with self.need("Channel signal fits within file"):
+                    assert data
+                signal = np.frombuffer(
+                    data, sig_arr_params["signal_dtype"].newbyteorder(">")
+                )
+                with self.precondition():
+                    assert sig_arr_params["array_format"] == "CF8"
+                    with self.need("All signal samples are finite and not NaN"):
+                        assert np.all(np.isfinite(signal))
+
+                this_data_block_signal_mask = overall_signal_mask[
+                    vector_start:vector_end
+                ]
+                with self.need("Vectors contain only zeroes where SIGNAL PVP is 0"):
+                    assert (
+                        np.count_nonzero(
+                            signal.reshape(-1, sig_arr_params["num_samples"])[
+                                this_data_block_signal_mask
+                            ]
+                        )
+                        == 0
+                    )
+
+                vector_start += num_vectors_read
+                vector_end += num_vectors_read
+                non_zeros += np.count_nonzero(signal)
+                samples_remaining -= len(signal)
+            with self.need("Signal samples are not all zeroes"):
+                assert non_zeros
+
     def check_pad_before_binary_blocks(self):
         """Pad before binary blocks is null bytes"""
         with self.precondition():
@@ -2272,3 +2443,7 @@ class CrsdConsistency(con.ConsistencyChecker):
             llh_coord = iarp_llh.copy()
             llh_coord[:2] += uiax_ll * iac_coord[0] + uiay_ll * iac_coord[1]
             return sarkit.wgs84.geodetic_to_cartesian(llh_coord)
+
+
+# Improve rendered docstring
+con.modify_conchecker_docs(CrsdConsistency)
