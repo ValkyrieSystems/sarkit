@@ -5,6 +5,7 @@ import numpy as np
 import numpy.typing as npt
 
 import sarkit.wgs84
+import sarkit.xmlhelp
 
 from . import _xml as cphd_xml
 
@@ -144,6 +145,12 @@ def ecf_to_iac(cphd_xmltree: lxml.etree.ElementTree, pt: npt.ArrayLike) -> np.nd
         Array of positions in IAC coordinates with IAX, IAY, IAZ components in meters in the last dimension.
     """
     sc_ew = cphd_xml.ElementWrapper(cphd_xmltree.find("{*}SceneCoordinates"))
+    return ecf_to_iac_from_ew(sc_ew, pt)
+
+
+def ecf_to_iac_from_ew(
+    sc_ew: sarkit.xmlhelp.ElementWrapper, pt: npt.ArrayLike
+) -> np.ndarray:
     if "Planar" in sc_ew["ReferenceSurface"]:
         return planar_ecf_to_iac(
             pt,
@@ -180,6 +187,12 @@ def iac_to_ecf(
         Array of positions in ECF coordinates with X, Y, Z components in meters in the last dimension.
     """
     sc_ew = cphd_xml.ElementWrapper(cphd_xmltree.find("{*}SceneCoordinates"))
+    return iac_to_ecf_from_ew(sc_ew, pt_iac)
+
+
+def iac_to_ecf_from_ew(
+    sc_ew: sarkit.xmlhelp.ElementWrapper, pt_iac: npt.ArrayLike
+) -> np.ndarray:
     if "Planar" in sc_ew["ReferenceSurface"]:
         return planar_iac_to_ecf(
             pt_iac,
@@ -217,6 +230,12 @@ def llh_to_iac(
         Array of positions in IAC coordinates with IAX, IAY, IAZ components in meters in the last dimension.
     """
     sc_ew = cphd_xml.ElementWrapper(cphd_xmltree.find("{*}SceneCoordinates"))
+    return llh_to_iac_from_ew(sc_ew, pt_llh)
+
+
+def llh_to_iac_from_ew(
+    sc_ew: sarkit.xmlhelp.ElementWrapper, pt_llh: npt.ArrayLike
+) -> np.ndarray:
     if "Planar" in sc_ew["ReferenceSurface"]:
         return planar_ecf_to_iac(
             sarkit.wgs84.geodetic_to_cartesian(pt_llh),
@@ -254,6 +273,12 @@ def iac_to_llh(
         ellipsoidal height (m)] in the last dimension.
     """
     sc_ew = cphd_xml.ElementWrapper(cphd_xmltree.find("{*}SceneCoordinates"))
+    return iac_to_llh_from_ew(sc_ew, pt_iac)
+
+
+def iac_to_llh_from_ew(
+    sc_ew: sarkit.xmlhelp.ElementWrapper, pt_iac: npt.ArrayLike
+) -> np.ndarray:
     if "Planar" in sc_ew["ReferenceSurface"]:
         pt = planar_iac_to_ecf(
             pt_iac,
