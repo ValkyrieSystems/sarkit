@@ -1,4 +1,4 @@
-<SICD xmlns="urn:SICD:1.5-DRAFT-2025_06_10">
+<SICD xmlns="urn:SICD:1.5">
   <CollectionInfo>
     <CollectorName>SyntheticCollector</CollectorName>
     <IlluminatorName>SyntheticIlluminator</IlluminatorName>

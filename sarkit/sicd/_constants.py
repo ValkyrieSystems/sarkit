@@ -39,10 +39,10 @@ VERSION_INFO: Final[dict[str, VersionInfoType]] = {
         "date": "2023-10-26T00:00:00Z",
         "schema": SCHEMA_DIR / "SICD_schema_V1.4.0_2024_05_01.xsd",
     },
-    "urn:SICD:1.5-DRAFT-2025_06_10": {
+    "urn:SICD:1.5": {
         "version": "1.5",
         "date": "2025-06-10",
-        "schema": SCHEMA_DIR / "SICD_schema_V1.5_DRAFT_2025_06_10.xsd",
+        "schema": SCHEMA_DIR / "NGA.STND.0024-4_1.5_Schema_2025_06_10.xsd",
     },
 }
 
