@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Additional CPHD consistency checks for optional antenna fields introduced in v1.1.0
+- Additional CPHD consistency checks for optional antenna & polarization fields introduced in v1.1.0
 - `--txsequences` argument to `crsdinfo` for listing transmit pulse sequences
 
 

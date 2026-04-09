@@ -20,6 +20,7 @@ import shapely.geometry as shg
 from lxml import etree
 
 import sarkit.cphd as skcphd
+import sarkit.crsd._computations
 import sarkit.verification._consistency as con
 from sarkit import _constants
 
@@ -103,6 +104,7 @@ class CphdConsistency(con.ConsistencyChecker):
         except AttributeError:
             self.cphdroot = cphd_xml.getroottree().getroot()
         self.xmlhelp = skcphd.XmlHelper(self.cphdroot.getroottree())
+        self.ew = skcphd.ElementWrapper(self.cphdroot)
 
         self.file_type_header = file_type_header
         self.kvp_list = kvp_list
@@ -603,6 +605,59 @@ class CphdConsistency(con.ConsistencyChecker):
                 "./AntPhaseCenter/ACFId references an identifier in AntCoordFrame."
             ):
                 assert apc_acf_ids_text <= acf_identifiers_text
+
+    @per_channel
+    def check_channel_txpolref(self, channel_id, channel_node):
+        """Transmit polarization parameters are consistent with Antenna metadata."""
+        self._check_channel_onesided_polref(channel_node, "Tx")
+
+    @per_channel
+    def check_channel_rcvpolref(self, channel_id, channel_node):
+        """Receive polarization parameters are consistent with Antenna metadata."""
+        self._check_channel_onesided_polref(channel_node, "Rcv")
+
+    def _check_channel_onesided_polref(self, channel_node, txrcv):
+        with self.precondition():
+            pvp = self._get_channel_pvps(channel_node.findtext("{*}Identifier"))
+            ref_pvp = pvp[int(channel_node.findtext("{*}RefVectorIndex"))]
+            chanpolref = channel_node.find(f"{{*}}Polarization/{{*}}{txrcv}PolRef")
+            apc_id = channel_node.findtext(f"{{*}}Antenna/{{*}}{txrcv}APCId")
+            apat_id = channel_node.findtext(f"{{*}}Antenna/{{*}}{txrcv}APATId")
+            assert chanpolref is not None
+            assert apc_id is not None
+            apat = self.ew["Antenna"].find("AntPattern", Identifier=apat_id)
+            assert "AntPolRef" in list(apat.keys())
+            acfid = self.ew["Antenna"].find("AntPhaseCenter", Identifier=apc_id)[
+                "ACFId"
+            ]
+            acf = self.ew["Antenna"].find("AntCoordFrame", Identifier=acfid)
+            # CPHD v1.1.0 section 7.2.5 defines how to compute uH/uV but leaves the rest up to the reader
+            # Happens to match uH/uV definition in CRSD v1.0
+            expected_amph, expected_ampv, phaseh, phasev = (
+                sarkit.crsd._computations.compute_h_v_pol_parameters(
+                    ref_pvp[f"{txrcv}Pos"],
+                    npp.polyval(ref_pvp[f"{txrcv}Time"], acf["XAxisPoly"]),
+                    npp.polyval(ref_pvp[f"{txrcv}Time"], acf["YAxisPoly"]),
+                    ref_pvp["SRPPos"],
+                    1 if txrcv == "Tx" else -1,
+                    apat["AntPolRef"]["AmpX"],
+                    apat["AntPolRef"]["AmpY"],
+                    0.0,
+                    apat["AntPolRef"]["PhaseY"],
+                )
+            )
+            chanpolref_ew = skcphd.ElementWrapper(chanpolref)
+            actual_amph, actual_ampv = unit(
+                [chanpolref_ew["AmpH"], chanpolref_ew["AmpV"]]
+            )
+            with self.want(f"{txrcv} AmpH/AmpV agree with AntPolRef and ACF"):
+                assert np.dot(
+                    [actual_amph, actual_ampv], [expected_amph, expected_ampv]
+                ) == con.Approx(1.0)
+            phasediff = (phasev - phaseh) - chanpolref_ew["PhaseV"]
+            phasediff -= round(phasediff)  # wrap angle
+            with self.want(f"{txrcv} PhaseV agrees with AntPolRef and ACF"):
+                assert phasediff == con.Approx(0.0)
 
     def check_antenna_array_element_antgpid(self):
         """Check that Array/AntGPId and Element/AntGPId, when present, are included together in /Antenna/AntPattern."""
