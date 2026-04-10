@@ -7,7 +7,6 @@ import collections.abc
 import copy
 import functools
 import itertools
-import logging
 import numbers
 import os
 import re
@@ -15,20 +14,14 @@ import struct
 from typing import Any, Optional
 
 import numpy as np
+import numpy.lib.recfunctions as rfn
 import numpy.polynomial.polynomial as npp
+import shapely.geometry as shg
 from lxml import etree
 
 import sarkit.cphd as skcphd
 import sarkit.verification._consistency as con
 from sarkit import _constants
-
-logger = logging.getLogger(__name__)
-
-try:
-    import shapely.geometry as shg
-except ImportError as ie:
-    logger.warning("'shapely' package not found. Some features may not work correctly.")
-    shg = con._ExceptionOnUse(ie)
 
 INVALID_CHAR_REGEX = re.compile(r"\W")
 
@@ -179,7 +172,7 @@ class CphdConsistency(con.ConsistencyChecker):
             import sarkit.cphd as skcphd
             import lxml.etree
             meta = skcphd.Metadata(
-                xmltree=lxml.etree.parse("data/example-cphd-1.0.1.xml"),
+                xmltree=lxml.etree.parse("data/example-cphd-1.1.0.xml"),
             )
             file = tmppath / "example.cphd"
             with file.open("wb") as f, skcphd.Writer(f, meta) as w:
@@ -194,7 +187,7 @@ class CphdConsistency(con.ConsistencyChecker):
 
             >>> import sarkit.verification as skver
 
-            >>> with open("data/example-cphd-1.0.1.xml", "r") as f:
+            >>> with open("data/example-cphd-1.1.0.xml", "r") as f:
             ...     con = skver.CphdConsistency.from_file(f)
             >>> con.check()
             >>> bool(con.passes())
@@ -282,7 +275,7 @@ class CphdConsistency(con.ConsistencyChecker):
 
             >>> import lxml.etree
             >>> import sarkit.verification as skver
-            >>> cphd_xmltree = lxml.etree.parse("data/example-cphd-1.0.1.xml")
+            >>> cphd_xmltree = lxml.etree.parse("data/example-cphd-1.1.0.xml")
             >>> con = skver.CphdConsistency.from_parts(cphd_xmltree)
             >>> con.check()
             >>> bool(con.passes())
@@ -322,18 +315,20 @@ class CphdConsistency(con.ConsistencyChecker):
             [self.xmlhelp.load_elem(vertex) for vertex in vertex_nodes]
         )
         if check:
-            with self.need("Polygon indices are all present"):
+            with self.need(f"{_get_root_path(polygon_node)} indices are all present"):
                 assert [int(x.attrib["index"]) for x in vertex_nodes] == list(
                     range(1, len(vertex_nodes) + 1)
                 )
             if "size" in polygon_node.attrib:
                 size = int(polygon_node.attrib["size"])
-                with self.need("Polygon size attribute matches the number of vertices"):
+                with self.need(
+                    f"{_get_root_path(polygon_node)} size attribute matches the number of vertices"
+                ):
                     assert size == len(vertex_nodes)
             shg_polygon = shg.Polygon(polygon)
-            with self.need("Polygon is simple"):
+            with self.need(f"{_get_root_path(polygon_node)} is simple"):
                 assert shg_polygon.is_simple
-            with self.need("Polygon is clockwise"):
+            with self.need(f"{_get_root_path(polygon_node)} is clockwise"):
                 assert not shg_polygon.exterior.is_ccw
         return polygon
 
@@ -401,6 +396,100 @@ class CphdConsistency(con.ConsistencyChecker):
             with self.need("XML passes schema"):
                 assert schema.validate(self.cphdroot), schema.error_log
 
+    def _check_count(self, expected_tag, tag_to_count):
+        with self.need(f"{expected_tag} matches #{{{tag_to_count}}} nodes"):
+            assert int(self.cphdroot.findtext(expected_tag)) == len(
+                self.cphdroot.findall(tag_to_count)
+            )
+
+    def check_data_num_cphd_channels(self):
+        """/Data/NumCPHDChannels matches #{/Data/Channel} nodes"""
+        self._check_count("./{*}Data/{*}NumCPHDChannels", "./{*}Data/{*}Channel")
+
+    def check_data_num_support_arrays(self):
+        """/Data/NumSupportArrays matches #{/Data/SupportArray} nodes"""
+        self._check_count("./{*}Data/{*}NumSupportArrays", "./{*}Data/{*}SupportArray")
+
+    def check_support_arrays_have_data(self):
+        """Each /SupportArray array has a corresponding /Data/SupportArray"""
+        sa_id_nodes = self.cphdroot.findall("{*}SupportArray/*/{*}Identifier")
+        with self.precondition():
+            assert sa_id_nodes
+            for sa_id_node in sa_id_nodes:
+                sa_id = sa_id_node.text
+                with self.need(
+                    f"Support array with identifier {sa_id} has an entry in /Data/SupportArray"
+                ):
+                    assert (
+                        self.cphdroot.find(
+                            f"{{*}}Data/{{*}}SupportArray[{{*}}Identifier='{sa_id}']"
+                        )
+                        is not None
+                    )
+
+    def check_dwell_num_cod_times(self):
+        """/Dwell/NumCODTimes matches #{/Dwell/CODTime} nodes"""
+        self._check_count("./{*}Dwell/{*}NumCODTimes", "./{*}Dwell/{*}CODTime")
+
+    def check_dwell_num_dwell_times(self):
+        """/Dwell/NumDwellTimes matches #{/Dwell/DwellTime} nodes"""
+        self._check_count("./{*}Dwell/{*}NumDwellTimes", "./{*}Dwell/{*}DwellTime")
+
+    def check_data_num_bytes_pvp_is_valid(self):
+        """/Data/NumBytesPVP is a multiple of 8 and > 0"""
+        data_node = self.cphdroot.find("./{*}Data")
+        num_bytes_pvp = int(data_node.findtext("./{*}NumBytesPVP"))
+        with self.need("/Data/NumBytesPVP is a multiple of 8"):
+            assert (num_bytes_pvp % 8) == 0
+        with self.need("/Data/NumBytesPVP > 0"):
+            assert num_bytes_pvp > 0
+
+    def check_data_num_bytes_pvp_accommodates_pvps(self):
+        """/Data/NumBytesPVP is large enough to accommodate PVPs described in XML"""
+        data_node = self.cphdroot.find("./{*}Data")
+        num_bytes_pvp = int(data_node.findtext("./{*}NumBytesPVP"))
+        min_required_words = max(
+            [
+                int(node.findtext("./{*}Offset")) + int(node.findtext("./{*}Size"))
+                for node in list(self.cphdroot.findall("./{*}PVP//{*}Offset/.."))
+            ]
+        )
+        bytes_per_pvp_word = 8
+        min_required_num_bytes = min_required_words * bytes_per_pvp_word
+
+        with self.need(
+            "/Data/NumBytesPVP large enough to accommodate PVPs described in XML"
+        ):
+            assert num_bytes_pvp >= min_required_num_bytes
+        with self.want("/Data/NumBytesPVP does not indicate trailing pad"):
+            assert num_bytes_pvp == min_required_num_bytes
+
+    @per_channel
+    def check_channel_dwell_usedta(self, channel_id, channel_node):
+        """UseDTA only present with DTAId"""
+        with self.precondition():
+            assert channel_node.find("./{*}DwellTimes/{*}UseDTA") is not None
+            with self.need(
+                f"UseDTA only included when DTAId is also included.  For channel={channel_id}"
+            ):
+                assert channel_node.find("./{*}DwellTimes/{*}DTAId") is not None
+
+    @per_channel
+    def check_channel_dtaid(self, channel_id, channel_node):
+        """If a DTAId is specified, the support array exists"""
+        with self.precondition():
+            dtaid = channel_node.findtext("./{*}DwellTimes/{*}DTAId")
+            assert dtaid is not None
+            with self.need(
+                f"Dwell Time support array with ID {dtaid} (used by channel {channel_id}) exists."
+            ):
+                assert (
+                    self.cphdroot.find(
+                        f"{{*}}SupportArray/{{*}}DwellTimeArray[{{*}}Identifier='{dtaid}']"
+                    )
+                    is not None
+                )
+
     @per_channel
     def check_channel_dwell_polys(self, channel_id, channel_node):
         """/Dwell/CODTime/CODTimePoly and /Dwell/DwellTime/DwellTimePoly are consistent with other metadata."""
@@ -408,6 +497,10 @@ class CphdConsistency(con.ConsistencyChecker):
         cod_node = get_by_id(self.cphdroot, "./{*}Dwell/{*}CODTime", cod_id)
         dwell_id = channel_node.findtext("./{*}DwellTimes/{*}DwellId")
         dwell_node = get_by_id(self.cphdroot, "./{*}Dwell/{*}DwellTime", dwell_id)
+        with self.need(
+            f"/Dwell/CODTime with Identifier={cod_id} exists for DwellTime in channel={channel_id}"
+        ):
+            assert cod_node is not None
         with self.need(
             f"/Dwell/DwellTime with Identifier={dwell_id} exists for DwellTime in channel={channel_id}"
         ):
@@ -511,6 +604,116 @@ class CphdConsistency(con.ConsistencyChecker):
             ):
                 assert apc_acf_ids_text <= acf_identifiers_text
 
+    def check_antenna_array_element_antgpid(self):
+        """Check that Array/AntGPId and Element/AntGPId, when present, are included together in /Antenna/AntPattern."""
+        antenna_node = self.cphdroot.find("./{*}Antenna")
+        with self.precondition():
+            assert antenna_node is not None
+            for antpat in antenna_node.findall("./{*}AntPattern"):
+                has_array_ant_gp_id = antpat.find("./{*}Array/{*}AntGPId") is not None
+                has_element_ant_gp_id = (
+                    antpat.find("./{*}Element/{*}AntGPId") is not None
+                )
+                with self.need(
+                    "Array/AntGPId and Element/AntGPId, when present, are included together in /Antenna/AntPattern"
+                ):
+                    assert has_array_ant_gp_id == has_element_ant_gp_id
+
+    def check_antenna_array_element_antgpid_exist(self):
+        """Check that used GPIds exist"""
+        gpid_nodes = self.cphdroot.findall("{*}Antenna/{*}AntPattern/*/{*}AntGPId")
+        with self.precondition():
+            assert gpid_nodes
+            for gpid_node in gpid_nodes:
+                gpid = gpid_node.text
+                with self.need(f"GainPhase array {gpid} exists"):
+                    assert (
+                        self.cphdroot.find(
+                            f"{{*}}SupportArray/{{*}}AntGainPhase[{{*}}Identifier='{gpid}']"
+                        )
+                        is not None
+                    )
+
+    def check_antenna_useacfpvp(self):
+        """UseACFPVP only included when PVP TxAntenna & RcvAntenna are included."""
+        with self.precondition():
+            assert (
+                self.cphdroot.find("{*}Antenna/{*}AntCoordFrame/{*}UseACFPVP")
+                is not None
+            )
+            with self.need(
+                "UseACFPVP only included when PVP TxAntenna & RcvAntenna are included"
+            ):
+                assert self.cphdroot.find("{*}PVP/{*}TxAntenna") is not None
+                assert self.cphdroot.find("{*}PVP/{*}RcvAntenna") is not None
+
+    def check_antenna_useebpvp(self):
+        """UseEBPVP only included when PVP TxAntenna & RcvAntenna are included."""
+        with self.precondition():
+            assert (
+                self.cphdroot.find("{*}Antenna/{*}AntPattern/{*}EB/{*}UseEBPVP")
+                is not None
+            )
+            with self.need(
+                "UseEBPVP only included when PVP TxAntenna & RcvAntenna are included"
+            ):
+                assert self.cphdroot.find("{*}PVP/{*}TxAntenna") is not None
+                assert self.cphdroot.find("{*}PVP/{*}RcvAntenna") is not None
+
+    def check_antenna_ebfreqshiftsf(self):
+        """AntPattern/EBFreqShiftSF only included for EBFreqShift = true"""
+        ebfreqshiftsf_elems = self.cphdroot.findall(
+            "{*}Antenna/{*}AntPattern/{*}EBFreqShiftSF"
+        )
+        with self.precondition():
+            assert ebfreqshiftsf_elems
+            for elem in ebfreqshiftsf_elems:
+                apat = elem.getparent()
+                apat_id = apat.findtext("{*}Identifier")
+                ebfs_elem = apat.find("{*}EBFreqShift")
+                with self.need(
+                    f"EBFreqShiftSF only included for EBFreqShift = true for APAT_ID={apat_id}"
+                ):
+                    assert ebfs_elem is not None
+                    assert self.xmlhelp.load_elem(ebfs_elem) is True
+
+    def check_antenna_mlfreqdilationsf(self):
+        """AntPattern/MLFreqDilationSF only included for MLFreqDilation = true"""
+        mlfreqdilationsf_elems = self.cphdroot.findall(
+            "{*}Antenna/{*}AntPattern/{*}MLFreqDilationSF"
+        )
+        with self.precondition():
+            assert mlfreqdilationsf_elems
+            for elem in mlfreqdilationsf_elems:
+                apat = elem.getparent()
+                apat_id = apat.findtext("{*}Identifier")
+                mlfd_elem = apat.find("{*}MLFreqDilation")
+                with self.need(
+                    f"MLFreqDilationSF only included for MLFreqDilation = true for APAT_ID={apat_id}"
+                ):
+                    assert mlfd_elem is not None
+                    assert self.xmlhelp.load_elem(mlfd_elem) is True
+
+    def check_antenna_arrayid_elementid_exist(self):
+        """Check that used gain phase arrays exist"""
+        array_id_nodes = self.cphdroot.findall(
+            "{*}Antenna/{*}AntPattern/{*}GainPhaseArray/{*}ArrayId"
+        )
+        element_id_nodes = self.cphdroot.findall(
+            "{*}Antenna/{*}AntPattern/{*}GainPhaseArray/{*}ElementId"
+        )
+        with self.precondition():
+            assert array_id_nodes + element_id_nodes
+            for gpid_node in array_id_nodes + element_id_nodes:
+                gpid = gpid_node.text
+                with self.need(f"GainPhase array {gpid} exists"):
+                    assert (
+                        self.cphdroot.find(
+                            f"{{*}}SupportArray/{{*}}AntGainPhase[{{*}}Identifier='{gpid}']"
+                        )
+                        is not None
+                    )
+
     @per_channel
     def check_channel_antenna_exist(self, channel_id, channel_node):
         """The antenna patterns and phase centers exist if declared."""
@@ -563,6 +766,32 @@ class CphdConsistency(con.ConsistencyChecker):
                     )
 
     @per_channel
+    def check_txrcv_posvel_residuals(self, channel_id, channel_node):
+        """Tx/Rcv Position/Velocity PVPs have small polyfit residual."""
+        with self.precondition():
+            pvp = self._get_channel_pvps(channel_id)
+            poly_order = 5
+            thresh = 1  # m (position) or m/s (velocity)
+            for side in ("Tx", "Rcv"):
+                xdata_name = side + "Time"
+                mask = np.logical_not(np.isnan(pvp[xdata_name]))
+                for param in ("Pos", "Vel"):
+                    ydata_name = side + param
+                    fit_polys = npp.polyfit(
+                        pvp[xdata_name][mask], pvp[ydata_name][mask], poly_order
+                    )
+                    fit_data = npp.polyval(pvp[xdata_name][mask], fit_polys)
+                    residuals = np.linalg.norm(
+                        pvp[ydata_name][mask] - np.transpose(fit_data), axis=1
+                    )
+                    with self.want(
+                        (
+                            f"Max residual of order-{poly_order} poly fit of {ydata_name} < {thresh}"
+                        )
+                    ):
+                        assert max(residuals) < thresh
+
+    @per_channel
     def check_time_increasing(self, channel_id, channel_node):
         """PVP times increase."""
         with self.precondition():
@@ -587,6 +816,16 @@ class CphdConsistency(con.ConsistencyChecker):
                 assert np.all(np.greater(rcv_time[mask], tx_time[mask]))
 
     @per_channel
+    def check_first_txtime(self, channel_id, channel_node):
+        """First TxTime greater than 0."""
+        with self.precondition():
+            pvp = self._get_channel_pvps(channel_id)
+            tx_time = pvp["TxTime"]
+            mask = np.isfinite(tx_time)
+            with self.need("First TxTime >= 0"):
+                assert tx_time[mask][0] >= 0
+
+    @per_channel
     def check_rcv_finite(self, channel_id, channel_node):
         """RcvTime and Pos are finite."""
         with self.precondition():
@@ -597,6 +836,81 @@ class CphdConsistency(con.ConsistencyChecker):
                 assert np.all(np.isfinite(rcv_time))
             with self.need("RcvPos"):
                 assert np.all(np.isfinite(rcv_pos))
+
+    @per_channel
+    def check_pvp_set_finiteness(self, channel_id, channel_node):
+        """PVP sets have the same per-vector finiteness."""
+        with self.precondition():
+            pvp = self._get_channel_pvps(channel_id)
+            pvp_sets = (
+                ["TxPos"],
+                ["TxVel"],
+                ["SRPPos"],
+                ["aFRR1", "aFRR2"],
+                ["FX1", "FX2"],
+                ["FXN1", "FXN2"],
+                ["TOA1", "TOA2"],
+                ["TOAE1", "TOAE2"],
+                ["SC0", "SCSS"],
+            )
+            for pvp_set in pvp_sets:
+                with self.precondition(f"{pvp_set} in PVPs"):
+                    assert set(pvp_set) <= set(pvp.dtype.fields)
+                    set_finiteness = np.isfinite(
+                        rfn.structured_to_unstructured(pvp[pvp_set])
+                    )
+                    with self.want(f"{pvp_set=} have the same per-vector finiteness"):
+                        assert all(
+                            set_finiteness.max(axis=-1) == set_finiteness.min(axis=-1)
+                        )
+
+    @per_channel
+    def check_tx_acxy(self, channel_id, channel_node):
+        """TxACX and TxACY PVPs are orthonormal"""
+        with self.precondition():
+            pvp = self._get_channel_pvps(channel_id)
+            assert {"TxACX", "TxACY"}.issubset(pvp.dtype.names)
+            with self.need("TxACX is unit length"):
+                assert np.linalg.norm(pvp["TxACX"], axis=-1) == con.Approx(1.0)
+            with self.need("TxACY is unit length"):
+                assert np.linalg.norm(pvp["TxACY"], axis=-1) == con.Approx(1.0)
+            with self.need("TxACX and TxACY are orthogonal"):
+                assert np.vecdot(pvp["TxACX"], pvp["TxACY"]) == con.Approx(
+                    0.0, atol=1e-6
+                )
+
+    @per_channel
+    def check_txeb(self, channel_id, channel_node):
+        """TxEB composed of valid direction cosines"""
+        with self.precondition():
+            pvp = self._get_channel_pvps(channel_id)
+            assert "TxEB" in pvp.dtype.names
+            with self.need("TxEB is less than unit length"):
+                assert np.linalg.norm(pvp["TxEB"], axis=-1) <= con.Approx(1.0)
+
+    @per_channel
+    def check_rcv_acxy(self, channel_id, channel_node):
+        """RcvACX and RcvACY PVPs are orthonormal"""
+        with self.precondition():
+            pvp = self._get_channel_pvps(channel_id)
+            assert {"RcvACX", "RcvACY"}.issubset(pvp.dtype.names)
+            with self.need("RcvACX is unit length"):
+                assert np.linalg.norm(pvp["RcvACX"], axis=-1) == con.Approx(1.0)
+            with self.need("RcvACY is unit length"):
+                assert np.linalg.norm(pvp["RcvACY"], axis=-1) == con.Approx(1.0)
+            with self.need("RcvACX and RcvACY are orthogonal"):
+                assert np.vecdot(pvp["RcvACX"], pvp["RcvACY"]) == con.Approx(
+                    0.0, atol=1e-6
+                )
+
+    @per_channel
+    def check_rcveb(self, channel_id, channel_node):
+        """RcvEB composed of valid direction cosines"""
+        with self.precondition():
+            pvp = self._get_channel_pvps(channel_id)
+            assert "RcvEB" in pvp.dtype.names
+            with self.need("RcvEB is less than unit length"):
+                assert np.linalg.norm(pvp["RcvEB"], axis=-1) <= con.Approx(1.0)
 
     @per_channel
     def check_channel_fxfixed(self, channel_id, channel_node):
@@ -789,6 +1103,28 @@ class CphdConsistency(con.ConsistencyChecker):
                     )
 
     @per_channel
+    def check_channel_fx2_gt_fx1(self, channel_id, channel_node):
+        """FX2 PVPs greater than FX1 PVPs."""
+        with self.precondition():
+            pvp = self._get_channel_pvps(channel_id)
+            mask = np.logical_and(np.isfinite(pvp["FX1"]), np.isfinite(pvp["FX2"]))
+            with self.need("FX2 PVPs greater than FX1 PVPs"):
+                assert np.all(pvp["FX2"][mask] > pvp["FX1"][mask])
+
+    @per_channel
+    def check_channel_positive_pvps(self, channel_id, channel_node):
+        """FX1, FX2, SC0, SCSS PVPs are strictly positive"""
+        with self.precondition():
+            pvp = self._get_channel_pvps(channel_id)
+            for param in ("FX1", "FX2", "SCSS"):
+                with self.need(f"{param} PVP is strictly positive"):
+                    assert not np.any(pvp[param] <= 0)
+            with self.precondition():
+                assert self.xmlhelp.load("./{*}Global/{*}DomainType") == "FX"
+                with self.need("SC0 PVP is strictly positive for FX domain"):
+                    assert not np.any(pvp["SC0"] <= 0)
+
+    @per_channel
     def check_channel_fxc(self, channel_id, channel_node):
         """PVP agrees with FxC."""
         with self.precondition():
@@ -964,6 +1300,24 @@ class CphdConsistency(con.ConsistencyChecker):
                     fx_c[mask] * pvp["aFRR2"][mask]
                 ) == con.Approx(1)
 
+    def check_txrcv_lfmrate(self):
+        """TxRcv LFMRate is not zero."""
+        version_ns = etree.QName(self.cphdroot).namespace
+        cphd_versions = list(skcphd.VERSION_INFO)
+        txrcv_node = self.cphdroot.find("./{*}TxRcv")
+        with self.precondition():
+            assert cphd_versions.index(version_ns) < cphd_versions.index(
+                "http://api.nsgreg.nga.mil/schema/cphd/1.1.0"
+            )
+            assert txrcv_node is not None
+            for lfmrate_child in txrcv_node.findall(".//{*}LFMRate"):
+                this_parent = lfmrate_child.getparent()
+                identifier = this_parent.findtext("./{*}Identifier")
+                with self.need(
+                    f"/TxRcv/{etree.QName(this_parent).localname}[Identifier='{identifier}']/LFMRate is not zero"
+                ):
+                    assert float(lfmrate_child.text) != 0
+
     def _get_channel_tx_lfmrates(self, channel_node):
         tx_lfmrates = set()
         for txwdid_node in channel_node.findall("./{*}TxRcv/{*}TxWFId"):
@@ -1100,8 +1454,17 @@ class CphdConsistency(con.ConsistencyChecker):
         with self.precondition():
             assert geo_polygons
             for geo_polygon in geo_polygons:
-                with self.need(etree.ElementTree(self.cphdroot).getpath(geo_polygon)):
-                    self.get_polygon(geo_polygon, check=True)
+                self.get_polygon(geo_polygon, check=True)
+
+    def check_segment_polygons(self):
+        """SegmentPolygons are simple, valid and clockwise."""
+        segment_polygons = self.cphdroot.findall(
+            "./{*}SceneCoordinates/{*}ImageGrid/{*}SegmentList/{*}Segment/{*}SegmentPolygon"
+        )
+        with self.precondition():
+            assert segment_polygons
+            for segment_polygon in segment_polygons:
+                self.get_polygon(segment_polygon, check=True)
 
     def check_image_area_corner_points(self):
         """The corner points represent a simple quadrilateral in clockwise order."""
@@ -1220,53 +1583,92 @@ class CphdConsistency(con.ConsistencyChecker):
             with self.need("Extended X2Y2 greater than image area X2Y2"):
                 assert extended_x2y2 >= con.Approx(global_x2y2)
 
+    def _get_signal_array_parameters(self, channel_id):
+        format_string = self.cphdroot.findtext("./{*}Data/{*}SignalArrayFormat")
+        signal_dtype = skcphd.binary_format_string_to_dtype(format_string)
+        channel_data_node = get_by_id(self.cphdroot, "./{*}Data/{*}Channel", channel_id)
+        signal_offset = int(channel_data_node.findtext("./{*}SignalArrayByteOffset"))
+        num_vectors = int(channel_data_node.findtext("./{*}NumVectors"))
+        num_samples = int(channel_data_node.findtext("./{*}NumSamples"))
+        signal_end = signal_offset + num_vectors * num_samples * signal_dtype.itemsize
+        signal_file_offset = (
+            int(self.kvp_list["SIGNAL_BLOCK_BYTE_OFFSET"]) + signal_offset
+        )
+        return {
+            "array_format": format_string,
+            "signal_dtype": signal_dtype,
+            "signal_offset": signal_offset,
+            "num_vectors": num_vectors,
+            "num_samples": num_samples,
+            "signal_end": signal_end,
+            "signal_file_offset": signal_file_offset,
+        }
+
     @per_channel
     def check_channel_signal_data(self, channel_id, channel_node):
-        """Sample data is all finite."""
+        """Check contents of signal array."""
         with self.precondition():
             assert self.kvp_list is not None
             assert self.cphdroot.find("./{*}Data/{*}SignalCompressionID") is None
-            format_string = self.xmlhelp.load("./{*}Data/{*}SignalArrayFormat")
-            signal_dtype = skcphd.binary_format_string_to_dtype(format_string)
-
-            channel_data_node = get_by_id(
-                self.cphdroot, "./{*}Data/{*}Channel", channel_id
-            )
-            signal_offset = self.xmlhelp.load_elem(
-                channel_data_node.find("./{*}SignalArrayByteOffset")
-            )
-            num_vectors = self.xmlhelp.load_elem(
-                channel_data_node.find("./{*}NumVectors")
-            )
-            num_samples = self.xmlhelp.load_elem(
-                channel_data_node.find("./{*}NumSamples")
-            )
-            signal_end = (
-                signal_offset + num_vectors * num_samples * signal_dtype.itemsize
-            )
-            signal_file_offset = (
-                int(self.kvp_list["SIGNAL_BLOCK_BYTE_OFFSET"]) + signal_offset
-            )
-
-            with self.need("Channel signal fits in signal block"):
-                assert int(self.kvp_list["SIGNAL_BLOCK_SIZE"]) >= signal_end
+            sig_arr_params = self._get_signal_array_parameters(channel_id)
+            pvps = self._get_channel_pvps(channel_id)
             with self.precondition():
                 assert self.file is not None
-                assert format_string == "CF8"
-                self.file.seek(signal_file_offset, os.SEEK_SET)
-                samples_remaining = num_vectors * num_samples
+                assert "SIGNAL" in pvps.dtype.fields
+                self.file.seek(sig_arr_params["signal_file_offset"], os.SEEK_SET)
+                samples_remaining = (
+                    sig_arr_params["num_vectors"] * sig_arr_params["num_samples"]
+                )
                 max_read_bytes = 2**20
-                max_read_samples = max_read_bytes // signal_dtype.itemsize
+                max_read_samples = (
+                    max_read_bytes // sig_arr_params["signal_dtype"].itemsize
+                )
+                max_whole_vector_read_samples = (
+                    max_read_samples // sig_arr_params["num_samples"]
+                ) * sig_arr_params["num_samples"]
+                num_vectors_read = (
+                    max_whole_vector_read_samples // sig_arr_params["num_samples"]
+                )
+                vector_start = 0
+                vector_end = num_vectors_read
+                overall_signal_mask = (
+                    pvps["SIGNAL"] == 0
+                )  # only check vectors with SIGNAL == 0
+                non_zeros = 0
                 while samples_remaining:
                     data = self.file.read(
-                        signal_dtype.itemsize * min(max_read_samples, samples_remaining)
+                        sig_arr_params["signal_dtype"].itemsize
+                        * min(max_whole_vector_read_samples, samples_remaining)
                     )
                     with self.need("Channel signal fits within file"):
                         assert data
-                    signal = np.frombuffer(data, signal_dtype.newbyteorder(">"))
-                    with self.need("All signal samples are finite and not NaN"):
-                        assert np.all(np.isfinite(signal))
+                    signal = np.frombuffer(
+                        data, sig_arr_params["signal_dtype"].newbyteorder(">")
+                    )
+                    with self.precondition():
+                        assert sig_arr_params["array_format"] == "CF8"
+                        with self.need("All signal samples are finite and not NaN"):
+                            assert np.all(np.isfinite(signal))
+
+                    this_data_block_signal_mask = overall_signal_mask[
+                        vector_start:vector_end
+                    ]
+                    with self.need("Vectors contain only zeroes where SIGNAL PVP is 0"):
+                        assert (
+                            np.count_nonzero(
+                                signal.reshape(-1, sig_arr_params["num_samples"])[
+                                    this_data_block_signal_mask
+                                ]
+                            )
+                            == 0
+                        )
+
+                    vector_start += num_vectors_read
+                    vector_end += num_vectors_read
+                    non_zeros += np.count_nonzero(signal)
                     samples_remaining -= len(signal)
+                with self.need("Signal samples are not all zeroes"):
+                    assert non_zeros
 
     @per_channel
     def check_channel_normal_signal_pvp(self, channel_id, channel_node):
@@ -1284,6 +1686,38 @@ class CphdConsistency(con.ConsistencyChecker):
             "It is recommended to populate SceneCoordinates.ImageGrid for processing purposes"
         ):
             assert self.cphdroot.find("./{*}SceneCoordinates/{*}ImageGrid") is not None
+
+    def check_image_grid(self):
+        """SceneCoordinates/ImageGrid is consistent with ImageArea"""
+        with self.precondition():
+            img_grid = self.cphdroot.find("./{*}SceneCoordinates/{*}ImageGrid")
+            assert img_grid is not None
+            iarp_line = float(img_grid.findtext("./{*}IARPLocation/{*}Line"))
+            line_spacing = float(img_grid.findtext("./{*}IAXExtent/{*}LineSpacing"))
+            first_line = int(img_grid.findtext("./{*}IAXExtent/{*}FirstLine"))
+            num_lines = int(img_grid.findtext("./{*}IAXExtent/{*}NumLines"))
+            grid_x1 = (first_line - iarp_line - 0.5) * line_spacing
+            grid_x2 = (first_line + num_lines - iarp_line - 0.5) * line_spacing
+
+            iarp_sample = float(img_grid.findtext("./{*}IARPLocation/{*}Sample"))
+            sample_spacing = float(img_grid.findtext("./{*}IAYExtent/{*}SampleSpacing"))
+            first_sample = int(img_grid.findtext("./{*}IAYExtent/{*}FirstSample"))
+            num_samples = int(img_grid.findtext("./{*}IAYExtent/{*}NumSamples"))
+            grid_y1 = (first_sample - iarp_sample - 0.5) * sample_spacing
+            grid_y2 = (first_sample + num_samples - iarp_sample - 0.5) * sample_spacing
+
+            image_area_x1, image_area_y1 = self.xmlhelp.load(
+                "./{*}SceneCoordinates/{*}ImageArea/{*}X1Y1"
+            )
+            image_area_x2, image_area_y2 = self.xmlhelp.load(
+                "./{*}SceneCoordinates/{*}ImageArea/{*}X2Y2"
+            )
+
+            with self.want("Grid Extent to match ImageArea"):
+                assert grid_x1 == con.Approx(image_area_x1, atol=line_spacing)
+                assert grid_x2 == con.Approx(image_area_x2, atol=line_spacing)
+                assert grid_y1 == con.Approx(image_area_y1, atol=sample_spacing)
+                assert grid_y2 == con.Approx(image_area_y2, atol=sample_spacing)
 
     def check_pad_header_xml(self):
         """The pad between the header and XML is 0."""
@@ -1563,6 +1997,81 @@ class CphdConsistency(con.ConsistencyChecker):
                 "ReferenceGeometry",
             )
 
+    def _get_pvp_bounds(self):
+        """Retrieve a sorted list of PVP bounds from the XML: [start, stop)"""
+        pvp_bounds = []  # inclusive
+        PvpBound = collections.namedtuple("PvpBound", "start stop")
+        for parameter in list(self.cphdroot.findall("./{*}PVP//{*}Offset/..")):
+            parsed_parameter = self.xmlhelp.load_elem(parameter)
+            this_pvp = PvpBound(
+                parsed_parameter["Offset"],
+                parsed_parameter["Offset"] + parsed_parameter["Size"],
+            )
+            pvp_bounds.append(this_pvp)
+        pvp_bounds.sort(key=lambda x: x.start)
+        return pvp_bounds
+
+    def check_first_pvp_zero_offset(self):
+        """First PVP in the layout has zero offset"""
+        pvp_bounds = self._get_pvp_bounds()
+        with self.need("First PVP in the layout has offset zero"):
+            assert pvp_bounds[0].start == 0
+
+    def check_overlapping_pvps(self):
+        """PVP layout described in XML does not contain overlapping parameters."""
+        pvp_bounds = self._get_pvp_bounds()
+        with self.want(
+            "PVP layout described in XML does not contain overlapping parameters"
+        ):
+            for n in range(1, len(pvp_bounds)):
+                assert pvp_bounds[n].start >= pvp_bounds[n - 1].stop
+
+    def check_gaps_between_pvps(self):
+        """PVP layout described in XML does not contain gaps between parameters."""
+        pvp_bounds = self._get_pvp_bounds()
+        with self.want(
+            "PVP layout described in XML does not contain gaps between parameters"
+        ):
+            for n in range(1, len(pvp_bounds)):
+                assert pvp_bounds[n].start <= pvp_bounds[n - 1].stop
+
+    def check_pvp_block_size(self):
+        """PVP_BLOCK_SIZE in header consistent with XML /Data branch."""
+        with self.precondition():
+            assert self.kvp_list is not None
+            data_node = self.cphdroot.find("./{*}Data")
+            total_num_vectors = sum(
+                int(chan.findtext("./{*}NumVectors"))
+                for chan in data_node.findall("./{*}Channel")
+            )
+            pvp_block_size_from_xml = total_num_vectors * int(
+                data_node.findtext("./{*}NumBytesPVP")
+            )
+            with self.need("PVP_BLOCK_SIZE in header consistent with XML /Data branch"):
+                assert int(self.kvp_list["PVP_BLOCK_SIZE"]) == pvp_block_size_from_xml
+
+    def check_antgainphase_support_array_domain(self):
+        """SupportArray/AntGainPhase grid coordinates are valid direction cosines."""
+        data_name_by_dim = {"X": "Rows", "Y": "Cols"}
+        for agp_element in self.cphdroot.findall("./{*}SupportArray/{*}AntGainPhase"):
+            agp_id = agp_element.findtext("./{*}Identifier")
+            agp_label = f"AntGainPhase (id={agp_id})"
+            for dim, data_name in data_name_by_dim.items():
+                d0 = float(agp_element.findtext(f"./{{*}}{dim}0"))
+                with self.need(f"{agp_label} {dim}0 ∈ [-1, 1]"):
+                    assert -1 <= d0 <= 1
+                dss = float(agp_element.findtext(f"./{{*}}{dim}SS"))
+                with self.precondition():
+                    num_d = float(
+                        get_by_id(
+                            self.cphdroot, "./{*}Data/{*}SupportArray", agp_id
+                        ).findtext(f"./{{*}}Num{data_name}")
+                    )
+                    with self.need(
+                        f"{agp_label} {dim}0 + (Data/SupportArray/Num{data_name} - 1) * {dim}SS ∈ [-1, 1]"
+                    ):
+                        assert -1 <= d0 + (num_d - 1) * dss <= 1
+
     def check_identifier_uniqueness(self):
         """Identifier nodes are unique."""
         identifier_sets = (
@@ -1663,5 +2172,17 @@ def _get_repeated_elements(items):
     return [x for x, count in collections.Counter(items).items() if count > 1]
 
 
+def _get_root_path(node):
+    path = []
+    while node is not None:
+        path.append(etree.QName(node).localname)
+        node = node.getparent()
+    return "/".join(reversed(path[:-1]))
+
+
 def unit(vec, axis=-1):
     return vec / np.linalg.norm(vec, axis=axis, keepdims=True)
+
+
+# Improve rendered docstring
+con.modify_conchecker_docs(CphdConsistency)

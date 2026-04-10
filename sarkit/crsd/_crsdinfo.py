@@ -23,6 +23,9 @@ def _parser():
     )
     parser.add_argument("--channels", "-c", action="store_true", help="List channels")
     parser.add_argument(
+        "--txsequences", "-t", action="store_true", help="List transmit pulse sequences"
+    )
+    parser.add_argument(
         "--raw",
         choices=["XML", "SUPPORT", "PPP", "PVP", "SIGNAL"],
         help="Extract raw bytes of a BLOCK",
@@ -58,6 +61,11 @@ def main(args=None):
         if config.channels:
             root = lxml.etree.fromstring(xmlstr)
             for node in root.findall("./{*}Data/{*}Receive/{*}Channel/{*}ChId"):
+                print(node.text)
+
+        if config.txsequences:
+            root = lxml.etree.fromstring(xmlstr)
+            for node in root.findall("./{*}Data/{*}Transmit/{*}TxSequence/{*}TxId"):
                 print(node.text)
 
 

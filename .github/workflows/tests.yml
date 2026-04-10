@@ -16,14 +16,14 @@ jobs:
       fail-fast: false
     steps:
     - name: checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         lfs: false  # Save GitHub LFS bandwidth
 
     - name: Setup PDM and Python
       uses: pdm-project/setup-pdm@v4
       with:
-        python-version: 3.13
+        python-version: 3.14
     - name: Install dependencies
       run: |
         pdm lock -G :all
@@ -45,7 +45,7 @@ jobs:
 
     steps:
     - name: checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         lfs: false  # Save GitHub LFS bandwidth
     - name: Setup PDM and Python
@@ -69,13 +69,13 @@ jobs:
 
     steps:
     - name: checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         lfs: false  # Save GitHub LFS bandwidth
     - name: Setup PDM and Python
       uses: pdm-project/setup-pdm@v4
       with:
-        python-version: 3.13
+        python-version: 3.14
     - name: Install dependencies
       run: |
         pdm lock -G :all

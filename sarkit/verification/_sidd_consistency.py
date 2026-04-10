@@ -1,7 +1,6 @@
 import datetime
 import functools
 import itertools
-import logging
 import os
 import pprint
 import re
@@ -11,18 +10,11 @@ import jbpy
 import lxml.etree
 import numpy as np
 import numpy.polynomial.polynomial as npp
+import shapely.geometry as shg
 
 import sarkit.sidd as sksidd
 import sarkit.verification._consistency as con
 from sarkit import wgs84
-
-logger = logging.getLogger(__name__)
-
-try:
-    import shapely.geometry as shg
-except ImportError as ie:
-    logger.warning("'shapely' package not found. Some features may not work correctly.")
-    shg = con._ExceptionOnUse(ie)
 
 _PIXEL_INFO = {
     "MONO8I": {
@@ -63,17 +55,25 @@ _PIXEL_INFO = {
 }
 
 
-def _unit(vec, axis=-1):
-    return vec / np.linalg.norm(vec, axis=axis, keepdims=True)
-
-
 def per_image(method):
     method.per_image = True
     return method
 
 
-def _get_version(xml_tree):
-    return lxml.etree.QName(xml_tree.getroot()).namespace.split(":")[-1]
+def _is_v1(con_obj) -> bool:
+    """Return ``True`` if first SIDD XML tree is v1.0"""
+    return (
+        lxml.etree.QName(con_obj.xml_trees[0].getroot()).namespace == "urn:SIDD:1.0.0"
+    )
+
+
+def _get_corners(xmlhelp):
+    ns = lxml.etree.QName(xmlhelp.element_tree.getroot()).namespace
+    if ns == "urn:SIDD:1.0.0":
+        corners_path = "{*}GeographicAndTarget/{*}GeographicCoverage/{*}Footprint"
+    else:
+        corners_path = "{*}GeoData/{*}ImageCorners"
+    return xmlhelp.load(corners_path)
 
 
 class SiddConsistency(con.ConsistencyChecker):
@@ -83,13 +83,12 @@ class SiddConsistency(con.ConsistencyChecker):
 
     Parameters
     ----------
-    sidd_xml : lxml.etree.Element or lxml.etree.ElementTree
+    xml_trees : lxml.etree.Element or lxml.etree.ElementTree
         SIDD XML
     schema_override : `path-like object`, optional
         Path to XML Schema. If None, tries to find a version-specific schema
     file : `file object`, optional
         SIDD NITF file; when specified, NITF headers are extracted during object instantiation
-
     """
 
     def __init__(self, xml_trees, schema_override=None, file=None):
@@ -103,7 +102,7 @@ class SiddConsistency(con.ConsistencyChecker):
             self.ntf = None
 
         self.xml_trees = [
-            item.getrootree() if hasattr(item, "getroottree") else item
+            item.getroottree() if hasattr(item, "getroottree") else item
             for item in xml_trees
         ]
 
@@ -200,9 +199,12 @@ class SiddConsistency(con.ConsistencyChecker):
             file.seek(0, os.SEEK_SET)
             ntf.load(file)
             for deseg in ntf["DataExtensionSegments"]:
-                if not deseg["subheader"]["DESSHF"]["DESSHTN"].value.startswith(
-                    "urn:SIDD"
-                ):
+                if not deseg["subheader"]["DESID"].value == "XML_DATA_CONTENT":
+                    continue
+                desshtn = getattr(
+                    deseg["subheader"].get("DESSHTN"), "encoded_value", b""
+                )
+                if not desshtn.startswith(b"urn:SIDD"):
                     continue
                 file.seek(deseg["DESDATA"].get_offset())
                 xml_bytes = file.read(deseg["DESDATA"].size)
@@ -288,16 +290,19 @@ class SiddConsistency(con.ConsistencyChecker):
             def _de_segment_type(segment):
                 deseg_type = "OTHER"
                 if segment["subheader"]["DESID"].value == "XML_DATA_CONTENT":
-                    if segment["subheader"]["DESSHF"]["DESSHTN"].value.startswith(
-                        "urn:SIDD"
+                    if segment["subheader"]["DESSHTN"].encoded_value.startswith(
+                        b"urn:SIDD"
                     ):
                         deseg_type = "SIDD"
-                    if segment["subheader"]["DESSHF"]["DESSHTN"].value.startswith(
-                        "urn:SICD"
+                    if segment["subheader"]["DESSHTN"].encoded_value.startswith(
+                        b"urn:SICD"
                     ):
                         deseg_type = "SICD"
                     else:
                         deseg_type = "SUPPORT"
+                elif segment["subheader"]["DESID"].value == "SICD_XML":
+                    # SIDD v1.0 uses this nonstandard DESID
+                    deseg_type = "SICD"
                 return deseg_type
 
             deseg_types = [
@@ -309,6 +314,15 @@ class SiddConsistency(con.ConsistencyChecker):
                 )
                 assert deseg_types == expected
 
+            with self.precondition():
+                assert not _is_v1(self)
+                desids = set(
+                    x["subheader"]["DESID"].value
+                    for x in self.ntf["DataExtensionSegments"]
+                )
+                with self.want("Outmoded DESID=SICD_XML not present"):
+                    assert "SICD_XML" not in desids
+
             for des_idx, xml_tree in enumerate(self.xml_trees):
                 subhdr = self.ntf["DataExtensionSegments"][des_idx]["subheader"]
                 with self.need("SIDD XML is in a XML_DATA_CONTENT DES"):
@@ -316,17 +330,17 @@ class SiddConsistency(con.ConsistencyChecker):
                 with self.need("DESVER is 1"):
                     assert subhdr["DESVER"].value == 1
                 with self.need("DESCRC is not used"):
-                    assert subhdr["DESSHF"]["DESCRC"].value == 99999
+                    assert subhdr["DESCRC"].value == 99999
                 with self.need("DESSHFT is XML"):
-                    assert subhdr["DESSHF"]["DESSHFT"].value == "XML"
+                    assert subhdr["DESSHFT"].value == "XML"
                 with self.need("DESSHSI specifies SIDD standard"):
                     expected = (
                         "SIDD Volume 1 Design & Implementation Description Document"
                     )
-                    assert subhdr["DESSHF"]["DESSHSI"].value == expected
+                    assert subhdr["DESSHSI"].value == expected
 
                 actual = {
-                    name: subhdr["DESSHF"][name].value
+                    name: subhdr[name].value
                     for name in ("DESSHSV", "DESSHSD", "DESSHTN")
                 }
 
@@ -351,14 +365,14 @@ class SiddConsistency(con.ConsistencyChecker):
                 def _parse_ll_pair(string):
                     return float(string[:12]), float(string[12:])
 
-                desshlpg = subhdr["DESSHF"]["DESSHLPG"].value
+                desshlpg = subhdr["DESSHLPG"].value
                 actual = [
                     _parse_ll_pair(desshlpg[pair * 25 : (pair + 1) * 25])
                     for pair in range(5)
                 ]
 
                 xmlhelp = sksidd.XmlHelper(xml_tree)
-                icp_ll = xmlhelp.load("./{*}GeoData/{*}ImageCorners")
+                icp_ll = _get_corners(xmlhelp)
 
                 found = False
                 # Starting vertex isn't specified in document, try them all
@@ -373,7 +387,7 @@ class SiddConsistency(con.ConsistencyChecker):
                     assert found, f"{actual=}\n{icp_ll=}"
 
                 with self.need("DESSHLPT is space-filled"):
-                    assert subhdr["DESSHF"]["DESSHLPT"].value == ""
+                    assert subhdr["DESSHLPT"].isnull()
 
     @staticmethod
     def _im_segment_type(segment):
@@ -392,72 +406,158 @@ class SiddConsistency(con.ConsistencyChecker):
         with self.precondition():
             assert self.ntf is not None
 
-            # not clear if all legends all go after the last SAR, or if each legend goes after the SAR it's attached to
-            imseg_types = [
-                self._im_segment_type(seg) for seg in self.ntf["ImageSegments"]
-            ]
-            with self.need("IM segments start with SIDD"):
-                required_order = ["SIDD_SAR", "SIDD_LEGEND", "SIDD_DED", "OTHER"]
-                expected = sorted(imseg_types, key=required_order.index)
-                assert imseg_types == expected
+            # iterate and for each segment create a list of what is allowed to be next
+            #    SIDD{n}{m} SAR -> SIDD{n}{m+1} SAR | SIDD{n}{m+1} LEG | SIDD{n+1}001 SAR | DED001 | OTHER
+            #    SIDD{n}{m} LEG -> SIDD{n}{m+1} LEG | SIDD{n+1}001 SAR | DED001 | OTHER
+            #    DED001 -> OTHER
+            #    OTHER -> OTHER
+            def _segment_desc(segment):
+                iid1 = segment["subheader"]["IID1"].value
+                icat = segment["subheader"]["ICAT"].value
 
-    def check_nitf_iid1_order(self) -> None:
-        """Images stored sequentially"""
+                if (iid1.startswith("SIDD") and icat in ("SAR", "LEG")) or (
+                    iid1 == "DED001" and icat == "DED"
+                ):
+                    return (iid1, icat)
+                return ("OTHER", "")
+
+            allowed = [("SIDD001001", "SAR")]  # must start with first SAR image segment
+            for seg in self.ntf["ImageSegments"]:
+                desc = _segment_desc(seg)
+                with self.need("Image segments in correct order"):
+                    assert desc in allowed
+
+                if desc == ("OTHER", ""):
+                    allowed = [("OTHER", "")]
+                elif desc[1] == "DED":
+                    allowed = [("OTHER", "")]
+                elif desc[1] == "SAR":
+                    n = int(desc[0][4:7])
+                    m = int(desc[0][7:10])
+                    allowed = [
+                        (f"SIDD{n:03d}{m + 1:03d}", "SAR"),
+                        (f"SIDD{n:03d}{m + 1:03d}", "LEG"),
+                        (f"SIDD{n + 1:03d}001", "SAR"),
+                        ("DED001", "DED"),
+                        ("OTHER", ""),
+                    ]
+                elif desc[1] == "LEG":
+                    n = int(desc[0][4:7])
+                    m = int(desc[0][7:10])
+                    allowed = [
+                        (f"SIDD{n:03d}{m + 1:03d}", "LEG"),
+                        (f"SIDD{n + 1:03d}001", "SAR"),
+                        ("DED001", "DED"),
+                        ("OTHER", ""),
+                    ]
+
+    def check_nitf_display_levels(self):
+        """Image segments have reasonable display and attachment levels"""
         with self.precondition():
             assert self.ntf is not None
 
-            sar_segments = [
-                imseg
-                for imseg in self.ntf["ImageSegments"]
-                if self._im_segment_type(imseg) == "SIDD_SAR"
+            idlvls = [
+                seg["subheader"]["IDLVL"].value for seg in self.ntf["ImageSegments"]
             ]
-            iid1s = [imseg["subheader"]["IID1"].value for imseg in sar_segments]
-            with self.need("SIDD image segments must be in order"):
-                assert iid1s == sorted(iid1s)
+            ialvls = [
+                seg["subheader"]["IALVL"].value for seg in self.ntf["ImageSegments"]
+            ]
+            with self.need("IDLVLs range from 1...num image segments"):
+                assert sorted(idlvls) == sorted(
+                    range(1, len(self.ntf["ImageSegments"]) + 1)
+                )
+            with self.need("IALVLs reference an existing IDLVL"):
+                assert set(ialvls) <= set(idlvls) | set([0])
 
-    def check_nitf_segmentation(self) -> None:
-        """NITF Image Subheaders match SIDD segmentation"""
+            with self.need("image segment is attached to a lower display level"):
+                for idlvl, ialvl in zip(idlvls, ialvls):
+                    assert ialvl < idlvl
+
+    @per_image
+    def check_nitf_sidd_image_segments(self, image_number, xml_tree):
+        """Check relationships between segments of a single image"""
         with self.precondition():
             assert self.ntf is not None
 
-            segmentation_imhdrs = self._image_segmentation()
-            for idx, expected in enumerate(segmentation_imhdrs):
+            headers = [
+                seg["subheader"]
+                for seg in self.ntf["ImageSegments"]
+                if seg["subheader"]["IID1"].value.startswith(
+                    f"SIDD{image_number + 1:03d}"
+                )
+            ]
+            sar_headers = [hdr for hdr in headers if hdr["ICAT"].value == "SAR"]
+            sar_idlvls = sorted([hdr["IDLVL"].value for hdr in sar_headers])
+            sar_ialvls = sorted([hdr["IALVL"].value for hdr in sar_headers])
+            with self.need("First SAR segment is attached to CCS"):
+                assert sar_ialvls[0] == 0
+            with self.need("SAR segments have sequential IDLVLS"):
+                assert np.all(np.diff(sar_idlvls)) == 1
+            with self.need("SAR segments are attached to the previous segment"):
+                assert sar_ialvls[1:] == sar_idlvls[:-1]
+
+            pixel_footprint = sksidd.ElementWrapper(xml_tree.getroot())["Measurement"][
+                "PixelFootprint"
+            ]
+            sum_nrows = sum(hdr["NROWS"].value for hdr in sar_headers)
+            all_ncols = np.asarray([hdr["NCOLS"].value for hdr in sar_headers])
+            with self.need("Combined SAR segments shape matches pixel footprint"):
+                assert np.all(all_ncols == all_ncols[0])
+                assert all_ncols[0] == pixel_footprint[1]
+                assert sum_nrows == pixel_footprint[0]
+
+            leg_headers = [hdr for hdr in headers if hdr["ICAT"].value == "LEG"]
+            leg_idlvls = sorted([hdr["IDLVL"].value for hdr in leg_headers])
+            leg_ialvls = sorted([hdr["IALVL"].value for hdr in leg_headers])
+            with self.need("Legends are displayed immediately after the SAR segments"):
+                expected_idlvls = list(
+                    range(sar_idlvls[-1] + 1, sar_idlvls[-1] + 1 + len(leg_headers))
+                )
+                assert sorted(leg_idlvls) == expected_idlvls
+            with self.need("Legends are attached to SAR segments"):
+                assert set(leg_ialvls) <= set(sar_idlvls)
+
+    @per_image
+    def check_nitf_image_segmentation(self, image_number, xml_tree):
+        """NITF Image Subheaders match SIDD segmentation algorithm"""
+        with self.precondition():
+            assert self.ntf is not None
+
+            segments = [
+                seg
+                for seg in self.ntf["ImageSegments"]
+                if seg["subheader"]["IID1"].value.startswith(
+                    f"SIDD{image_number + 1:03d}"
+                )
+            ]
+
+            # seginfos are for a single image, update based on other images in the SIDD
+            _, _, seginfos = sksidd.segmentation_algorithm([xml_tree])
+            for info in seginfos:
+                info.iid1 = f"SIDD{image_number + 1:03d}{info.iid1[7:10]}"
+                info.idlvl += segments[0]["subheader"]["IDLVL"].value - 1
+                if info.ialvl != 0:
+                    info.ialvl += segments[0]["subheader"]["IDLVL"].value - 1
+
+            for idx, (segment, expected) in enumerate(zip(segments, seginfos)):
                 with self.need(f"Image Segment {idx} must be SAR"):
-                    assert (
-                        self.ntf["ImageSegments"][idx]["subheader"]["ICAT"].value
-                        == "SAR"
-                    )
+                    assert segment["subheader"]["ICAT"].value == "SAR"
 
                 with self.need(f"Image Segment {idx} has expected IDLVL"):
-                    assert (
-                        self.ntf["ImageSegments"][idx]["subheader"]["IDLVL"].value
-                        == expected["idlvl"]
-                    )
+                    assert segment["subheader"]["IDLVL"].value == expected.idlvl
                 with self.need(f"Image Segment {idx} has expected IALVL"):
-                    assert (
-                        self.ntf["ImageSegments"][idx]["subheader"]["IALVL"].value
-                        == expected["ialvl"]
-                    )
+                    assert segment["subheader"]["IALVL"].value == expected.ialvl
                 with self.need(f"Image Segment {idx} has expected ILOC"):
-                    assert (
-                        self.ntf["ImageSegments"][idx]["subheader"]["ILOC"].value
-                        == expected["iloc"]
+                    assert segment["subheader"]["ILOC"].value == (
+                        int(expected.iloc[:5]),
+                        int(expected.iloc[5:]),
                     )
                 with self.need(f"Image Segment {idx} has expected IID1"):
-                    assert (
-                        self.ntf["ImageSegments"][idx]["subheader"]["IID1"].value
-                        == expected["iid1"]
-                    )
+                    assert segment["subheader"]["IID1"].value == expected.iid1
                 with self.need(f"Image Segment {idx} has expected NROWS"):
-                    assert (
-                        self.ntf["ImageSegments"][idx]["subheader"]["NROWS"].value
-                        == expected["nrows"]
-                    )
+                    assert segment["subheader"]["NROWS"].value == expected.nrows
                 with self.need(f"Image Segment {idx} has expected NCOLS"):
-                    assert (
-                        self.ntf["ImageSegments"][idx]["subheader"]["NCOLS"].value
-                        == expected["ncols"]
-                    )
+                    assert segment["subheader"]["NCOLS"].value == expected.ncols
 
                 def _dms_to_dd(dms_str):
                     direction = dms_str[-1]
@@ -475,10 +575,22 @@ class SiddConsistency(con.ConsistencyChecker):
                     [_dms_to_dd(igeolo[45:52]), _dms_to_dd(igeolo[52:60])],
                 ]
 
+                igeolo = expected.igeolo
+                expected_ll = [
+                    [_dms_to_dd(igeolo[0:7]), _dms_to_dd(igeolo[7:15])],
+                    [_dms_to_dd(igeolo[15:22]), _dms_to_dd(igeolo[22:30])],
+                    [_dms_to_dd(igeolo[30:37]), _dms_to_dd(igeolo[37:45])],
+                    [_dms_to_dd(igeolo[45:52]), _dms_to_dd(igeolo[52:60])],
+                ]
+
                 with self.need(f"Image Segment {idx} has expected IGEOLO"):
                     np.testing.assert_allclose(
-                        igeolo_ll, expected["igeolo_dd"], atol=1.0 / 60 / 60, rtol=0
+                        igeolo_ll, expected_ll, atol=1.0 / 60 / 60, rtol=0
                     )
+
+            for segment in segments[len(seginfos) :]:
+                with self.need("Legends located after SAR image"):
+                    assert segment["subheader"]["ICAT"].value == "LEG"
 
     @per_image
     def check_nitf_image_subheaders(self, image_number, xml_tree):
@@ -573,11 +685,11 @@ class SiddConsistency(con.ConsistencyChecker):
                             == irepband
                         )
                     with self.need("ISUBCAT is space-filled"):
-                        assert imseg["subheader"][f"ISUBCAT{idx + 1:05d}"].value == ""
+                        assert not imseg["subheader"][f"ISUBCAT{idx + 1:05d}"].value
                     with self.need('IFC is "N"'):
                         assert imseg["subheader"][f"IFC{idx + 1:05d}"].value == "N"
-                    with self.need("IREPBAND is space-filled"):
-                        assert imseg["subheader"][f"IMFLT{idx + 1:05d}"].value == ""
+                    with self.need("IMFLT is space-filled"):
+                        assert not imseg["subheader"][f"IMFLT{idx + 1:05d}"].value
                     with self.need("NLUTS consistent with PixelType"):
                         assert (
                             imseg["subheader"][f"NLUTS{idx + 1:05d}"].value
@@ -599,136 +711,6 @@ class SiddConsistency(con.ConsistencyChecker):
                         == imseg["subheader"]["ABPP"].value
                     )
 
-    def _image_segmentation(self):
-        """Attempts to implement the SIDD segmentation algorithm (sans obvious document errors)"""
-        z = 0
-        fhdr_numi = 0
-        num_rows_limit = []
-        imhdr = []
-        num_seg_per_image = []
-
-        # Not defined by document, but necessary to make coordinate calculation work with multple xml_trees
-        starting_seg_per_image = []
-
-        num_rows = []
-        num_cols = []
-        for k, xml_tree in enumerate(self.xml_trees):
-            # k is 1 based in document, 0 based here
-            num_rows.append(
-                int(xml_tree.findtext("./{*}Measurement/{*}PixelFootprint/{*}Row"))
-            )
-            num_cols.append(
-                int(xml_tree.findtext("./{*}Measurement/{*}PixelFootprint/{*}Col"))
-            )
-
-        for k, xml_tree in enumerate(self.xml_trees):
-            # k is 1 based in document, 0 based here
-            pixel_info = _PIXEL_INFO[xml_tree.findtext("./{*}Display/{*}PixelType")]
-
-            bytes_per_pixel = pixel_info["NBANDS"]
-            bytes_per_row = (
-                bytes_per_pixel * num_cols[k]
-            )  # document says NumRows(m), which can't possibly be right
-            num_rows_limit.append(
-                min(np.floor(sksidd.LI_MAX / bytes_per_row), sksidd.ILOC_MAX)
-            )
-            product_size = bytes_per_pixel * num_rows[k] * num_cols[k]
-
-            starting_seg_per_image.append(z)
-            if product_size <= sksidd.LI_MAX:
-                num_seg_per_image.append(1)
-                z += 1
-                fhdr_numi += 1
-                imhdr.append(
-                    {
-                        "idlvl": z,
-                        "ialvl": 0,
-                        "iloc": (0, 0),
-                        "iid1": f"SIDD{k + 1:03d}001",  # document say to use m instead of k, but that doesn't make sense
-                        "nrows": num_rows[k],  # document says to use num_rows_limit[k],
-                        "ncols": num_cols[k],
-                    }
-                )
-            else:
-                num_seg_per_image.append(
-                    int(np.ceil(num_rows[k] / num_rows_limit[k]))
-                )  # document omits ceil
-                z += 1
-                fhdr_numi += num_seg_per_image[k]
-                imhdr.append(
-                    {
-                        "idlvl": z,
-                        "ialvl": 0,
-                        "iloc": (0, 0),
-                        "iid1": f"SIDD{k + 1:03d}001",  # document say to use m instead of k, but that doesn't make sense
-                        "nrows": num_rows_limit[k],  # document doesn't set nrows here
-                        "ncols": num_cols[k],
-                    }
-                )
-                for n in range(2, num_seg_per_image[k]):
-                    z += 1
-                    imhdr.append(
-                        {
-                            "idlvl": z,
-                            "ialvl": z - 1,
-                            "iloc": (num_rows_limit[k], 0),
-                            "iid1": f"SIDD{k + 1:03d}{n:03d}",
-                            "nrows": num_rows_limit[k],
-                            "ncols": num_cols[k],
-                        }
-                    )
-                z += 1
-                last_seg_rows = (
-                    num_rows[k] - (num_seg_per_image[k] - 1) * num_rows_limit[k]
-                )
-                imhdr.append(
-                    {
-                        "idlvl": z,
-                        "ialvl": z - 1,
-                        "iloc": (
-                            num_rows_limit[k],
-                            0,
-                        ),  # document says to use last_seg_rows
-                        "iid1": f"SIDD{k + 1:03d}{num_seg_per_image[k]:03d}",  # document says to use the undefiend 'n'
-                        "nrows": last_seg_rows,
-                        "ncols": num_cols[k],
-                    }
-                )
-
-        # Image Segment Corner Coordinate Parameters
-        for k, xml_tree in enumerate(self.xml_trees):
-            # k is 1 based in document, 0 based here
-
-            xmlhelp = sksidd.XmlHelper(xml_tree)
-            icp_ll = xmlhelp.load("./{*}GeoData/{*}ImageCorners")
-            pcc_lla = np.concatenate((icp_ll, np.full((len(icp_ll), 1), 0)), axis=1)
-            pcc_ecef = wgs84.geodetic_to_cartesian(pcc_lla)
-
-            for z in range(num_seg_per_image[k]):
-                iscc_ecef = np.zeros((4, 3))
-                imhdr_idx = starting_seg_per_image[k] + z
-                # imhdr_idx is 'z' in document, but offset to actually work with multiple product images
-
-                wgt1 = (z * num_rows_limit[k]) / num_rows[k]
-                wgt2 = 1 - wgt1
-                wgt3 = (z * num_rows_limit[k] + imhdr[imhdr_idx]["nrows"]) / num_rows[k]
-                wgt4 = 1 - wgt3
-
-                iscc_ecef[1 - 1] = wgt2 * pcc_ecef[1 - 1] + wgt1 * pcc_ecef[4 - 1]
-                iscc_ecef[2 - 1] = wgt2 * pcc_ecef[2 - 1] + wgt1 * pcc_ecef[3 - 1]
-                iscc_ecef[3 - 1] = wgt4 * pcc_ecef[2 - 1] + wgt3 * pcc_ecef[3 - 1]
-                iscc_ecef[4 - 1] = wgt4 * pcc_ecef[1 - 1] + wgt3 * pcc_ecef[4 - 1]
-
-                iscc = wgs84.cartesian_to_geodetic(iscc_ecef)[:, :2]
-                imhdr[imhdr_idx]["igeolo_dd"] = [
-                    [iscc[0, 0], iscc[0, 1]],
-                    [iscc[1, 0], iscc[1, 1]],
-                    [iscc[2, 0], iscc[2, 1]],
-                    [iscc[3, 0], iscc[3, 1]],
-                ]
-
-        return imhdr
-
     @per_image
     def check_datetime_fields_are_utc(self, image_number, xml_tree) -> None:
         """Datetime fields should be followed by Z to indicate UTC."""
@@ -742,6 +724,7 @@ class SiddConsistency(con.ConsistencyChecker):
                     assert element.text.strip().endswith("Z")
 
     @per_image
+    @con.skipif(_is_v1, "Does not apply to SIDD v1.0")
     def check_display_numbands(self, image_number, xml_tree) -> None:
         """Display/NumBands is consistent with Display/PixelType."""
         pixel_type = xml_tree.findtext("./{*}Display/{*}PixelType")
@@ -760,6 +743,7 @@ class SiddConsistency(con.ConsistencyChecker):
             )
 
     @per_image
+    @con.skipif(_is_v1, "Does not apply to SIDD v1.0")
     def check_display_processing_bands(self, image_number, xml_tree) -> None:
         """Display/[Non]InteractiveProcessing nodes are present for each band."""
         num_bands = int(xml_tree.findtext("./{*}Display/{*}NumBands"))
@@ -777,6 +761,7 @@ class SiddConsistency(con.ConsistencyChecker):
                 assert actual_bands == expected_bands
 
     @per_image
+    @con.skipif(_is_v1, "Does not apply to SIDD v1.0")
     def check_display_antialias_filter_operation(self, image_number, xml_tree) -> None:
         """Display/.../(RRDS|Scaling)/AntiAlias/Operation is set correctly."""
         elems = itertools.chain(
@@ -796,6 +781,7 @@ class SiddConsistency(con.ConsistencyChecker):
                 assert elem.text == expected_operation
 
     @per_image
+    @con.skipif(_is_v1, "Does not apply to SIDD v1.0")
     def check_display_interpolation_filter_operation(
         self, image_number, xml_tree
     ) -> None:
@@ -817,6 +803,7 @@ class SiddConsistency(con.ConsistencyChecker):
                 assert elem.text == expected_operation
 
     @per_image
+    @con.skipif(_is_v1, "Does not apply to SIDD v1.0")
     def check_display_dra_bandstatssource(self, image_number, xml_tree) -> None:
         """Display/InteractiveProcessing/DynamicRangeAdjustment/BandStatsSource is a valid band index."""
         num_bands = int(xml_tree.findtext("./{*}Display/{*}NumBands"))
@@ -825,6 +812,7 @@ class SiddConsistency(con.ConsistencyChecker):
             assert 1 <= int(xml_tree.findtext(path)) <= num_bands
 
     @per_image
+    @con.skipif(_is_v1, "Does not apply to SIDD v1.0")
     def check_display_auto_dra_parameters(self, image_number, xml_tree) -> None:
         """Display/InteractiveProcessing/DynamicRangeAdjustment/DRAParameters included if AlgorithmType = AUTO."""
         dra_path = "./{*}Display/{*}InteractiveProcessing/{*}DynamicRangeAdjustment"
@@ -835,6 +823,7 @@ class SiddConsistency(con.ConsistencyChecker):
                 assert elem.find("../{*}DRAParameters") is not None
 
     @per_image
+    @con.skipif(_is_v1, "Does not apply to SIDD v1.0")
     def check_display_valid_dra_parameters(self, image_number, xml_tree) -> None:
         """Display/InteractiveProcessing/DynamicRangeAdjustment/DRAParameters: 0.0 <= min <= max <= 1.0"""
         for elem in xml_tree.findall(
@@ -854,6 +843,7 @@ class SiddConsistency(con.ConsistencyChecker):
                     )
 
     @per_image
+    @con.skipif(_is_v1, "Does not apply to SIDD v1.0")
     def check_display_none_dra_overrides(self, image_number, xml_tree) -> None:
         """Display/InteractiveProcessing/DynamicRangeAdjustment/DRAOverrides excluded if AlgorithmType = NONE."""
         dra_path = "./{*}Display/{*}InteractiveProcessing/{*}DynamicRangeAdjustment"
@@ -862,6 +852,7 @@ class SiddConsistency(con.ConsistencyChecker):
                 assert elem.find("../{*}DRAOverrides") is None
 
     @per_image
+    @con.skipif(_is_v1, "Does not apply to SIDD v1.0")
     def check_display_valid_dra_overrides(self, image_number, xml_tree) -> None:
         """Display/InteractiveProcessing/DynamicRangeAdjustment/DRAOverrides ∈ [0.0, 2047.0]"""
         for elem in xml_tree.findall(
@@ -895,6 +886,7 @@ class SiddConsistency(con.ConsistencyChecker):
                 assert np.dot(u_row, u_col) == con.Approx(0, atol=1e-6)
 
     @per_image
+    @con.skipif(_is_v1, "Does not apply to SIDD v1.0")
     def check_measurement_validdata(self, image_number, xml_tree) -> None:
         """Measurement/ValidData is a simple convex polygon with vertices in clockwise order"""
         xmlhelp = sksidd.XmlHelper(xml_tree)
@@ -917,6 +909,11 @@ class SiddConsistency(con.ConsistencyChecker):
             assert not shg_polygon.exterior.is_ccw
         with self.need("Vertex 1 determined by min row index & min col index"):
             assert np.lexsort((polygon[:, 1], polygon[:, 0]))[0] == 0
+        with self.want("ValidData vertices contained within PixelFootprint"):
+            nrows, ncols = xmlhelp.load("./{*}Measurement/{*}PixelFootprint")
+            pad = 1
+            assert np.all(polygon >= (-pad, -pad))
+            assert np.all(polygon <= (nrows + pad, ncols + pad))
 
     @per_image
     def check_expfeatures_geometry(self, image_number, xml_tree) -> None:
@@ -933,7 +930,7 @@ class SiddConsistency(con.ConsistencyChecker):
 
         expfeatures_elem = xml_tree.find("./{*}ExploitationFeatures")
         with self.precondition():
-            expected_geom = calc_expfeatures_geom(xml_tree, _get_version(xml_tree))
+            expected_geom = calc_expfeatures_geom(xml_tree)
             collection_geom = {
                 k.removeprefix("{*}Collection/"): v
                 for k, v in expected_geom.items()
@@ -985,252 +982,80 @@ class SiddConsistency(con.ConsistencyChecker):
 
     @per_image
     def check_geodata_image_corners(self, image_number, xml_tree) -> None:
-        """GeoData/ImageCorners are consistent with Measurement element."""
-        with self.precondition():
-            icp_from_measurement = calc_geodata_imagecorners(xml_tree)
-            xmlhelp = sksidd.XmlHelper(xml_tree)
-            icp_ll = xmlhelp.load("./{*}GeoData/{*}ImageCorners")
-            scp = xmlhelp.load("./{*}Measurement//{*}ReferencePoint/{*}ECEF")
-            _, _, scp_height = wgs84.cartesian_to_geodetic(scp)
-            icp_ecef = wgs84.geodetic_to_cartesian(
-                np.concatenate((icp_ll, np.full((len(icp_ll), 1), scp_height)), axis=1)
-            )
-            for index, (icp_reported, icp_predicted) in enumerate(
-                zip(icp_ecef, icp_from_measurement)
+        """Image Corners are consistent with Measurement element."""
+        xmlhelp = sksidd.XmlHelper(xml_tree)
+        n_rows, n_cols = xmlhelp.load("./{*}Measurement/{*}PixelFootprint")
+        corners = [
+            (-0.5, -0.5),
+            (-0.5, n_cols - 0.5),
+            (n_rows - 0.5, n_cols - 0.5),
+            (n_rows - 0.5, -0.5),
+        ]
+        icp_from_measurement = sksidd.calculations.pixel_to_ecef(xml_tree, corners)
+
+        icp_ll = _get_corners(xmlhelp)
+        ref_pt = xmlhelp.load("./{*}Measurement//{*}ReferencePoint/{*}ECEF")
+        _, _, ref_height = wgs84.cartesian_to_geodetic(ref_pt)
+        icp_ecef = wgs84.geodetic_to_cartesian(
+            np.concatenate((icp_ll, np.full((len(icp_ll), 1), ref_height)), axis=1)
+        )
+        chords = itertools.combinations(icp_ecef, 2)
+        max_chord_length = max(np.linalg.norm(chord[1] - chord[0]) for chord in chords)
+        for index, (icp_reported, icp_predicted) in enumerate(
+            zip(icp_ecef, icp_from_measurement)
+        ):
+            icp_dist = np.linalg.norm(icp_predicted - icp_reported)
+            with self.want(
+                f"Distance between reported and predicted ICP{index + 1} "
+                "< 0.05 * maximum chord length"
             ):
-                icp_dist = np.linalg.norm(icp_predicted - icp_reported)
-                scp_dist = np.linalg.norm(icp_reported - scp)
-                with self.need(
-                    f"Distance between reported and predicted ICP{index + 1} "
-                    "< 0.1 * (distance between reported ICP and SCP)"
-                ):
-                    assert icp_dist < 0.1 * scp_dist
+                assert icp_dist < 0.05 * max_chord_length
 
 
-def calc_expfeatures_geom(sidd_xml, sidd_version="2.0.0"):
+def calc_expfeatures_geom(sidd_xml):
     """ExploitationFeatures Geometry (SIDD2.0, Sec. 7.1-7.5)"""
-    meas_proj_elem = sidd_xml.find("./{*}Measurement/*[1]")
-    scp = sksidd.XyzType().parse_elem(
-        meas_proj_elem.find("./{*}ReferencePoint/{*}ECEF")
-    )
-    scp_llh = wgs84.cartesian_to_geodetic(scp)
-    ueast = wgs84.east(scp_llh)
-    unor = wgs84.north(scp_llh)
-    uup = wgs84.up(scp_llh)
-    scp_coa_time = sksidd.PolyCoef2dType().parse_elem(
-        meas_proj_elem.find("./{*}TimeCOAPoly")
-    )[0][0]
-    arp_poly = sksidd.XyzPolyType().parse_elem(
-        sidd_xml.find("./{*}Measurement/{*}ARPPoly")
-    )
-
-    localname = lxml.etree.QName(meas_proj_elem).localname
-    if localname == "PlaneProjection":
-        r_hat = sksidd.XyzType().parse_elem(
-            meas_proj_elem.find("./{*}ProductPlane/{*}RowUnitVector")
-        )
-        c_hat = sksidd.XyzType().parse_elem(
-            meas_proj_elem.find("./{*}ProductPlane/{*}ColUnitVector")
-        )
-    elif localname == "GeographicProjection":
-        r_hat = -unor
-        c_hat = ueast
-    else:
-        raise NotImplementedError(f"{localname} not supported.")
+    sidd_xh = sksidd.XmlHelper(sidd_xml)
+    tcoa_poly = sidd_xh.load("./{*}Measurement/*[1]/{*}TimeCOAPoly")
+    assert tcoa_poly is not None
+    scp = sidd_xh.load("./{*}Measurement/*[1]/{*}ReferencePoint/{*}ECEF")
+    scp_coa_time = tcoa_poly[0][0]
+    arp_poly = sidd_xh.load("./{*}Measurement/{*}ARPPoly")
 
     p_a = npp.polyval(scp_coa_time, arp_poly)
     v_a = npp.polyval(scp_coa_time, npp.polyder(arp_poly))
-    va_hat = _unit(v_a)
-    p_0 = scp
-    zg_hat = uup
 
-    # 7.2 - Slant Plane Definition
-    xs_hat = _unit(p_a - p_0)
-    n_hat = _unit(np.cross(xs_hat, v_a))
-    zs_hat = np.sign(np.dot(p_0, n_hat)) * n_hat
-    ys_hat = np.cross(zs_hat, xs_hat)
+    scp_px = sksidd.ecef_to_pixel(sidd_xml, scp)
+    r, c = sksidd.pixel_to_ecef(sidd_xml, scp_px + [[1, 0], [0, 1]]) - scp
+    r_hat = r / np.linalg.norm(r)
+    c_hat = c / np.linalg.norm(c)
 
-    # 7.2.1 - Image Plane Definition
-    z_hat = np.cross(r_hat, c_hat)
-
-    # 7.5.1 - Azimuth Angle
-    azim_ang = np.arctan2(np.dot(ueast, xs_hat), np.dot(unor, xs_hat))
-
-    # 7.5.2 - Slope Angle
-    slope_ang = np.arccos(np.dot(zs_hat, zg_hat))
-
-    # 7.5.3 - Doppler Cone Angle
-    doppler_cone_ang = np.arccos(np.dot(-xs_hat, va_hat))
-
-    # 7.5.4 - Squint
-    # look direction seems to be omitted from the calculation in the spec but is referenced in the table
-    uleft = _unit(np.cross(p_a, v_a))
-    look = +1 if np.dot(uleft, xs_hat) < 0 else -1
-
-    zp_hat = _unit(p_a)
-    xs_prime = xs_hat - np.dot(xs_hat, zp_hat) * zp_hat
-    va_prime = va_hat - np.dot(va_hat, zp_hat) * zp_hat
-    squint_ang = look * np.arccos(-np.dot(_unit(xs_prime), _unit(va_prime)))
-
-    # 7.5.5 - Grazing Angle
-    graze_ang = np.arcsin(np.dot(xs_hat, zg_hat))
-
-    # 7.5.6 - Tilt Angle
-    tilt_ang = np.arctan(np.dot(zg_hat, ys_hat) / np.dot(zg_hat, zs_hat))
-
-    # 7.6 Phenomenology
-    # 7.6.1 - Shadow
-    s = zg_hat - xs_hat / np.dot(xs_hat, zg_hat)
-    s_prime = s - np.dot(s, z_hat) / np.dot(zs_hat, z_hat) * zs_hat
-    shadow_ang2 = np.arctan2(np.dot(c_hat, s_prime), np.dot(r_hat, s_prime))
-    shadow_ang3 = np.arctan2(np.dot(r_hat, s_prime), np.dot(c_hat, s_prime))
-    shadow_mag = np.sqrt(np.dot(s_prime, s_prime))
-
-    # 7.6.2 - Layover
-    L = z_hat - zs_hat / np.dot(zs_hat, z_hat)  # noqa N806
-    layover_ang2 = np.arctan2(np.dot(c_hat, L), np.dot(r_hat, L))
-    layover_ang3 = np.arctan2(np.dot(r_hat, L), np.dot(c_hat, L))
-    layover_mag = np.sqrt(np.dot(L, L))
-
-    # 7.6.3 - North Direction
-    n_prime = unor - np.dot(unor, z_hat) / np.dot(zs_hat, z_hat) * zs_hat
-    north_ang2 = np.arctan2(np.dot(c_hat, n_prime), np.dot(r_hat, n_prime))
-    north_ang3 = np.arctan2(np.dot(r_hat, n_prime), np.dot(c_hat, n_prime))
-
-    # 7.6.5 - Multi-Path
-    m = xs_hat - np.dot(xs_hat, z_hat) / np.dot(zs_hat, z_hat) * zs_hat
-    multipath_ang2 = np.arctan2(np.dot(c_hat, m), np.dot(r_hat, m))
-    multipath_ang3 = np.arctan2(np.dot(r_hat, m), np.dot(c_hat, m))
-
-    # 7.6.6 - Ground Track (Image Track) Angle
-    t = v_a - np.dot(v_a, z_hat) * z_hat
-    groundtrack_ang2 = np.arctan2(np.dot(c_hat, t), np.dot(r_hat, t))
-    groundtrack_ang3 = np.arctan2(np.dot(r_hat, t), np.dot(c_hat, t))
-
-    if sidd_version == "2.0.0":
-        exp_feat = {
-            "{*}Collection/{*}Geometry/{*}Azimuth": np.degrees(azim_ang) % 360,
-            "{*}Collection/{*}Geometry/{*}Slope": np.degrees(slope_ang),
-            "{*}Collection/{*}Geometry/{*}Squint": np.degrees(squint_ang),
-            "{*}Collection/{*}Geometry/{*}Graze": np.degrees(graze_ang),
-            "{*}Collection/{*}Geometry/{*}Tilt": np.degrees(tilt_ang),
-            "{*}Collection/{*}Geometry/{*}DopplerConeAngle": np.degrees(
-                doppler_cone_ang
-            ),
-            "{*}Collection/{*}Phenomenology/{*}Shadow/{*}Angle": np.degrees(
-                shadow_ang2
-            ),
-            "{*}Collection/{*}Phenomenology/{*}Shadow/{*}Magnitude": shadow_mag,
-            "{*}Collection/{*}Phenomenology/{*}Layover/{*}Angle": np.degrees(
-                layover_ang2
-            ),
-            "{*}Collection/{*}Phenomenology/{*}Layover/{*}Magnitude": layover_mag,
-            "{*}Collection/{*}Phenomenology/{*}MultiPath": np.degrees(multipath_ang2),
-            "{*}Collection/{*}Phenomenology/{*}GroundTrack": np.degrees(
-                groundtrack_ang2
-            ),
-            "{*}Product/{*}North": np.degrees(north_ang2),
-        }
-
-    elif sidd_version == "3.0.0":
-        exp_feat = {
-            "{*}Collection/{*}Geometry/{*}Azimuth": np.degrees(azim_ang) % 360,
-            "{*}Collection/{*}Geometry/{*}Slope": np.degrees(slope_ang),
-            "{*}Collection/{*}Geometry/{*}Squint": np.degrees(squint_ang),
-            "{*}Collection/{*}Geometry/{*}Graze": np.degrees(graze_ang),
-            "{*}Collection/{*}Geometry/{*}Tilt": np.degrees(tilt_ang),
-            "{*}Collection/{*}Geometry/{*}DopplerConeAngle": np.degrees(
-                doppler_cone_ang
-            ),
-            "{*}Collection/{*}Phenomenology/{*}Shadow/{*}Angle": np.degrees(shadow_ang3)
-            % 360,
-            "{*}Collection/{*}Phenomenology/{*}Shadow/{*}Magnitude": shadow_mag,
-            "{*}Collection/{*}Phenomenology/{*}Layover/{*}Angle": np.degrees(
-                layover_ang3
-            )
-            % 360,
-            "{*}Collection/{*}Phenomenology/{*}Layover/{*}Magnitude": layover_mag,
-            "{*}Collection/{*}Phenomenology/{*}MultiPath": np.degrees(multipath_ang3)
-            % 360,
-            "{*}Collection/{*}Phenomenology/{*}GroundTrack": np.degrees(
-                groundtrack_ang3
-            )
-            % 360,
-            "{*}Product/{*}North": np.degrees(north_ang3) % 360,
-        }
-    else:
-        raise ValueError(f"SIDD version {sidd_version} is not supported.")
-
-    return exp_feat
-
-
-def calc_geodata_imagecorners(sidd_xml):
-    """Return approximate image corners (in ECEF) derived from a SIDD Measurement element (SIDD2.0, Sec. 3)"""
-    meas_proj_elem = sidd_xml.find("./{*}Measurement/*[1]")
-    ref_pt = sksidd.XyzType().parse_elem(
-        meas_proj_elem.find("./{*}ReferencePoint/{*}ECEF")
+    sidd_versions = list(sksidd.VERSION_INFO)
+    this_ns = lxml.etree.QName(sidd_xml.getroot()).namespace
+    pre_3 = sidd_versions.index(this_ns) < sidd_versions.index("urn:SIDD:3.0.0")
+    angles = sksidd.compute_angles(
+        scp,
+        p_a,
+        v_a,
+        r_hat,
+        c_hat,
+        convention="2.0" if pre_3 else "3.0",
     )
-    r_0, c_0 = sksidd.RowColDblType().parse_elem(
-        meas_proj_elem.find("./{*}ReferencePoint/{*}Point")
-    )
-    n_rows, n_cols = sksidd.RowColIntType().parse_elem(
-        sidd_xml.find("./{*}Measurement/{*}PixelFootprint")
-    )
+    return {
+        "{*}Collection/{*}Geometry/{*}Azimuth": angles.Azimuth,
+        "{*}Collection/{*}Geometry/{*}Slope": angles.Slope,
+        "{*}Collection/{*}Geometry/{*}Squint": angles.Squint,
+        "{*}Collection/{*}Geometry/{*}Graze": angles.Graze,
+        "{*}Collection/{*}Geometry/{*}Tilt": angles.Tilt,
+        "{*}Collection/{*}Geometry/{*}DopplerConeAngle": angles.DopplerCone,
+        "{*}Collection/{*}Phenomenology/{*}Shadow/{*}Angle": angles.Shadow,
+        "{*}Collection/{*}Phenomenology/{*}Shadow/{*}Magnitude": angles.ShadowMagnitude,
+        "{*}Collection/{*}Phenomenology/{*}Layover/{*}Angle": angles.Layover,
+        "{*}Collection/{*}Phenomenology/{*}Layover/{*}Magnitude": angles.LayoverMagnitude,
+        "{*}Collection/{*}Phenomenology/{*}MultiPath": angles.MultiPath,
+        "{*}Collection/{*}Phenomenology/{*}GroundTrack": angles.GroundTrack,
+        "{*}Product/{*}North": angles.North,
+    }
 
-    def passthrough(*args):
-        return args
 
-    rc_to_sensor_coord = passthrough
-
-    if (ss_elem := meas_proj_elem.find("./{*}SampleSpacing")) is not None:
-        delta_r, delta_c = sksidd.RowColDblType().parse_elem(ss_elem)
-
-        def rc_to_sensor_grid_distance(r, c):
-            return delta_r * (r - r_0), delta_c * (c - c_0)
-
-        rc_to_sensor_coord = rc_to_sensor_grid_distance
-
-    sensor_coord_to_ecef = None
-    localname = lxml.etree.QName(meas_proj_elem).localname
-    if localname == "PlaneProjection":  # 3.2 - PGD Pixel to ECEF
-        p_pgd = ref_pt
-        r_pgd = sksidd.XyzType().parse_elem(
-            meas_proj_elem.find("./{*}ProductPlane/{*}RowUnitVector")
-        )
-        c_pgd = sksidd.XyzType().parse_elem(
-            meas_proj_elem.find("./{*}ProductPlane/{*}ColUnitVector")
-        )
-
-        def sensor_coord_to_ecef_pgd(d_r, d_c):
-            reshape_vec = np.append(np.ones(d_r.ndim, dtype=int), -1)
-            return (
-                p_pgd.reshape(reshape_vec)
-                + np.multiply.outer(d_r, r_pgd)
-                + np.multiply.outer(d_c, c_pgd)
-            )
-
-        sensor_coord_to_ecef = sensor_coord_to_ecef_pgd
-
-    elif localname == "GeographicProjection":  # 3.4 GGD Pixel to Geodetic
-        lon_0, lat_0, h_0 = wgs84.cartesian_to_geodetic(ref_pt)
-
-        def sensor_coord_to_ecef_ggd(d_r, d_c):
-            d_r_, d_c_, h_0_ = np.broadcast_arrays(d_r, d_c, h_0)
-            pt_llh = np.stack(
-                [
-                    np.radians(lon_0 + d_c_ / 3600),
-                    np.radians(lat_0 - d_r_ / 3600),
-                    h_0_,
-                ],
-                -1,
-            )
-            return wgs84.geodetic_to_cartesian(pt_llh)
-
-        sensor_coord_to_ecef = sensor_coord_to_ecef_ggd
-    else:
-        raise NotImplementedError(f"{localname} not supported.")
-
-    # use pixel-as-area
-    r_corner = np.array([-0.5, -0.5, n_rows - 0.5, n_rows - 0.5])
-    c_corner = np.array([-0.5, n_cols - 0.5, n_cols - 0.5, -0.5])
-    return sensor_coord_to_ecef(*rc_to_sensor_coord(r_corner, c_corner))
+# Improve rendered docstring
+con.modify_conchecker_docs(SiddConsistency)

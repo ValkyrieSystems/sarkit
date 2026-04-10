@@ -7,6 +7,95 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Additional CPHD consistency checks for optional antenna fields introduced in v1.1.0
+- `--txsequences` argument to `crsdinfo` for listing transmit pulse sequences
+
+
+## [1.6.0] - 2026-03-30
+
+### Added
+- `ElementWrapper.findall` and `ElementWrapper.find` methods
+- Additional CPHD consistency checks for Support Arrays and associated unit tests
+- Methods for converting to & from image area coordinates in `sarkit.cphd`
+- Methods for computing "reference times" in `sarkit.cphd`
+
+
+## [1.5.0] - 2026-03-04
+
+### Added
+- Additional CRSD checks and associated unit tests
+- Read methods now support an optional "out" argument
+
+
+## [1.4.1] - 2026-02-06
+
+### Added
+- Extended `jbpy` version compatibility
+
+
+## [1.4.0] - 2026-01-26
+
+### Added
+- Option to use SIDD v1.0/2.0 image angle convention in `sarkit.sidd.compute_angles`
+- Support for Python 3.14
+- `sarkit.wgs84.GM` constant
+- Additional error checking in Transcoders and ElementWrappers
+
+### Changed
+- `jbpy` dependency updated
+
+### Fixed
+- SIDD v2.0 ANG_MAG types properly transcode to `AngleMagnitudeType`
+- SICDConsistency.check_image_corners and SIDDConsistency.check_geodata_image_corners made more robust
+
+
+## [1.3.0] - 2025-11-11
+
+### Added
+- Ability to read and write SIDD legend segments
+- Additional CPHD consistency checks and associated unit tests
+- SIDD Coordinate Transforms for GGD, CGD, and PFGD coordinate systems
+
+### Changed
+- `jbpy` dependency updated
+- `verification` packaging extra functionality and dependencies moved to the base package
+
+### Fixed
+- SICD consistency failure when optional ValidData polygon was omitted
+- Handling of CPHD and CRSD with padded PVP/PPP sets
+
+
+## [1.2.0] - 2025-10-13
+
+### Added
+- Ability to read and write SIDD DED segments
+- SICD and SIDD consistency checks for ValidData bounds
+- Support for SIDD v1.0
+
+### Changed
+- Improved read performance
+- Pinned `jbpy` dependency
+
+### Fixed
+- SICD consistency failure when optional IPP Sets were omitted
+- `ElementWrapper` not creating non-repeatable subelement for empty dict
+
+
+## [1.1.0] - 2025-09-29
+
+### Added
+- `sarkit.cphd.Reader` support for reading a subset of vectors
+- New `check_*`methods for SICD consistency
+- More complete unit tests for SICD consistency
+- `ElementWrapper.get` now supports the `default` parameter
+
+### Changed
+- `ElementWrapper.__contains__` now raises `KeyError` for impossible keys
+
+### Fixed
+- Minor bugfixes for existing SICD consistency `check_*` methods
+
 
 ## [1.0.1] - 2025-09-09
 
@@ -147,3 +236,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Limited CPHD Reading and Writing
 - Limited SICD Reading and Writing
 - Limited SIDD NITF Reading and Writing
+
+[unreleased]: https://github.com/ValkyrieSystems/sarkit/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/ValkyrieSystems/sarkit/compare/v1.5.0...v1.6.0
+[1.5.0]: https://github.com/ValkyrieSystems/sarkit/compare/v1.4.1...v1.5.0
+[1.4.1]: https://github.com/ValkyrieSystems/sarkit/compare/v1.4.0...v1.4.1
+[1.4.0]: https://github.com/ValkyrieSystems/sarkit/compare/v1.3.0...v1.4.0
+[1.3.0]: https://github.com/ValkyrieSystems/sarkit/compare/v1.2.0...v1.3.0
+[1.2.0]: https://github.com/ValkyrieSystems/sarkit/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/ValkyrieSystems/sarkit/compare/v1.0.1...v1.1.0
+[1.0.1]: https://github.com/ValkyrieSystems/sarkit/compare/v1.0.0...v1.0.1
+[1.0.0]: https://github.com/ValkyrieSystems/sarkit/compare/v0.12.0...v1.0.0
+[0.12.0]: https://github.com/ValkyrieSystems/sarkit/compare/v0.11.0...v0.12.0
+[0.11.0]: https://github.com/ValkyrieSystems/sarkit/compare/v0.10.0...v0.11.0
+[0.10.0]: https://github.com/ValkyrieSystems/sarkit/compare/v0.9.0...v0.10.0
+[0.9.0]: https://github.com/ValkyrieSystems/sarkit/compare/v0.8.0...v0.9.0
+[0.8.0]: https://github.com/ValkyrieSystems/sarkit/compare/v0.7.0...v0.8.0
+[0.7.0]: https://github.com/ValkyrieSystems/sarkit/compare/v0.6.1...v0.7.0
+[0.6.1]: https://github.com/ValkyrieSystems/sarkit/compare/v0.6.0...v0.6.1
+[0.6.0]: https://github.com/ValkyrieSystems/sarkit/compare/v0.5.0...v0.6.0
+[0.5.0]: https://github.com/ValkyrieSystems/sarkit/compare/v0.4.0...v0.5.0
+[0.4.0]: https://github.com/ValkyrieSystems/sarkit/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/ValkyrieSystems/sarkit/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/ValkyrieSystems/sarkit/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/ValkyrieSystems/sarkit/releases/tag/v0.1.0

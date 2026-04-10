@@ -13,6 +13,47 @@ import tests.utils
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
 
 
+def _last_field(structured_dtype):
+    dtype, offset = sorted(
+        ((dtype, offset) for (dtype, offset) in structured_dtype.fields.values()),
+        key=lambda x: x[1],
+    )[-1]
+
+    return dtype, offset
+
+
+def test_get_pvp_dtype():
+    etree = lxml.etree.parse(DATAPATH / "example-crsd-1.0.xml")
+    num_bytes_pvp = int(etree.find("./{*}Data/{*}Receive/{*}NumBytesPVP").text)
+    pvp_dtype = skcrsd.get_pvp_dtype(etree)
+
+    dtype, offset = _last_field(pvp_dtype)
+    assert pvp_dtype.itemsize == dtype.itemsize + offset  # example has no end pad
+
+    end_pad = 10
+    num_bytes_pvp += end_pad
+    etree.find("./{*}Data/{*}Receive/{*}NumBytesPVP").text = str(num_bytes_pvp)
+    pvp_dtype2 = skcrsd.get_pvp_dtype(etree)
+    dtype, offset = _last_field(pvp_dtype)
+    assert pvp_dtype2.itemsize == dtype.itemsize + offset + end_pad
+
+
+def test_get_ppp_dtype():
+    etree = lxml.etree.parse(DATAPATH / "example-crsd-1.0.xml")
+    num_bytes_ppp = int(etree.find("./{*}Data/{*}Transmit/{*}NumBytesPPP").text)
+    ppp_dtype = skcrsd.get_ppp_dtype(etree)
+
+    dtype, offset = _last_field(ppp_dtype)
+    assert ppp_dtype.itemsize == dtype.itemsize + offset  # example has no end pad
+
+    end_pad = 10
+    num_bytes_ppp += end_pad
+    etree.find("./{*}Data/{*}Transmit/{*}NumBytesPPP").text = str(num_bytes_ppp)
+    ppp_dtype2 = skcrsd.get_ppp_dtype(etree)
+    dtype, offset = _last_field(ppp_dtype)
+    assert ppp_dtype2.itemsize == dtype.itemsize + offset + end_pad
+
+
 def _random_array(shape, dtype, reshape=True):
     rng = np.random.default_rng()
     retval = np.frombuffer(
@@ -70,6 +111,14 @@ def test_roundtrip(tmp_path, caplog):
     num_samples = xmlhelp.load("./{*}Data/{*}Receive/{*}Channel/{*}NumSamples")
     basis_signal = _random_array((num_vectors, num_samples), signal_dtype)
 
+    num_bytes_pvp = xmlhelp.load("./{*}Data/{*}Receive/{*}NumBytesPVP")
+    num_bytes_pvp += 10  # force padding
+    xmlhelp.set("./{*}Data/{*}Receive/{*}NumBytesPVP", num_bytes_pvp)
+
+    num_bytes_ppp = xmlhelp.load("./{*}Data/{*}Transmit/{*}NumBytesPPP")
+    num_bytes_ppp += 10  # force padding
+    xmlhelp.set("./{*}Data/{*}Transmit/{*}NumBytesPPP", num_bytes_ppp)
+
     pvps = np.zeros(num_vectors, dtype=skcrsd.get_pvp_dtype(basis_etree))
     for f, (dt, _) in pvps.dtype.fields.items():
         pvps[f] = _random_array(num_vectors, dtype=dt, reshape=False)
@@ -120,6 +169,63 @@ def test_roundtrip(tmp_path, caplog):
         reader.metadata.xmltree, method="c14n"
     ) == lxml.etree.tostring(basis_etree, method="c14n")
     assert not caplog.text
+
+    # test 'out=' arguments
+    with open(out_crsd, "rb") as f, skcrsd.Reader(f) as reader:
+        read_sig2 = np.empty_like(read_sig)
+        read_pvp2 = np.empty_like(read_pvp)
+        read_sig3, read_pvp3 = reader.read_channel(
+            channel_ids[0], out_signal=read_sig2, out_pvp=read_pvp2
+        )
+        with pytest.raises(ValueError, match="must have shape"):
+            reader.read_channel(channel_ids[0], out_pvp=read_pvp2[0:1])
+        with pytest.raises(ValueError, match="must have dtype"):
+            reader.read_channel(
+                channel_ids[0], out_pvp=read_pvp2.view(f"V{read_pvp2.dtype.itemsize}")
+            )
+        with pytest.raises(ValueError, match="must have shape"):
+            reader.read_channel(channel_ids[0], out_signal=read_sig2[0:1])
+        with pytest.raises(ValueError, match="must have dtype"):
+            reader.read_channel(
+                channel_ids[0],
+                out_signal=read_sig2.view(f"V{read_sig2.dtype.itemsize}"),
+            )
+
+        assert read_sig2.ctypes.data == read_sig3.ctypes.data
+        assert np.array_equal(read_sig, read_sig3)
+
+        for sa_id in reader.metadata.xmltree.findall(
+            "./{*}SupportArray/*/{*}Identifier"
+        ):
+            read_sa2 = np.empty_like(read_support_arrays[sa_id.text])
+            read_sa3 = reader.read_support_array(sa_id.text, out=read_sa2)
+
+            assert read_sa2.ctypes.data == read_sa3.ctypes.data
+            assert np.array_equal(read_sa3, read_support_arrays[sa_id.text])
+            with pytest.raises(ValueError, match="must have shape"):
+                reader.read_support_array(sa_id.text, out=read_sa2[0, 0])
+            with pytest.raises(ValueError, match="must have dtype"):
+                if len(read_sa2.dtype.descr) > 1:
+                    bad_dtype = np.dtype(
+                        [
+                            (key, f"V{value[0].itemsize}")
+                            for key, value in read_sa2.dtype.fields.items()
+                        ]
+                    )
+                else:
+                    bad_dtype = np.dtype(f"V{read_sa2.dtype.itemsize}")
+                reader.read_support_array(sa_id.text, out=read_sa2.view(bad_dtype))
+
+        read_ppp2 = np.empty_like(read_ppp)
+        read_ppp3 = reader.read_ppps(sequence_ids[0], out=read_ppp2)
+        assert read_ppp2.ctypes.data == read_ppp3.ctypes.data
+        assert np.array_equal(read_ppp, read_ppp3)
+        with pytest.raises(ValueError, match="must have shape"):
+            reader.read_ppps(sequence_ids[0], out=read_ppp2[0:1])
+        with pytest.raises(ValueError, match="must have dtype"):
+            reader.read_ppps(
+                sequence_ids[0], out=read_ppp2.view(f"V{read_ppp2.dtype.itemsize}")
+            )
 
 
 def test_roundtrip_compressed(tmp_path):
@@ -177,6 +283,12 @@ def test_roundtrip_compressed(tmp_path):
         sig_array = reader.read_signal_compressed()
 
     assert sig_array.tobytes().decode() == signal_block_str
+
+    with open(out_crsd, "rb") as f, skcrsd.Reader(f) as reader:
+        sig_array2 = np.empty_like(sig_array)
+        sig_array3 = reader.read_signal_compressed(out=sig_array2)
+        assert sig_array2.ctypes.data == sig_array3.ctypes.data
+        assert np.array_equal(sig_array3, sig_array)
 
 
 @pytest.mark.parametrize("is_masked", (True, False))
@@ -249,6 +361,12 @@ def test_write_support_array(is_masked, nodata_in_xml, tmp_path):
     with open(out_crsd, "rb") as f, skcrsd.Reader(f) as reader:
         read_sa = reader.read_support_array(sa_id)
         assert np.array_equal(mx, read_sa)
+        if is_masked:
+            read_sa_2 = np.empty_like(read_sa)
+            read_sa_3 = reader.read_support_array(sa_id, out=read_sa_2)
+            assert read_sa_2.ctypes.data == read_sa_3.ctypes.data
+            assert read_sa_2.mask.ctypes.data == read_sa_3.mask.ctypes.data
+            assert np.array_equal(mx, read_sa_2)
 
 
 def test_remote_read(example_crsdsar):

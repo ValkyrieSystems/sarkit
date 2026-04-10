@@ -25,6 +25,12 @@ def test_elementwrapper():
     with pytest.raises(KeyError, match="foo"):
         del wrapped_siddroot["foo"]
 
+    with pytest.raises(KeyError, match="foo"):
+        assert "foo" in wrapped_siddroot
+
+    with pytest.raises(KeyError, match="foo"):
+        wrapped_siddroot.get("foo")
+
     # Attribute KeyErrors
     with pytest.raises(KeyError, match="@fooattr"):
         wrapped_siddroot["@fooattr"] = "doesn't exist"
@@ -34,6 +40,9 @@ def test_elementwrapper():
 
     with pytest.raises(KeyError, match="@fooattr"):
         del wrapped_siddroot["@fooattr"]
+
+    with pytest.raises(KeyError, match="@fooattr"):
+        assert "@fooattr" in wrapped_siddroot
 
     # Add descendant of repeatable
     wrapped_siddroot["ProductProcessing"].add("ProcessingModule")["ModuleName"] = (
@@ -103,6 +112,66 @@ def test_elementwrapper():
     assert (
         "ECEF"
         not in wrapped_siddroot["Measurement"]["PlaneProjection"]["ReferencePoint"]
+    )
+
+    # get() defaults to empty ElementWrappers
+    assert (
+        wrapped_siddroot["Measurement"]["PlaneProjection"]["ReferencePoint"].get("ECEF")
+        == wrapped_siddroot["Measurement"]["PlaneProjection"]["ReferencePoint"]["ECEF"]
+    )
+    assert (
+        wrapped_siddroot["Measurement"]["PlaneProjection"]["ReferencePoint"].get("ECEF")
+        == {}
+    )
+    assert (
+        wrapped_siddroot["Measurement"]["PlaneProjection"]["ReferencePoint"].get(
+            "ECEF", None
+        )
+        is None
+    )
+
+    # repeatable fields must be initialized with a list
+    with pytest.raises(ValueError):
+        wrapped_siddroot["ExploitationFeatures"]["Product"] = {"North": 1}
+    wrapped_siddroot["ExploitationFeatures"]["Product"] = [{"North": 1}]
+
+    # primitive types can only be set with compatable types
+    assert isinstance(
+        wrapped_siddroot["ExploitationFeatures"]["Product"][0]["North"], float
+    )
+    with pytest.raises(ValueError):
+        wrapped_siddroot["ExploitationFeatures"]["Product"][0]["North"] = "string"
+
+    # Find works
+    wrapped_siddroot["ExploitationFeatures"]["Product"] = [
+        {
+            "North": 1,
+            "Ellipticity": 0.5,
+            "Polarization": [{"TxPolarizationProc": "V", "RcvPolarizationProc": "H"}],
+        },
+        {"North": 1, "Ellipticity": 0.25},
+        {"North": 2, "Ellipticity": 0.75},
+    ]
+    assert (
+        len(wrapped_siddroot["ExploitationFeatures"].findall("Product", North=1)) == 2
+    )
+    assert (
+        len(wrapped_siddroot["ExploitationFeatures"].findall("Product", North=2)) == 1
+    )
+    assert (
+        wrapped_siddroot["ExploitationFeatures"].find("Product", North=1)["Ellipticity"]
+        == 0.5
+    )
+    assert (
+        wrapped_siddroot["ExploitationFeatures"].find("Product", North=2)["Ellipticity"]
+        == 0.75
+    )
+    assert (
+        wrapped_siddroot["ExploitationFeatures"].find(
+            "Product",
+            Polarization=[{"TxPolarizationProc": "V", "RcvPolarizationProc": "H"}],
+        )
+        is not None
     )
 
 

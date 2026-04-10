@@ -13,7 +13,7 @@ Supported Versions
 * `SICD 1.2.1`_
 * `SICD 1.3.0`_
 * `SICD 1.4.0`_
-* `SICD:1.5-DRAFT-2025_06_10`_
+* `SICD 1.5`_
 
 Data Structure & File Format
 ============================
@@ -184,10 +184,11 @@ SICD 1.4.0
    "Sensor Independent Complex Data (SICD) XML Schema, Version 1.4.0", 2024.
    https://nsgreg.nga.mil/doc/view?i=5538
 
-SICD:1.5-DRAFT-2025_06_10
--------------------------
+SICD 1.5
+--------
 
-.. WARNING:: DRAFT support is temporary and will be replaced upon NTB approval
+.. WARNING:: SICD v1.5 Volumes 1-3 are labeled as "Draft" with status set to "Not Valid" while the schema's status is
+   "Valid".
 
 """
 

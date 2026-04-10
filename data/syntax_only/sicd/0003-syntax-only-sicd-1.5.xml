@@ -1,4 +1,4 @@
-<ns3:SICD xmlns:ns3="urn:SICD:1.5-DRAFT-2025_06_10">
+<ns3:SICD xmlns:ns3="urn:SICD:1.5">
     <ns3:CollectionInfo>
         <ns3:CollectorName>Synthetic</ns3:CollectorName>
         <ns3:IlluminatorName>Synthetic</ns3:IlluminatorName>

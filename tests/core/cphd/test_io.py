@@ -52,6 +52,31 @@ def test_dtype_binary_format(dtype, format_str):
     assert skcphd.binary_format_string_to_dtype(format_str) == dtype
 
 
+def _last_field(structured_dtype):
+    dtype, offset = sorted(
+        ((dtype, offset) for (dtype, offset) in structured_dtype.fields.values()),
+        key=lambda x: x[1],
+    )[-1]
+
+    return dtype, offset
+
+
+def test_get_pvp_dtype():
+    etree = lxml.etree.parse(DATAPATH / "example-cphd-1.1.0.xml")
+    num_bytes_pvp = int(etree.find("./{*}Data/{*}NumBytesPVP").text)
+    pvp_dtype = skcphd.get_pvp_dtype(etree)
+
+    dtype, offset = _last_field(pvp_dtype)
+    assert pvp_dtype.itemsize == dtype.itemsize + offset  # example has no end pad
+
+    end_pad = 10
+    num_bytes_pvp += end_pad
+    etree.find("./{*}Data/{*}NumBytesPVP").text = str(num_bytes_pvp)
+    pvp_dtype2 = skcphd.get_pvp_dtype(etree)
+    dtype, offset = _last_field(pvp_dtype)
+    assert pvp_dtype2.itemsize == dtype.itemsize + offset + end_pad
+
+
 def _random_array(shape, dtype, reshape=True):
     rng = np.random.default_rng()
     retval = np.frombuffer(
@@ -84,9 +109,13 @@ def _random_support_array(cphd_xmltree, sa_id):
     )
 
 
+@pytest.mark.parametrize(
+    "basis_xml",
+    (DATAPATH / "example-cphd-1.0.1.xml", DATAPATH / "example-cphd-1.1.0.xml"),
+)
 @pytest.mark.parametrize("with_support_block", (True, False))
-def test_roundtrip(tmp_path, with_support_block):
-    basis_etree = lxml.etree.parse(DATAPATH / "example-cphd-1.0.1.xml")
+def test_roundtrip(tmp_path, with_support_block, basis_xml):
+    basis_etree = lxml.etree.parse(basis_xml)
     basis_version = lxml.etree.QName(basis_etree.getroot()).namespace
     schema = lxml.etree.XMLSchema(file=skcphd.VERSION_INFO[basis_version]["schema"])
     schema.assertValid(basis_etree)
@@ -102,6 +131,10 @@ def test_roundtrip(tmp_path, with_support_block):
     num_vectors = xmlhelp.load("./{*}Data/{*}Channel/{*}NumVectors")
     num_samples = xmlhelp.load(".//{*}Data/{*}Channel/{*}NumSamples")
     basis_signal = _random_array((num_vectors, num_samples), signal_dtype)
+
+    num_bytes_pvp = xmlhelp.load("./{*}Data/{*}NumBytesPVP")
+    num_bytes_pvp += 10  # force padding
+    xmlhelp.set("./{*}Data/{*}NumBytesPVP", num_bytes_pvp)
 
     pvps = np.zeros(num_vectors, dtype=skcphd.get_pvp_dtype(basis_etree))
     for f, (dt, _) in pvps.dtype.fields.items():
@@ -137,7 +170,48 @@ def test_roundtrip(tmp_path, with_support_block):
         for sa_id in reader.metadata.xmltree.findall(
             "./{*}SupportArray/*/{*}Identifier"
         ):
-            read_support_arrays[sa_id.text] = reader.read_support_array(sa_id.text)
+            read_sa = reader.read_support_array(sa_id.text)
+            read_support_arrays[sa_id.text] = read_sa
+
+            # test 'out=' argument
+            read_sa2 = np.empty_like(read_sa)
+            read_sa3 = reader.read_support_array(sa_id.text, out=read_sa2)
+            assert read_sa2.ctypes.data == read_sa3.ctypes.data
+            assert np.array_equal(read_sa, read_sa2)
+            with pytest.raises(ValueError, match="must have shape"):
+                reader.read_support_array(sa_id.text, out=read_sa2[0, 0])
+            with pytest.raises(ValueError, match="must have dtype"):
+                bad_dtype = np.dtype(
+                    [
+                        (key, f"V{value[0].itemsize}")
+                        for key, value in read_sa2.dtype.fields.items()
+                    ]
+                )
+                reader.read_support_array(sa_id.text, out=read_sa2.view(bad_dtype))
+
+        # test 'out=' arguments
+        read_sig2 = np.empty_like(read_sig)
+        read_pvp2 = np.empty_like(read_pvp)
+        read_sig3, read_pvp3 = reader.read_channel(
+            channel_ids[0], out_signal=read_sig2, out_pvp=read_pvp2
+        )
+        assert read_sig2.ctypes.data == read_sig3.ctypes.data
+        assert np.array_equal(read_sig, read_sig2)
+        assert read_pvp2.ctypes.data == read_pvp3.ctypes.data
+        assert np.array_equal(read_pvp, read_pvp2)
+        with pytest.raises(ValueError, match="must have shape"):
+            reader.read_channel(channel_ids[0], out_pvp=read_pvp2[0:1])
+        with pytest.raises(ValueError, match="must have dtype"):
+            reader.read_channel(
+                channel_ids[0], out_pvp=read_pvp2.view(f"V{read_pvp2.dtype.itemsize}")
+            )
+        with pytest.raises(ValueError, match="must have shape"):
+            reader.read_channel(channel_ids[0], out_signal=read_sig2[0:1])
+        with pytest.raises(ValueError, match="must have dtype"):
+            reader.read_channel(
+                channel_ids[0],
+                out_signal=read_sig2.view(f"V{read_sig2.dtype.itemsize}"),
+            )
 
     assert cphd_metadata.file_header_part == reader.metadata.file_header_part
     assert np.array_equal(basis_signal, read_sig)
@@ -153,7 +227,7 @@ def test_roundtrip(tmp_path, with_support_block):
 
 
 def test_roundtrip_compressed(tmp_path):
-    basis_etree = lxml.etree.parse(DATAPATH / "example-cphd-1.0.1.xml")
+    basis_etree = lxml.etree.parse(DATAPATH / "example-cphd-1.1.0.xml")
     basis_version = lxml.etree.QName(basis_etree.getroot()).namespace
     assert basis_etree.find("{*}Data/{*}SignalCompressionID") is None
     channel_ids = [
@@ -192,14 +266,18 @@ def test_roundtrip_compressed(tmp_path):
 
     with open(out_cphd, "rb") as f, skcphd.Reader(f) as reader:
         sig_array = reader.read_signal(ch_id)
+        assert sig_array.tobytes().decode() == ch_id
 
-    assert sig_array.tobytes().decode() == ch_id
+        sig_array2 = np.empty_like(sig_array)
+        sig_array3 = reader.read_signal(ch_id, out=sig_array2)
+        assert sig_array3.data == sig_array2.data
+        assert np.array_equal(sig_array, sig_array2)
 
 
 @pytest.mark.parametrize("is_masked", (True, False))
 @pytest.mark.parametrize("nodata_in_xml", (True, False))
 def test_write_support_array(is_masked, nodata_in_xml, tmp_path):
-    basis_etree = lxml.etree.parse(DATAPATH / "example-cphd-1.0.1.xml")
+    basis_etree = lxml.etree.parse(DATAPATH / "example-cphd-1.1.0.xml")
     elem_ns = lxml.etree.QName(basis_etree.getroot()).namespace
     em = lxml.builder.ElementMaker(namespace=elem_ns, nsmap={None: elem_ns})
     sa_id = str(uuid.uuid4())
@@ -266,6 +344,35 @@ def test_write_support_array(is_masked, nodata_in_xml, tmp_path):
     with open(out_cphd, "rb") as f, skcphd.Reader(f) as reader:
         read_sa = reader.read_support_array(sa_id)
         assert np.array_equal(mx, read_sa)
+        if is_masked:
+            read_sa_2 = np.empty_like(read_sa)
+            read_sa_3 = reader.read_support_array(sa_id, out=read_sa_2)
+            assert read_sa_2.ctypes.data == read_sa_3.ctypes.data
+            assert read_sa_2.mask.ctypes.data == read_sa_3.mask.ctypes.data
+            assert np.array_equal(mx, read_sa_2)
+
+
+INDICES_TO_CHECK = [None, 0, 7, 9, -9, -7, -1_000_000_000, 1_000_000_000_000]
+
+
+@pytest.mark.parametrize("start", INDICES_TO_CHECK)
+@pytest.mark.parametrize("stop", INDICES_TO_CHECK)
+def test_read_partial(example_cphd, start, stop):
+    with open(example_cphd, "rb") as file, skcphd.Reader(file) as reader:
+        ch_id = reader.metadata.xmltree.findtext("{*}Data/{*}Channel/{*}Identifier")
+        all_signal, all_pvp = reader.read_channel(ch_id)
+        kwargs = {}
+
+        if start is not None:
+            kwargs["start_vector"] = start
+
+        if stop is not None:
+            kwargs["stop_vector"] = stop
+
+        partial_signal, partial_pvp = reader.read_channel(ch_id, **kwargs)
+
+    np.testing.assert_array_equal(all_signal[start:stop, :], partial_signal)
+    np.testing.assert_array_equal(all_pvp[start:stop], partial_pvp)
 
 
 def test_remote_read(example_cphd):

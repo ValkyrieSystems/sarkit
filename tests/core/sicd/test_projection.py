@@ -314,8 +314,9 @@ def test_r_rdot_to_dem_surface(mdata_name, request):
         proj_metadata.LOOK,
         proj_metadata.SCP,
         proj_set,
-        ecef2dem_func=lambda x: sarkit.wgs84.cartesian_to_geodetic(x)[..., -1]
-        - proj_metadata.SCP_HAE,
+        ecef2dem_func=lambda x: (
+            sarkit.wgs84.cartesian_to_geodetic(x)[..., -1] - proj_metadata.SCP_HAE
+        ),
         hae_min=proj_metadata.SCP_HAE - 10.0,
         hae_max=proj_metadata.SCP_HAE + 10.0,
         delta_dist_dem=1.0,
@@ -387,8 +388,10 @@ def test_r_rdot_to_dem_surface_mono_as_bi(example_proj_metadata):
         sicdproj.r_rdot_to_dem_surface,
         example_proj_metadata.LOOK,
         example_proj_metadata.SCP,
-        ecef2dem_func=lambda x: sarkit.wgs84.cartesian_to_geodetic(x)[..., -1]
-        - example_proj_metadata.SCP_HAE,
+        ecef2dem_func=lambda x: (
+            sarkit.wgs84.cartesian_to_geodetic(x)[..., -1]
+            - example_proj_metadata.SCP_HAE
+        ),
         hae_min=example_proj_metadata.SCP_HAE - 10.0,
         hae_max=example_proj_metadata.SCP_HAE + 10.0,
         delta_dist_dem=1.0,
@@ -412,8 +415,10 @@ def test_r_rdot_to_dem_surface_max_bistatic_contour_points(example_proj_metadata
         example_proj_metadata_bi.LOOK,
         example_proj_metadata_bi.SCP,
         sicdproj.compute_projection_sets(example_proj_metadata_bi, [0, 0]),
-        ecef2dem_func=lambda x: sarkit.wgs84.cartesian_to_geodetic(x)[..., -1]
-        - example_proj_metadata_bi.SCP_HAE,
+        ecef2dem_func=lambda x: (
+            sarkit.wgs84.cartesian_to_geodetic(x)[..., -1]
+            - example_proj_metadata_bi.SCP_HAE
+        ),
         hae_min=example_proj_metadata_bi.SCP_HAE - 10.0,
         hae_max=example_proj_metadata_bi.SCP_HAE + 10.0,
         delta_dist_dem=1.0,

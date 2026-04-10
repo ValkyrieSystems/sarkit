@@ -1,0 +1,101 @@
+<SIDD xmlns="urn:SIDD:1.0.0" xmlns:sicommon="urn:SICommon:0.1" xmlns:ism="urn:us:gov:ic:ism">
+    <ProductCreation>
+        <ProcessorInformation>
+            <Application>nga_sar_processing 1.2.0</Application>
+            <ProcessingDateTime>2025-09-23T16:22:59.939106Z</ProcessingDateTime>
+            <Site>Unknown</Site>
+        </ProcessorInformation>
+        <Classification ism:DESVersion="4" ism:resourceElement="true" ism:createDate="2025-09-23" ism:classification="U" ism:ownerProducer="USA"/>
+        <ProductName>Detected Image</ProductName>
+        <ProductClass>Detected Image</ProductClass>
+    </ProductCreation>
+    <Display>
+        <PixelType>MONO8I</PixelType>
+    </Display>
+    <GeographicAndTarget>
+        <GeographicCoverage>
+            <Footprint size="4">
+                <Vertex index="1">
+                    <sicommon:Lat>0.0026148693456123483</sicommon:Lat>
+                    <sicommon:Lon>-0.0018276522714230081</sicommon:Lon>
+                </Vertex>
+                <Vertex index="2">
+                    <sicommon:Lat>0.0018257736264529673</sicommon:Lat>
+                    <sicommon:Lon>0.0026175733520944137</sicommon:Lon>
+                </Vertex>
+                <Vertex index="3">
+                    <sicommon:Lat>-0.0026306745860156687</sicommon:Lat>
+                    <sicommon:Lon>0.0018370416849164547</sicommon:Lon>
+                </Vertex>
+                <Vertex index="4">
+                    <sicommon:Lat>-0.0018415788668926139</sicommon:Lat>
+                    <sicommon:Lon>-0.0026081839386108904</sicommon:Lon>
+                </Vertex>
+            </Footprint>
+        </GeographicCoverage>
+    </GeographicAndTarget>
+    <Measurement>
+        <CylindricalProjection>
+            <ReferencePoint name="foo">
+                <sicommon:ECEF>
+                    <sicommon:X>6378137</sicommon:X>
+                    <sicommon:Y>0</sicommon:Y>
+                    <sicommon:Z>0</sicommon:Z>
+                </sicommon:ECEF>
+                <sicommon:Point>
+                    <sicommon:Row>162</sicommon:Row>
+                    <sicommon:Col>188</sicommon:Col>
+                </sicommon:Point>
+            </ReferencePoint>
+            <SampleSpacing>
+                <sicommon:Row>0.0</sicommon:Row>
+                <sicommon:Col>0.0</sicommon:Col>
+            </SampleSpacing>
+            <TimeCOAPoly order1="0" order2="0">
+                <sicommon:Coef exponent1="0" exponent2="0">0.0</sicommon:Coef>
+            </TimeCOAPoly>
+            <StripmapDirection>
+                <sicommon:X>0.0</sicommon:X>
+                <sicommon:Y>0.0</sicommon:Y>
+                <sicommon:Z>0.0</sicommon:Z>
+            </StripmapDirection>
+            <CurvatureRadius>0.8</CurvatureRadius>
+        </CylindricalProjection>
+        <PixelFootprint>
+            <sicommon:Row>325</sicommon:Row>
+            <sicommon:Col>377</sicommon:Col>
+        </PixelFootprint>
+        <ARPPoly>
+            <sicommon:X order1="1">
+                <sicommon:Coef exponent1="0">7228404.811503545</sicommon:Coef>
+                <sicommon:Coef exponent1="1">346.84829637761965</sicommon:Coef>
+            </sicommon:X>
+            <sicommon:Y order1="1">
+                <sicommon:Coef exponent1="0">262323.8621818392</sicommon:Coef>
+                <sicommon:Coef exponent1="1">-7332.590937252358</sicommon:Coef>
+            </sicommon:Y>
+            <sicommon:Z order1="1">
+                <sicommon:Coef exponent1="0">1451209.4380581959</sicommon:Coef>
+                <sicommon:Coef exponent1="1">-402.23122351918136</sicommon:Coef>
+            </sicommon:Z>
+        </ARPPoly>
+    </Measurement>
+    <ExploitationFeatures>
+        <Collection identifier="SyntheticCore">
+            <Information>
+                <SensorName>Synthetic</SensorName>
+                <RadarMode>
+                    <sicommon:ModeType>SPOTLIGHT</sicommon:ModeType>
+                </RadarMode>
+                <CollectionDateTime>2025-09-23T15:58:33.000000Z</CollectionDateTime>
+                <CollectionDuration>1.8818218481278524</CollectionDuration>
+            </Information>
+        </Collection>
+        <Product>
+            <Resolution>
+                <sicommon:Row>2.3026098816448664</sicommon:Row>
+                <sicommon:Col>2.0269747534018392</sicommon:Col>
+            </Resolution>
+        </Product>
+    </ExploitationFeatures>
+</SIDD>

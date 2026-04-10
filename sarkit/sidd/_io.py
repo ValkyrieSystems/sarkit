@@ -3,6 +3,7 @@ Functions to read and write SIDD files.
 """
 
 import collections
+import copy
 import dataclasses
 import datetime
 import itertools
@@ -68,7 +69,7 @@ class NitfImSubheaderPart:
             tgtid=image_header["TGTID"].value,
             iid2=image_header["IID2"].value,
             security=NitfSecurityFields._from_nitf_fields("IS", image_header),
-            icom=[val.value for val in image_header.find_all("ICOM\\d+")],
+            icom=[val.value for val in image_header.find_all("ICOM\\d+")],  # type: ignore  # all ICOM should have value
         )
 
     def __post_init__(self):
@@ -83,10 +84,35 @@ class NitfDeSubheaderPart(sksicd.NitfDeSubheaderPart):
 
 @dataclasses.dataclass
 class NitfLegendMetadata:
-    """SIDD NITF legend metadata"""
+    """SIDD NITF legend metadata
+
+    Attributes
+    ----------
+    attach_row : int
+        Product image row to place legend's upper left corner
+    attach_col : int
+        Product image column to place legend's upper left corner
+    nrows : int
+        Number of rows in the legend
+    ncols : int
+        Number of columns in the legend
+    im_subheader_part : NitfImSubheaderPart
+        NITF Image Segment Header fields which can be set
+
+    Notes
+    -----
+    Legend pixel type must be the same as the product image it is attached to
+    """
+
+    attach_row: int
+    attach_col: int
+    nrows: int
+    ncols: int
+    im_subheader_part: NitfImSubheaderPart
 
     def __post_init__(self):
-        raise NotImplementedError()
+        if isinstance(self.im_subheader_part, dict):
+            self.im_subheader_part = NitfImSubheaderPart(**self.im_subheader_part)
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -148,15 +174,31 @@ class NitfProductImageMetadata:
 
         if isinstance(self.im_subheader_part, dict):
             self.im_subheader_part = NitfImSubheaderPart(**self.im_subheader_part)
+        if isinstance(self.de_subheader_part, dict):
             self.de_subheader_part = NitfDeSubheaderPart(**self.de_subheader_part)
 
 
 @dataclasses.dataclass
 class NitfDedMetadata:
-    """SIDD NITF DED metadata"""
+    """SIDD NITF Digital Elevation Data (DED) metadata
+
+    Attributes
+    ----------
+    nrows : int
+        Number of rows in the DED
+    ncols : int
+        Number of columns in the DED
+    im_subheader_part : NitfImSubheaderPart
+        NITF Image Segment Header fields which can be set
+    """
+
+    nrows: int
+    ncols: int
+    im_subheader_part: NitfImSubheaderPart
 
     def __post_init__(self):
-        raise NotImplementedError()
+        if isinstance(self.im_subheader_part, dict):
+            self.im_subheader_part = NitfImSubheaderPart(**self.im_subheader_part)
 
 
 @dataclasses.dataclass
@@ -306,17 +348,26 @@ class NitfReader:
         self.jbp = jbpy.Jbp().load(file)
 
         im_segments = {}
+        legend_segments = {}
+        self._ded_segment = None
         for imseg_index, imseg in enumerate(self.jbp["ImageSegments"]):
             img_header = imseg["subheader"]
             if img_header["IID1"].value.startswith("SIDD"):
-                if img_header["ICAT"].value == "SAR":
+                if img_header["ICAT"].value in ("SAR", "LEG"):
                     image_number = int(img_header["IID1"].value[4:7]) - 1
                     im_segments.setdefault(image_number, [])
-                    im_segments[image_number].append(imseg_index)
+                    legend_segments.setdefault(image_number, [])
+                    if img_header["ICAT"].value == "SAR":
+                        im_segments[image_number].append(imseg_index)
+                    else:
+                        legend_segments[image_number].append(imseg_index)
+            elif img_header["IID1"].value == "DED001":
+                if self._ded_segment is None:
+                    self._ded_segment = imseg
                 else:
-                    raise NotImplementedError("Non SAR images not supported")  # TODO
-            elif img_header["IID1"].value.startswith("DED"):
-                raise NotImplementedError("DED not supported")  # TODO
+                    logger.warning(
+                        "SIDD contains extra DED segments.  Only the first will be used."
+                    )
 
         image_segment_collections = {}
         for idx, imseg in enumerate(self.jbp["ImageSegments"]):
@@ -385,12 +436,47 @@ class NitfReader:
                                 raise ValueError(
                                     f"Unsupported NLUTS={im_subhdr['NLUTS00001'].value}"
                                 )
+
+                        legends = []
+
+                        for legend_seg_index in legend_segments[image_number]:
+                            leg_subhdr = self.jbp["ImageSegments"][legend_seg_index][
+                                "subheader"
+                            ]
+                            leg_subheader_part = NitfImSubheaderPart._from_header(
+                                leg_subhdr
+                            )
+
+                            # Determine attachment location relative to full product image
+                            attach_loc = np.asarray(leg_subhdr["ILOC"].value)
+                            attached_to = leg_subhdr["IALVL"].value
+                            first_segment_idlvl = self.jbp["ImageSegments"][
+                                im_segments[image_number][0]
+                            ]["subheader"]["IDLVL"].value
+                            while attached_to != first_segment_idlvl:
+                                attached_subhdr = self._find_segment_with_idlvl(
+                                    image_number, attached_to
+                                )["subheader"]
+                                attach_loc[0] += attached_subhdr["NROWS"].value
+                                attached_to = attached_subhdr["IALVL"].value
+
+                            legends.append(
+                                NitfLegendMetadata(
+                                    attach_row=attach_loc[0],
+                                    attach_col=attach_loc[1],
+                                    nrows=leg_subhdr["NROWS"].value,
+                                    ncols=leg_subhdr["NCOLS"].value,
+                                    im_subheader_part=leg_subheader_part,
+                                )
+                            )
+
                         self.metadata.images.append(
                             NitfProductImageMetadata(
                                 xmltree=xmltree,
                                 im_subheader_part=im_subhdeader_part,
                                 de_subheader_part=de_subheader_part,
                                 lookup_table=lookup_table,
+                                legends=legends,
                             )
                         )
                         image_number += 1
@@ -411,19 +497,54 @@ class NitfReader:
                     self.metadata.product_support_xmls.append(
                         NitfProductSupportXmlMetadata(xmltree, de_subheader_part)
                     )
+            elif des_header["DESID"].value == "SICD_XML":
+                # SIDD v1.0 SICD XML DES Description uses a different DESID
+                file.seek(deseg["DESDATA"].get_offset(), os.SEEK_SET)
+                try:
+                    xmltree = lxml.etree.fromstring(
+                        file.read(deseg["DESDATA"].size)
+                    ).getroottree()
+                except lxml.etree.XMLSyntaxError:
+                    logger.error(f"Failed to parse DES {idx} as XML")
+                    continue
+                de_subheader_part = NitfDeSubheaderPart(
+                    security=NitfSecurityFields._from_nitf_fields("DES", des_header)
+                )
+                self.metadata.sicd_xmls.append(
+                    NitfSicdXmlMetadata(xmltree, de_subheader_part)
+                )
 
-        # TODO Legends
-        # TODO DED
-        assert not any(x.legends for x in self.metadata.images)
-        assert not self.metadata.ded
+        if self._ded_segment is not None:
+            self.metadata.ded = NitfDedMetadata(
+                nrows=self._ded_segment["subheader"]["NROWS"].value,
+                ncols=self._ded_segment["subheader"]["NCOLS"].value,
+                im_subheader_part=sksidd.NitfImSubheaderPart._from_header(
+                    self._ded_segment["subheader"]
+                ),
+            )
 
-    def read_image(self, image_number: int) -> npt.NDArray:
+    def _find_segment_with_idlvl(self, image_number, idlvl):
+        for imseg in self.jbp["ImageSegments"]:
+            if not imseg["subheader"]["IID1"].value.startswith(
+                f"SIDD{image_number + 1:03d}"
+            ):
+                continue
+            if imseg["subheader"]["IDLVL"].value == idlvl:
+                return imseg
+        else:
+            raise RuntimeError(f"Failed to find image segment with IDLVL={idlvl}")
+
+    def read_image(
+        self, image_number: int, *, out: npt.NDArray | None = None
+    ) -> npt.NDArray:
         """Read the entire pixel array
 
         Parameters
         ----------
         image_number : int
             index of SIDD Product image to read
+        out : ndarray or None, optional
+            Array to read into.  If None, a new array will be created.
 
         Returns
         -------
@@ -442,19 +563,83 @@ class NitfReader:
         ]
         imsegs = [self.jbp["ImageSegments"][idx] for idx in imseg_indices]
 
-        image_pixels = np.empty(shape, dtype)
+        out = _iohelp.ensure_array(out, shape, dtype)
         imseg_sizes = np.asarray([imseg["Data"].size for imseg in imsegs])
         imseg_offsets = np.asarray([imseg["Data"].get_offset() for imseg in imsegs])
         splits = np.cumsum(imseg_sizes // (shape[-1] * dtype.itemsize))[:-1]
-        for split, offset in zip(
-            np.array_split(image_pixels, splits, axis=0), imseg_offsets
-        ):
+        for split, offset in zip(np.array_split(out, splits, axis=0), imseg_offsets):
             self._file_object.seek(offset)
-            split[...] = _iohelp.fromfile(
-                self._file_object, dtype, np.prod(split.shape)
-            ).reshape(split.shape)
+            _iohelp.fromfile(
+                self._file_object, dtype, np.prod(split.shape), out=split.reshape(-1)
+            )
+        return out
 
-        return image_pixels
+    def read_legend(
+        self, image_number: int, legend_number: int, *, out: npt.NDArray | None = None
+    ) -> npt.NDArray:
+        """Read a legend
+
+        Parameters
+        ----------
+        image_number : int
+            index of SIDD Product image associated with the legend
+        legend_number : int
+            index of legend to read
+        out : ndarray or None, optional
+            Array to read into.  If None a new array will be created.
+
+        Returns
+        -------
+        ndarray
+            legend pixel array
+        """
+        xml_helper = sksidd.XmlHelper(self.metadata.images[image_number].xmltree)
+        legend_segments = [
+            seg
+            for seg in self.jbp["ImageSegments"]
+            if seg["subheader"]["IID1"].value.startswith(f"SIDD{image_number + 1:03d}")
+            and seg["subheader"]["ICAT"].value == "LEG"
+        ]
+        imseg = legend_segments[legend_number]
+        shape = imseg["subheader"]["NROWS"].value, imseg["subheader"]["NCOLS"].value
+        dtype = siddconst.PIXEL_TYPES[xml_helper.load("{*}Display/{*}PixelType")][
+            "dtype"
+        ].newbyteorder(">")
+
+        self._file_object.seek(imseg["Data"].get_offset(), os.SEEK_SET)
+        out = _iohelp.ensure_array(out, shape, dtype)
+        _iohelp.fromfile(
+            self._file_object,
+            dtype=dtype,
+            count=np.prod(shape),
+            out=out.reshape(-1),
+        )
+        return out
+
+    def read_ded(self, *, out: npt.NDArray | None = None):
+        """Read Digital Elevation Data (DED)
+
+        Parameters
+        ----------
+        out : ndarray or None, optional
+            Array to read into.  If None, a new array will be created.
+
+        Returns
+        -------
+        ndarray
+            2D array of DED posts, dtype= `numpy.int16`
+        """
+        if self._ded_segment is None:
+            raise RuntimeError("no DED to read")
+
+        shape = (self.metadata.ded.nrows, self.metadata.ded.ncols)
+        dtype = np.dtype(">i2")
+        self._file_object.seek(self._ded_segment["Data"].get_offset())
+        out = _iohelp.ensure_array(out, shape, dtype)
+        _iohelp.fromfile(
+            self._file_object, dtype=dtype, count=np.prod(shape), out=out.reshape(-1)
+        )
+        return out
 
     def __enter__(self):
         return self
@@ -475,26 +660,35 @@ def jbp_from_nitf_metadata(metadata: NitfMetadata) -> jbpy.Jbp:
     jbp["FileHeader"]["OPHONE"].value = metadata.file_header_part.ophone
 
     _, _, seginfos = segmentation_algorithm((img.xmltree for img in metadata.images))
-    jbp["FileHeader"]["NUMI"].value = len(seginfos)  # TODO + num DES + num LEG
+    seginfos = _insert_legend_segments(seginfos, metadata.images)
+    numi = len(seginfos)
+    if metadata.ded is not None:
+        numi += 1
+    jbp["FileHeader"]["NUMI"].value = numi
 
     for idx, seginfo in enumerate(seginfos):
         subhdr = jbp["ImageSegments"][idx]["subheader"]
         image_num = int(seginfo.iid1[4:7]) - 1
 
         imageinfo = metadata.images[image_num]
-        xml_helper = sarkit.sidd._xml.XmlHelper(imageinfo.xmltree)
+        if seginfo.icat == "SAR":
+            im_subheader_part = imageinfo.im_subheader_part
+        else:
+            _, _, single_image_seginfos = segmentation_algorithm([imageinfo.xmltree])
+            legend_index = int(seginfo.iid1[7:10]) - len(single_image_seginfos) - 1
+            im_subheader_part = imageinfo.legends[legend_index].im_subheader_part
+
+        xml_helper = sksidd.XmlHelper(imageinfo.xmltree)
         pixel_type = xml_helper.load("./{*}Display/{*}PixelType")
         pixel_info = siddconst.PIXEL_TYPES[pixel_type]
-
-        icp = xml_helper.load("./{*}GeoData/{*}ImageCorners")
 
         subhdr["IID1"].value = seginfo.iid1
         subhdr["IDATIM"].value = xml_helper.load(
             "./{*}ExploitationFeatures/{*}Collection/{*}Information/{*}CollectionDateTime"
         ).strftime("%Y%m%d%H%M%S")
-        subhdr["TGTID"].value = imageinfo.im_subheader_part.tgtid
-        subhdr["IID2"].value = imageinfo.im_subheader_part.iid2
-        imageinfo.im_subheader_part.security._set_nitf_fields("IS", subhdr)
+        subhdr["TGTID"].value = im_subheader_part.tgtid
+        subhdr["IID2"].value = im_subheader_part.iid2
+        im_subheader_part.security._set_nitf_fields("IS", subhdr)
         subhdr["ISORCE"].value = xml_helper.load(
             "./{*}ExploitationFeatures/{*}Collection/{*}Information/{*}SensorName"
         )
@@ -502,14 +696,15 @@ def jbp_from_nitf_metadata(metadata: NitfMetadata) -> jbpy.Jbp:
         subhdr["NCOLS"].value = seginfo.ncols
         subhdr["PVTYPE"].value = "INT"
         subhdr["IREP"].value = pixel_info["IREP"]
-        subhdr["ICAT"].value = "SAR"
+        subhdr["ICAT"].value = seginfo.icat
         subhdr["ABPP"].value = pixel_info["NBPP"]
         subhdr["PJUST"].value = "R"
-        subhdr["ICORDS"].value = "G"
-        subhdr["IGEOLO"].value = seginfo.igeolo
+        if seginfo.icat == "SAR":
+            subhdr["ICORDS"].value = "G"
+            subhdr["IGEOLO"].value = seginfo.igeolo
         subhdr["IC"].value = "NC"
-        subhdr["NICOM"].value = len(imageinfo.im_subheader_part.icom)
-        for icomidx, icom in enumerate(imageinfo.im_subheader_part.icom):
+        subhdr["NICOM"].value = len(im_subheader_part.icom)
+        for icomidx, icom in enumerate(im_subheader_part.icom):
             subhdr[f"ICOM{icomidx + 1}"].value = icom
         subhdr["NBANDS"].value = len(pixel_info["IREPBANDn"])
         for bandnum, irepband in enumerate(pixel_info["IREPBANDn"]):
@@ -569,10 +764,55 @@ def jbp_from_nitf_metadata(metadata: NitfMetadata) -> jbpy.Jbp:
             // 8
         )
 
-    # TODO add image_managers for legends
-    assert not any(x.legends for x in metadata.images)
-    # TODO add image_managers for DED
-    assert not metadata.ded
+    if metadata.ded is not None:
+        if metadata.ded.nrows * metadata.ded.ncols * 2 > 9_999_999_998:
+            raise ValueError("DED must fit within a single image segment")
+
+        ded_segment = jbp["ImageSegments"][-1]
+        subhdr = ded_segment["subheader"]
+        subhdr["IID1"].value = "DED001"
+        # subhdr["IDATIM"]  # not clear how to set this
+        subhdr["TGTID"].value = metadata.ded.im_subheader_part.tgtid
+        subhdr["IID2"].value = metadata.ded.im_subheader_part.iid2
+        metadata.ded.im_subheader_part.security._set_nitf_fields("IS", subhdr)
+
+        # subhdr["ISORCE"]  # not clear how to set this
+        subhdr["NROWS"].value = metadata.ded.nrows
+        subhdr["NCOLS"].value = metadata.ded.ncols
+        subhdr["PVTYPE"].value = "SI"
+        subhdr["IREP"].value = "NODISPLY"
+        subhdr["ICAT"].value = "DED"
+        subhdr["ABPP"].value = 16
+        subhdr["PJUST"].value = "R"
+
+        subhdr["NICOM"].value = len(metadata.ded.im_subheader_part.icom)
+        for icomidx, icom in enumerate(metadata.ded.im_subheader_part.icom):
+            subhdr[f"ICOM{icomidx + 1}"].value = icom
+
+        subhdr["IC"].value = "NC"
+        subhdr["NBANDS"].value = 1
+        subhdr["IREPBAND00001"].value = ""
+        subhdr["IMODE"].value = "B"
+        subhdr["NBPR"].value = 1  # Not clear if SIDD DED can be blocked
+        subhdr["NBPC"].value = 1  # Not clear if SIDD DED can be blocked
+        subhdr["NPPBH"].value = 0 if metadata.ded.ncols > 8192 else metadata.ded.ncols
+        subhdr["NPPBV"].value = 0 if metadata.ded.nrows > 8192 else metadata.ded.nrows
+        subhdr["NBPP"].value = 16
+        subhdr["IDLVL"].value = (
+            max(seg["subheader"]["IDLVL"].value for seg in jbp["ImageSegments"][:-1])
+            + 1
+        )
+        subhdr["IALVL"].value = 0
+        subhdr["IMAG"].value = "1.0"
+
+        jbp["ImageSegments"][-1]["Data"].size = (
+            # No compression, no masking, no blocking
+            subhdr["NROWS"].value
+            * subhdr["NCOLS"].value
+            * subhdr["NBANDS"].value
+            * subhdr["NBPP"].value
+            // 8
+        )
 
     # DE Segments
     jbp["FileHeader"]["NUMDES"].value = (
@@ -588,28 +828,31 @@ def jbp_from_nitf_metadata(metadata: NitfMetadata) -> jbpy.Jbp:
         xml_helper = sksidd.XmlHelper(imageinfo.xmltree)
 
         deseg = jbp["DataExtensionSegments"][desidx]
+        deseg.set_subheader(jbpy.des_subheader_factory("XML_DATA_CONTENT", 1))
         subhdr = deseg["subheader"]
-        subhdr["DESID"].value = "XML_DATA_CONTENT"
-        subhdr["DESVER"].value = 1
         imageinfo.de_subheader_part.security._set_nitf_fields("DES", subhdr)
         subhdr["DESSHL"].value = 773
-        subhdr["DESSHF"]["DESCRC"].value = 99999
-        subhdr["DESSHF"]["DESSHFT"].value = "XML"
-        subhdr["DESSHF"]["DESSHDT"].value = now_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-        subhdr["DESSHF"]["DESSHRP"].value = imageinfo.de_subheader_part.desshrp
-        subhdr["DESSHF"]["DESSHSI"].value = siddconst.SPECIFICATION_IDENTIFIER
-        subhdr["DESSHF"]["DESSHSV"].value = siddconst.VERSION_INFO[xmlns]["version"]
-        subhdr["DESSHF"]["DESSHSD"].value = siddconst.VERSION_INFO[xmlns]["date"]
-        subhdr["DESSHF"]["DESSHTN"].value = xmlns
+        subhdr["DESCRC"].value = 99999
+        subhdr["DESSHFT"].value = "XML"
+        subhdr["DESSHDT"].value = now_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+        subhdr["DESSHRP"].value = imageinfo.de_subheader_part.desshrp
+        subhdr["DESSHSI"].value = siddconst.SPECIFICATION_IDENTIFIER
+        subhdr["DESSHSV"].value = siddconst.VERSION_INFO[xmlns]["version"]
+        subhdr["DESSHSD"].value = siddconst.VERSION_INFO[xmlns]["date"]
+        subhdr["DESSHTN"].value = xmlns
 
-        icp = xml_helper.load("./{*}GeoData/{*}ImageCorners")
+        if xmlns == "urn:SIDD:1.0.0":
+            corners_path = "{*}GeographicAndTarget/{*}GeographicCoverage/{*}Footprint"
+        else:
+            corners_path = "{*}GeoData/{*}ImageCorners"
+        icp = xml_helper.load(corners_path)
         desshlpg = ""
         for icp_lat, icp_lon in itertools.chain(icp, [icp[0]]):
             desshlpg += f"{icp_lat:0=+12.8f}{icp_lon:0=+13.8f}"
-        subhdr["DESSHF"]["DESSHLPG"].value = desshlpg
-        subhdr["DESSHF"]["DESSHLI"].value = imageinfo.de_subheader_part.desshli
-        subhdr["DESSHF"]["DESSHLIN"].value = imageinfo.de_subheader_part.desshlin
-        subhdr["DESSHF"]["DESSHABS"].value = imageinfo.de_subheader_part.desshabs
+        subhdr["DESSHLPG"].value = desshlpg
+        subhdr["DESSHLI"].value = imageinfo.de_subheader_part.desshli
+        subhdr["DESSHLIN"].value = imageinfo.de_subheader_part.desshlin
+        subhdr["DESSHABS"].value = imageinfo.de_subheader_part.desshabs
 
         xml_bytes = lxml.etree.tostring(imageinfo.xmltree)
         deseg["DESDATA"].size = len(xml_bytes)
@@ -620,27 +863,26 @@ def jbp_from_nitf_metadata(metadata: NitfMetadata) -> jbpy.Jbp:
     # Product Support XML DES
     for prodinfo in metadata.product_support_xmls:
         deseg = jbp["DataExtensionSegments"][desidx]
+        deseg.set_subheader(jbpy.des_subheader_factory("XML_DATA_CONTENT", 1))
         subhdr = deseg["subheader"]
-        sidd_uh = jbp["DataExtensionSegments"][0]["subheader"]["DESSHF"]
+        sidd_uh = jbp["DataExtensionSegments"][0]["subheader"]
 
         xmlns = lxml.etree.QName(prodinfo.xmltree.getroot()).namespace or ""
 
-        subhdr["DESID"].value = "XML_DATA_CONTENT"
-        subhdr["DESVER"].value = 1
         prodinfo.de_subheader_part.security._set_nitf_fields("DES", subhdr)
         subhdr["DESSHL"].value = 773
-        subhdr["DESSHF"]["DESCRC"].value = 99999
-        subhdr["DESSHF"]["DESSHFT"].value = "XML"
-        subhdr["DESSHF"]["DESSHDT"].value = now_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-        subhdr["DESSHF"]["DESSHRP"].value = prodinfo.de_subheader_part.desshrp
-        subhdr["DESSHF"]["DESSHSI"].value = sidd_uh["DESSHSI"].value
-        subhdr["DESSHF"]["DESSHSV"].value = "v" + sidd_uh["DESSHSV"].value
-        subhdr["DESSHF"]["DESSHSD"].value = sidd_uh["DESSHSD"].value
-        subhdr["DESSHF"]["DESSHTN"].value = xmlns
-        subhdr["DESSHF"]["DESSHLPG"].value = ""
-        subhdr["DESSHF"]["DESSHLI"].value = prodinfo.de_subheader_part.desshli
-        subhdr["DESSHF"]["DESSHLIN"].value = prodinfo.de_subheader_part.desshlin
-        subhdr["DESSHF"]["DESSHABS"].value = prodinfo.de_subheader_part.desshabs
+        subhdr["DESCRC"].value = 99999
+        subhdr["DESSHFT"].value = "XML"
+        subhdr["DESSHDT"].value = now_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+        subhdr["DESSHRP"].value = prodinfo.de_subheader_part.desshrp
+        subhdr["DESSHSI"].value = sidd_uh["DESSHSI"].value
+        subhdr["DESSHSV"].value = "v" + sidd_uh["DESSHSV"].value
+        subhdr["DESSHSD"].value = sidd_uh["DESSHSD"].value
+        subhdr["DESSHTN"].value = xmlns
+        subhdr["DESSHLPG"].value = ""
+        subhdr["DESSHLI"].value = prodinfo.de_subheader_part.desshli
+        subhdr["DESSHLIN"].value = prodinfo.de_subheader_part.desshlin
+        subhdr["DESSHABS"].value = prodinfo.de_subheader_part.desshabs
 
         xml_bytes = lxml.etree.tostring(prodinfo.xmltree)
         deseg["DESDATA"].size = len(xml_bytes)
@@ -648,14 +890,22 @@ def jbp_from_nitf_metadata(metadata: NitfMetadata) -> jbpy.Jbp:
         desidx += 1
 
     # SICD XML DES
+    sidd_ns = lxml.etree.QName(metadata.images[0].xmltree.getroot()).namespace
     for sicd_xml_info in metadata.sicd_xmls:
         deseg = jbp["DataExtensionSegments"][desidx]
-        sarkit.sicd._io._populate_de_segment(
-            deseg, sicd_xml_info.xmltree, sicd_xml_info.de_subheader_part
-        )
+
+        if sidd_ns == "urn:SIDD:1.0.0":
+            xml_des_subheader = populate_sicd_xml_des_sidd1(
+                sicd_xml_info.de_subheader_part
+            )
+        else:
+            xml_des_subheader = sarkit.sicd._io._create_xml_des_subheader(
+                sicd_xml_info.xmltree, sicd_xml_info.de_subheader_part
+            )
 
         xml_bytes = lxml.etree.tostring(sicd_xml_info.xmltree)
         deseg["DESDATA"].size = len(xml_bytes)
+        deseg.set_subheader(xml_des_subheader)
 
         desidx += 1
 
@@ -663,8 +913,16 @@ def jbp_from_nitf_metadata(metadata: NitfMetadata) -> jbpy.Jbp:
     return jbp
 
 
-def _is_sidd_product_image_segment(segment):
-    if segment["subheader"]["ICAT"].value != "SAR":
+def populate_sicd_xml_des_sidd1(de_subheader_part):
+    """Populate SICD XML DES according to SIDD v1.0 volume 2, section 2.2.4"""
+    subhdr = jbpy.des_subheader_factory("SICD_XML", 1)
+    de_subheader_part.security._set_nitf_fields("DES", subhdr)
+    subhdr["DESSHL"].value = 0
+    return subhdr
+
+
+def _is_sidd_image_segment(segment, icat):
+    if segment["subheader"]["ICAT"].value != icat:
         return False
 
     iid1 = segment["subheader"]["IID1"].value
@@ -698,7 +956,7 @@ def product_image_segment_mapping(jbp: jbpy.Jbp) -> dict[str, list[int]]:
     )
     for im_idx, imseg in sorted_by_iid1:
         iid1 = imseg["subheader"]["IID1"].value
-        if _is_sidd_product_image_segment(imseg):
+        if _is_sidd_image_segment(imseg, "SAR"):
             name = iid1[:7]
             mapping.setdefault(name, []).append(im_idx)
     return mapping
@@ -776,6 +1034,8 @@ class NitfWriter:
         self._metadata = metadata
         self._jbp = jbp_override or jbp_from_nitf_metadata(metadata)
         self._images_written: set[int] = set()
+        self._legends_written: set[tuple[int, int]] = set()
+        self._ded_written = False
 
         self._jbp.finalize()
         self._jbp.dump(file)
@@ -848,6 +1108,11 @@ class NitfWriter:
         array : ndarray
             2D array of pixels
         """
+        num_images = len(self._metadata.images)
+        if not (0 <= image_number < num_images):
+            raise IndexError(
+                f"Unknown {image_number=} (zero-based). SIDD has {num_images} images."
+            )
         shape, pixel_type, imsegs = self._product_image_info(image_number)
 
         # require array to be full image
@@ -875,10 +1140,107 @@ class NitfWriter:
             raw_array = input_array[
                 first_row : first_row + imseg["subheader"]["NROWS"].value
             ]
-            raw_array = raw_array.astype(raw_dtype.newbyteorder(">"), copy=False)
+            raw_array = raw_array.astype(
+                raw_dtype.newbyteorder(">"), casting="safe", copy=False
+            )
             raw_array.tofile(self._file)
 
         self._images_written.add(image_number)
+
+    def write_legend(
+        self,
+        image_number: int,
+        legend_number: int,
+        array: npt.NDArray,
+    ):
+        """Write legend pixel data to a NITF file
+
+        Parameters
+        ----------
+        image_number : int
+            index of SIDD Product containing the legend
+        legend_number : int
+            index of legend within SIDD Product image to write
+        array : ndarray
+            2D array of pixels
+        """
+        num_images = len(self._metadata.images)
+        if not (0 <= image_number < num_images):
+            raise IndexError(
+                f"Unknown {image_number=} (zero-based). SIDD has {num_images} images."
+            )
+        num_legends = len(self._metadata.images[image_number].legends)
+        if not (0 <= legend_number < num_legends):
+            raise IndexError(
+                f"Unknown {legend_number=} (zero-based). SIDD image has {num_legends} legends."
+            )
+
+        legend = self._metadata.images[image_number].legends[legend_number]
+        shape = (legend.nrows, legend.ncols)
+        # require array to be full image
+        if np.any(array.shape != shape):
+            raise ValueError(
+                f"Array shape {array.shape} does not match legend shape {shape}."
+            )
+
+        imseg = [
+            seg
+            for seg in self._jbp["ImageSegments"]
+            if seg["subheader"]["IID1"].value.startswith(f"SIDD{image_number + 1:03d}")
+            and _is_sidd_image_segment(seg, "LEG")
+        ][legend_number]
+
+        self._file.seek(imseg["Data"].get_offset(), os.SEEK_SET)
+
+        _, pixel_type, _ = self._product_image_info(image_number)
+        if pixel_type == "RGB24I":
+            assert array.dtype.names is not None  # placate mypy
+            raw_dtype = array.dtype[array.dtype.names[0]]
+            input_array = array.view((raw_dtype, 3))
+        else:
+            raw_dtype = siddconst.PIXEL_TYPES[pixel_type]["dtype"].newbyteorder(">")
+            input_array = array
+        raw_array = input_array.astype(
+            raw_dtype.newbyteorder(">"), casting="safe", copy=False
+        )
+        raw_array.tofile(self._file)
+
+        self._legends_written.add((image_number, legend_number))
+
+    def write_ded(self, array):
+        """Write Digital Elevation Data (DED) to a NITF file
+
+        Parameters
+        ----------
+        array : ndarray
+            2D array of DED posts, dtype= `numpy.int16`
+        """
+        if self._metadata.ded is None:
+            raise RuntimeError("Metadata must describe DED")
+
+        for imseg in self._jbp["ImageSegments"]:
+            if imseg["subheader"]["IID1"].value == "DED001":
+                break
+        else:
+            raise RuntimeError("Failed to find DED image segment")
+
+        subhdr = imseg["subheader"]
+        if not ((subhdr["NBPR"].value == 1) and (subhdr["NBPC"].value == 1)):
+            raise RuntimeError("Only single-block DED supported")
+
+        shape = (subhdr["NROWS"].value, subhdr["NCOLS"].value)
+        if np.any(array.shape != shape):
+            raise ValueError(
+                f"Array shape {array.shape} does not match DED shape {shape}."
+            )
+
+        if array.dtype.newbyteorder("=") != np.dtype("i2"):
+            raise ValueError(f"DED must be 16-bit signed int.  Not {array.dtype}.")
+        array = array.astype(array.dtype.newbyteorder(">"), copy=False)
+        self._file.seek(imseg["Data"].get_offset(), os.SEEK_SET)
+        array.tofile(self._file)
+
+        self._ded_written = True
 
     def __enter__(self):
         return self
@@ -890,7 +1252,20 @@ class NitfWriter:
             logger.warning(
                 f"SIDD Writer closed without writing all images. Missing: {images_missing}"
             )
-        # TODO check legends, DED
+        ded_missing = (self._metadata.ded is not None) and not self._ded_written
+        if ded_missing:
+            logger.warning("SIDD Writer closed without writing DED")
+
+        legends_expected = set()
+        for image_number, image in enumerate(self._metadata.images):
+            for legend_number in range(len(image.legends)):
+                legends_expected.add((image_number, legend_number))
+        legends_missing = legends_expected - self._legends_written
+        if legends_missing:
+            logger.warning(
+                f"SIDD Writer closed without writing all legends. Missing: {legends_missing}"
+            )
+
         return
 
 
@@ -905,6 +1280,7 @@ class SegmentationImhdr:
     nrows: int
     ncols: int
     igeolo: str
+    icat: str  # not mentioned in the algorithm, but useful for supporting legends
 
 
 def segmentation_algorithm(
@@ -937,9 +1313,11 @@ def segmentation_algorithm(
         num_rows_k = xml_helper.load("./{*}Measurement/{*}PixelFootprint/{*}Row")
         num_cols_k = xml_helper.load("./{*}Measurement/{*}PixelFootprint/{*}Col")
 
-        pcc = xml_helper.load(
-            "./{*}GeoData/{*}ImageCorners"
-        )  # Document says /SIDD/GeographicAndTarget/GeogrpahicCoverage/Footprint, but that was renamed in v2.0
+        if lxml.etree.QName(sidd_xmltree.getroot()).namespace == "urn:SIDD:1.0.0":
+            corners_path = "{*}GeographicAndTarget/{*}GeographicCoverage/{*}Footprint"
+        else:
+            corners_path = "{*}GeoData/{*}ImageCorners"
+        pcc = xml_helper.load(corners_path)
 
         bytes_per_pixel = pixel_info[
             "dtype"
@@ -963,6 +1341,7 @@ def segmentation_algorithm(
                     nrows=num_rows_k,
                     ncols=num_cols_k,
                     igeolo=sarkit.sicd._io._format_igeolo(pcc),
+                    icat="SAR",
                 )
             )
         else:
@@ -980,6 +1359,7 @@ def segmentation_algorithm(
                     nrows=num_rows_limit_k,
                     ncols=num_cols_k,
                     igeolo="",
+                    icat="SAR",
                 )
             )
             for n in range(1, num_seg_per_image_k - 1):
@@ -994,6 +1374,7 @@ def segmentation_algorithm(
                         nrows=num_rows_limit_k,
                         ncols=num_cols_k,
                         igeolo="",
+                        icat="SAR",
                     )
                 )
             z += 1
@@ -1008,6 +1389,7 @@ def segmentation_algorithm(
                     nrows=last_seg_rows,
                     ncols=num_cols_k,
                     igeolo="",
+                    icat="SAR",
                 )
             )
             seginfos.extend(this_image_seginfos)
@@ -1030,6 +1412,62 @@ def segmentation_algorithm(
                 seginfo.igeolo = sarkit.sicd._io._format_igeolo(iscc)
 
     return fhdr_numi, fhdr_li, seginfos
+
+
+def _insert_legend_segments(
+    seginfos: list[SegmentationImhdr], images: list[NitfProductImageMetadata]
+):
+    """Modify segmentation algorithm results to include legend segments
+
+    This process is not explicity defined in the SIDD document.
+    The segmentation algorithm does not take into account legends, however the section on legends requires
+    the IDLVL and IALVL fields to be set in a way that conflicts with the segmentation algorithm
+    when the SIDD file contains multiple products.
+    """
+    seginfos = copy.deepcopy(seginfos)
+
+    def _find(idx):
+        return [info for info in seginfos if info.iid1.startswith(f"SIDD{idx + 1:03d}")]
+
+    for image_index, image in enumerate(images):
+        for legend in image.legends:
+            image_seginfos = _find(image_index)
+            insert_at = seginfos.index(image_seginfos[-1]) + 1
+
+            # Determine which segment to attach the legend to
+            attach_row = legend.attach_row
+            for attach_to_segment in image_seginfos:
+                if attach_to_segment.icat != "SAR":
+                    continue
+                if attach_row <= attach_to_segment.nrows:
+                    break
+                attach_row -= attach_to_segment.nrows
+            else:
+                raise RuntimeError(
+                    f"Unable to find segment to attach legend at {legend.attach_row, legend.attach_col}"
+                )
+
+            seginfos.insert(
+                insert_at,
+                SegmentationImhdr(
+                    idlvl=image_seginfos[-1].idlvl + 1,
+                    ialvl=attach_to_segment.idlvl,
+                    iloc=f"{attach_row:05d}{legend.attach_col:05d}",
+                    iid1=f"SIDD{image_index + 1:03d}{len(image_seginfos) + 1:03d}",
+                    nrows=legend.nrows,
+                    ncols=legend.ncols,
+                    igeolo="",
+                    icat="LEG",
+                ),
+            )
+
+            # Update display levels of subsequent segments
+            for info in seginfos[insert_at + 1 :]:
+                info.idlvl += 1
+                if info.ialvl != 0:
+                    info.ialvl += 1
+
+    return seginfos
 
 
 def _validate_xml(sidd_xmltree):

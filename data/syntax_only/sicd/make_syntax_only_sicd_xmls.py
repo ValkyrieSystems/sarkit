@@ -81,7 +81,7 @@ def update_1_1_0_to_1_4_0(etree):
 def update_1_1_0_to_1_5(etree):
     update_1_1_0_to_1_4_0(etree)
 
-    ns = "urn:SICD:1.5-DRAFT-2025_06_10"
+    ns = "urn:SICD:1.5"
 
     for elem in etree.iter():
         elem.tag = f"{{{ns}}}{lxml.etree.QName(elem).localname}"
@@ -114,7 +114,7 @@ def update_version(etree, urn):
         "urn:SICD:1.2.1": update_1_1_0_to_1_2_1,
         "urn:SICD:1.3.0": update_1_1_0_to_1_3_0,
         "urn:SICD:1.4.0": update_1_1_0_to_1_4_0,
-        "urn:SICD:1.5-DRAFT-2025_06_10": update_1_1_0_to_1_5,
+        "urn:SICD:1.5": update_1_1_0_to_1_5,
     }[urn]
     return converter(etree)
 
@@ -193,7 +193,7 @@ def main(args=None):
                 ),
                 functools.partial(
                     set_version_ifa,
-                    urn="urn:SICD:1.5-DRAFT-2025_06_10",
+                    urn="urn:SICD:1.5",
                     ifa_label="RMA-RMCR",
                 ),
                 functools.partial(

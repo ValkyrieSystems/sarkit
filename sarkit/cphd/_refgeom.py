@@ -6,6 +6,7 @@ import numpy.polynomial.polynomial as npp
 
 import sarkit.wgs84
 
+from . import _scenecoords as skcphd_sc
 from . import _xml as skcphd_xml
 
 
@@ -61,21 +62,7 @@ def compute_reference_geometry(
     # (1)
     srp_llh = sarkit.wgs84.cartesian_to_geodetic(srp)
     srp_lat, srp_lon = np.deg2rad(srp_llh[:2])
-
-    # TODO: factor this out into a separate calculation
-    ref_surface = cphd_xmltree.find(
-        "./{*}SceneCoordinates/{*}ReferenceSurface/{*}Planar"
-    )
-    if ref_surface is None:  # TODO: Add HAE
-        raise NotImplementedError(
-            "Non-Planar reference surfaces (e.g. HAE) are currently not supported."
-        )
-
-    iax = xh.load_elem(ref_surface.find("./{*}uIAX"))
-    iay = xh.load_elem(ref_surface.find("./{*}uIAY"))
-    iaz = np.cross(iax, iay)
-    iarp = xh.load_elem(cphd_xmltree.find("./{*}SceneCoordinates/{*}IARP/{*}ECF"))
-    srp_iac = np.dot([iax, iay, iaz], srp - iarp)
+    srp_iac = skcphd_sc.ecf_to_iac(cphd_xmltree, srp)
 
     # (2)
     srp_dec = np.linalg.norm(srp)

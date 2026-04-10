@@ -158,6 +158,7 @@ class ImageCornersType(skxt.NdArrayType):
                 elem, ns + self.sub_tag, attrib={"index": label}
             )
             self.sub_type.set_elem(icp, coord)
+        self.parse_elem(elem)  # make sure result is parsable
 
 
 class XmlHelper(skxml.XmlHelper):
@@ -260,24 +261,23 @@ class XsdHelper(skxml.XsdHelper):
             "{urn:SICD:1.4.0}Matrix6x6Type": MtxType((6, 6)),
         }
         sicd_15 = {
-            k.replace("urn:SICD:1.4.0", "urn:SICD:1.5-DRAFT-2025_06_10"): v
-            for k, v in sicd_140.items()
+            k.replace("urn:SICD:1.4.0", "urn:SICD:1.5"): v for k, v in sicd_140.items()
         }
         sicd_15 |= {
-            "{urn:SICD:1.5-DRAFT-2025_06_10}LSVertexType": LineSampType(),
+            "{urn:SICD:1.5}LSVertexType": LineSampType(),
             (
-                "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType"
-                "/{urn:SICD:1.5-DRAFT-2025_06_10}Area"
-                "/{urn:SICD:1.5-DRAFT-2025_06_10}Plane"
-                "/{urn:SICD:1.5-DRAFT-2025_06_10}SegmentList"
-                "/{urn:SICD:1.5-DRAFT-2025_06_10}Segment"
-                "/{urn:SICD:1.5-DRAFT-2025_06_10}SegmentPolygon"
+                "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType"
+                "/{urn:SICD:1.5}Area"
+                "/{urn:SICD:1.5}Plane"
+                "/{urn:SICD:1.5}SegmentList"
+                "/{urn:SICD:1.5}Segment"
+                "/{urn:SICD:1.5}SegmentPolygon"
             ): skxt.NdArrayType("SV", LineSampType()),
             (
-                "<UNNAMED>-{urn:SICD:1.5-DRAFT-2025_06_10}RadarCollectionType"
-                "/{urn:SICD:1.5-DRAFT-2025_06_10}Area"
-                "/{urn:SICD:1.5-DRAFT-2025_06_10}Plane"
-                "/{urn:SICD:1.5-DRAFT-2025_06_10}Polygon"
+                "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType"
+                "/{urn:SICD:1.5}Area"
+                "/{urn:SICD:1.5}Plane"
+                "/{urn:SICD:1.5}Polygon"
             ): skxt.NdArrayType("Vertex", LineSampType()),
         }
         easy = sicd_110 | sicd_121 | sicd_130 | sicd_140 | sicd_15

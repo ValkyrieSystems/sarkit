@@ -92,21 +92,21 @@ class NitfSecurityFields:
         """Construct from NITF security fields"""
         return cls(
             clas=field_group[f"{prefix}CLAS"].value,
-            clsy=field_group[f"{prefix}CLSY"].value,
-            code=field_group[f"{prefix}CODE"].value,
-            ctlh=field_group[f"{prefix}CTLH"].value,
-            rel=field_group[f"{prefix}REL"].value,
-            dctp=field_group[f"{prefix}DCTP"].value,
-            dcdt=field_group[f"{prefix}DCDT"].value,
-            dcxm=field_group[f"{prefix}DCXM"].value,
-            dg=field_group[f"{prefix}DG"].value,
-            dgdt=field_group[f"{prefix}DGDT"].value,
-            cltx=field_group[f"{prefix}CLTX"].value,
-            catp=field_group[f"{prefix}CATP"].value,
-            caut=field_group[f"{prefix}CAUT"].value,
-            crsn=field_group[f"{prefix}CRSN"].value,
-            srdt=field_group[f"{prefix}SRDT"].value,
-            ctln=field_group[f"{prefix}CTLN"].value,
+            clsy=field_group[f"{prefix}CLSY"].value or "",
+            code=field_group[f"{prefix}CODE"].value or "",
+            ctlh=field_group[f"{prefix}CTLH"].value or "",
+            rel=field_group[f"{prefix}REL"].value or "",
+            dctp=field_group[f"{prefix}DCTP"].value or "",
+            dcdt=field_group[f"{prefix}DCDT"].value or "",
+            dcxm=field_group[f"{prefix}DCXM"].value or "",
+            dg=field_group[f"{prefix}DG"].value or "",
+            dgdt=field_group[f"{prefix}DGDT"].value or "",
+            cltx=field_group[f"{prefix}CLTX"].value or "",
+            catp=field_group[f"{prefix}CATP"].value or "",
+            caut=field_group[f"{prefix}CAUT"].value or "",
+            crsn=field_group[f"{prefix}CRSN"].value or "",
+            srdt=field_group[f"{prefix}SRDT"].value or "",
+            ctln=field_group[f"{prefix}CTLN"].value or "",
         )
 
     def _set_nitf_fields(self, prefix: str, field_group: jbpy.core.Group) -> None:
@@ -158,10 +158,10 @@ class NitfFileHeaderPart:
         """Construct from a NITF File Header object"""
         return cls(
             ostaid=file_header["OSTAID"].value,
-            ftitle=file_header["FTITLE"].value,
+            ftitle=file_header["FTITLE"].value or "",
             security=NitfSecurityFields._from_nitf_fields("FS", file_header),
-            oname=file_header["ONAME"].value,
-            ophone=file_header["OPHONE"].value,
+            oname=file_header["ONAME"].value or "",
+            ophone=file_header["OPHONE"].value or "",
         )
 
     def __post_init__(self):
@@ -198,11 +198,11 @@ class NitfImSubheaderPart:
     def _from_header(cls, image_header: jbpy.core.ImageSubheader) -> Self:
         """Construct from a NITF ImageSubheader object"""
         return cls(
-            tgtid=image_header["TGTID"].value,
-            iid2=image_header["IID2"].value,
+            tgtid=image_header["TGTID"].value or "",
+            iid2=image_header["IID2"].value or "",
             security=NitfSecurityFields._from_nitf_fields("IS", image_header),
-            isorce=image_header["ISORCE"].value,
-            icom=[val.value for val in image_header.find_all("ICOM\\d+")],
+            isorce=image_header["ISORCE"].value or "",
+            icom=[val.value for val in image_header.find_all("ICOM\\d+")],  # type: ignore  # all ICOM should have value
         )
 
     def __post_init__(self):
@@ -239,10 +239,10 @@ class NitfDeSubheaderPart:
         """Construct from a NITF DataExtensionSubheader object"""
         return cls(
             security=NitfSecurityFields._from_nitf_fields("DES", de_header),
-            desshrp=de_header["DESSHF"]["DESSHRP"].value,
-            desshli=de_header["DESSHF"]["DESSHLI"].value,
-            desshlin=de_header["DESSHF"]["DESSHLIN"].value,
-            desshabs=de_header["DESSHF"]["DESSHABS"].value,
+            desshrp=de_header["DESSHRP"].value,
+            desshli=de_header["DESSHLI"].value or "",
+            desshlin=de_header["DESSHLIN"].value or "",
+            desshabs=de_header["DESSHABS"].value or "",
         )
 
     def __post_init__(self):
@@ -362,7 +362,7 @@ class NitfReader:
         self.jbp = jbpy.Jbp().load(file)
 
         deseg = self.jbp["DataExtensionSegments"][0]  # SICD XML must be in first DES
-        if not deseg["subheader"]["DESSHF"]["DESSHTN"].value.startswith("urn:SICD"):
+        if not deseg["subheader"]["DESSHTN"].encoded_value.startswith(b"urn:SICD"):
             raise ValueError(f"Unable to find SICD DES in {file}")
 
         file.seek(deseg["DESDATA"].get_offset(), os.SEEK_SET)
@@ -383,15 +383,24 @@ class NitfReader:
             de_subheader_part=nitf_de_fields,
         )
 
-    def read_image(self) -> npt.NDArray:
+    def read_image(
+        self,
+        *,
+        out: npt.NDArray | None = None,
+    ) -> npt.NDArray:
         """Read the entire pixel array
+
+        Parameters
+        ----------
+        out : ndarray or None, optional
+            Array to store the image.  If None, a new array will be created.
 
         Returns
         -------
         ndarray
             SICD image array
         """
-        return self.read_sub_image()[0]
+        return self.read_sub_image(out=out)[0]
 
     def read_sub_image(
         self,
@@ -399,6 +408,8 @@ class NitfReader:
         start_col: int | None = None,
         stop_row: int | None = None,
         stop_col: int | None = None,
+        *,
+        out: npt.NDArray | None = None,
     ) -> tuple[npt.NDArray, lxml.etree.ElementTree]:
         """Read a 2D slice / sub-image from the file
 
@@ -412,6 +423,8 @@ class NitfReader:
             Highest row index to retrieve (exclusive). If None, defaults to one after last row.
         stop_col : int or None
             Highest col index to retrieve (exclusive). If None, defaults to one after last column.
+        out : ndarray or None, optional
+            Array to store the sub-image.  If None, a new array will be created.
 
         Returns
         -------
@@ -437,7 +450,7 @@ class NitfReader:
         if np.any(np.less(out_shape, 1)):
             raise ValueError(f"Invalid shape requested: ({out_shape})")
 
-        out = np.empty(out_shape, dtype)
+        out = _iohelp.ensure_array(out, out_shape, dtype)
 
         out_xmltree = _update_sicd_subimage_xml(
             self.metadata.xmltree, start_row, start_col, out_nrows, out_ncols
@@ -730,28 +743,27 @@ def jbp_from_nitf_metadata(metadata: NitfMetadata) -> jbpy.Jbp:
     sicd_xml_bytes = lxml.etree.tostring(sicd_xmltree)
     jbp["FileHeader"]["NUMDES"].value = 1
     jbp["DataExtensionSegments"][0]["DESDATA"].size = len(sicd_xml_bytes)
-    _populate_de_segment(
-        jbp["DataExtensionSegments"][0],
-        sicd_xmltree,
-        metadata.de_subheader_part,
+    xml_des_subheader = _create_xml_des_subheader(
+        sicd_xmltree, metadata.de_subheader_part
     )
+    jbp["DataExtensionSegments"][0].set_subheader(xml_des_subheader)
 
     jbp.finalize()  # compute lengths, CLEVEL, etc...
     return jbp
 
 
-def _populate_de_segment(de_segment, sicd_xmltree, de_subheader_part):
-    subhdr = de_segment["subheader"]
-    subhdr["DESID"].value = "XML_DATA_CONTENT"
-    subhdr["DESVER"].value = 1
+def _create_xml_des_subheader(
+    sicd_xmltree: lxml.etree.ElementTree, de_subheader_part: NitfDeSubheaderPart
+):
+    subhdr = jbpy.des_subheader_factory("XML_DATA_CONTENT", 1)
     de_subheader_part.security._set_nitf_fields("DES", subhdr)
     subhdr["DESSHL"].value = 773
-    subhdr["DESSHF"]["DESCRC"].value = 99999
-    subhdr["DESSHF"]["DESSHFT"].value = "XML"
+    subhdr["DESCRC"].value = 99999
+    subhdr["DESSHFT"].value = "XML"
     now_dt = datetime.datetime.now(datetime.timezone.utc)
-    subhdr["DESSHF"]["DESSHDT"].value = now_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-    subhdr["DESSHF"]["DESSHRP"].value = de_subheader_part.desshrp
-    subhdr["DESSHF"][
+    subhdr["DESSHDT"].value = now_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+    subhdr["DESSHRP"].value = de_subheader_part.desshrp
+    subhdr[
         "DESSHSI"
     ].value = "SICD Volume 1 Design & Implementation Description Document"
 
@@ -765,18 +777,19 @@ def _populate_de_segment(de_segment, sicd_xmltree, de_subheader_part):
         spec_date = sicdconst.VERSION_INFO[xmlns]["date"]
         spec_version = sicdconst.VERSION_INFO[xmlns]["version"]
 
-    subhdr["DESSHF"]["DESSHSD"].value = spec_date
-    subhdr["DESSHF"]["DESSHSV"].value = spec_version
-    subhdr["DESSHF"]["DESSHTN"].value = xmlns
+    subhdr["DESSHSD"].value = spec_date
+    subhdr["DESSHSV"].value = spec_version
+    subhdr["DESSHTN"].value = xmlns
 
     icp = xml_helper.load("./{*}GeoData/{*}ImageCorners")
     desshlpg = ""
     for icp_lat, icp_lon in itertools.chain(icp, [icp[0]]):
         desshlpg += f"{icp_lat:0=+12.8f}{icp_lon:0=+13.8f}"
-    subhdr["DESSHF"]["DESSHLPG"].value = desshlpg
-    subhdr["DESSHF"]["DESSHLI"].value = de_subheader_part.desshli
-    subhdr["DESSHF"]["DESSHLIN"].value = de_subheader_part.desshlin
-    subhdr["DESSHF"]["DESSHABS"].value = de_subheader_part.desshabs
+    subhdr["DESSHLPG"].value = desshlpg
+    subhdr["DESSHLI"].value = de_subheader_part.desshli
+    subhdr["DESSHLIN"].value = de_subheader_part.desshlin
+    subhdr["DESSHABS"].value = de_subheader_part.desshabs
+    return subhdr
 
 
 class NitfWriter:

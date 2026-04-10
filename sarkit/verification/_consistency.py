@@ -5,6 +5,8 @@ Common functionality for verifying files for internal consistency.
 import argparse
 import ast
 import contextlib
+import functools
+import inspect
 import linecache
 import os
 import re
@@ -16,15 +18,33 @@ from typing import Optional
 import numpy as np
 
 
-class _ExceptionOnUse:
-    """Class to help handle optional dependencies"""
+def skipif(condition_func, details=None):
+    """Skip check if condition_func evalulates to ``True``
 
-    def __init__(self, exception):
-        self._error_class = type(exception)
-        self._error_message = exception.msg
+    Parameters
+    ----------
+    condition_func : callable
+        Function that returns ``True`` is check should be skipped.
+        Called with a single argument which is the `ConsistencyChecker` containing the check.
+    details : str or None, optional
+        Text describing the scope of checks
 
-    def __getattr__(self, name):
-        raise self._error_class(self._error_message)
+    Returns
+    -------
+    callable
+        decorator for check method
+    """
+
+    def decorator_skipif(func):
+        @functools.wraps(func)
+        def wrap_check(check_obj, *args, **kwargs):
+            with check_obj.precondition(details):
+                assert not condition_func(check_obj)
+                func(check_obj, *args, **kwargs)
+
+        return wrap_check
+
+    return decorator_skipif
 
 
 def _exception_stack():
@@ -639,3 +659,39 @@ def start_color(color: str) -> str:
         invert=7,
     )
     return "\x1b[%sm" % color_table[color]
+
+
+def modify_conchecker_docs(obj):
+    """Try to make the rendered documentation looks more useful for ConsistencyChecker subclasses
+
+    There is an autodoc-skip-member event handler in the doc's conf.py that skips the check_ methods
+    but they still show up in the class method summary tables.
+    Explicitly adding a methods section seemingly avoids this.
+    """
+    allfuncs = inspect.getmembers(obj, lambda x: inspect.isfunction)
+    methods_to_doc = []
+    checks = []
+    for funcname, func in allfuncs:
+        if funcname.startswith("check_"):
+            checks.append((funcname, func))
+        elif not funcname.startswith("_"):
+            methods_to_doc.append(funcname)
+
+    method_list = "\n    ".join(methods_to_doc)
+    check_list = "\n    ".join(
+        (f"``{name}``\n        {obj.__doc__}") for name, obj in checks
+    )
+
+    con_doc_footer = f"""
+    Methods
+    -------
+    {method_list}
+
+    Notes
+    -----
+    The following checks are available:
+
+    {check_list}
+
+    """
+    obj.__doc__ += textwrap.dedent(con_doc_footer)
