@@ -1849,3 +1849,19 @@ def test_check_antenna_mlfreqdilationsf(cphd_con):
     apat_ew["MLFreqDilation"] = True
     cphd_con.check("check_antenna_mlfreqdilationsf")
     assert cphd_con.passes() and not cphd_con.failures()
+
+
+@pytest.mark.parametrize("txrcv", ["Tx", "Rcv"])
+def test_check_channel_txrcvpolref(cphd_con_from_file, txrcv):
+    cphd_con = cphd_con_from_file
+    polref_ew = cphd_con.ew["Channel"]["Parameters"][0]["Polarization"][
+        f"{txrcv}PolRef"
+    ]
+    polref_ew["AmpH"] = np.pi / 4
+    polref_ew["AmpV"] = np.e / 4
+    polref_ew["PhaseV"] = np.euler_gamma / 4
+    cphd_con.check("check_channel_txpolref", allow_prefix=True)
+    cphd_con.check("check_channel_rcvpolref", allow_prefix=True)
+    assert cphd_con.passes() and not cphd_con.skips()
+    testing.assert_failures(cphd_con, f"{txrcv} AmpH/AmpV")
+    testing.assert_failures(cphd_con, f"{txrcv} PhaseV")
