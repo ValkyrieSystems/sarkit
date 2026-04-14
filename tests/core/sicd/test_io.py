@@ -32,6 +32,7 @@ def _random_image(sicd_xmltree):
 @pytest.mark.parametrize(
     "sicd_xml,pixel_type",
     [
+        (DATAPATH / "example-sicd-1.0.1.xml", "RE32F_IM32F"),
         (DATAPATH / "example-sicd-1.1.0.xml", "RE32F_IM32F"),
         (DATAPATH / "example-sicd-1.2.1.xml", "RE16I_IM16I"),
         (DATAPATH / "example-sicd-1.3.0.xml", "AMP8I_PHS8I"),
