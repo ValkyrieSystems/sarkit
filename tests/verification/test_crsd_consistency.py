@@ -2157,8 +2157,8 @@ def test_assert_iac_matches_ecf_hae(crsd_con):
     crsd_con.crsdroot.find("{*}SceneCoordinates/{*}ReferenceSurface").append(hae)
     iaxll = np.array([-2e-5, 1e-5])
     iayll = np.array([1.0e-5, 2e-5])
-    crsd_con.xmlhelp.set_elem(hae.find("{*}uIAXLL"), iaxll)
-    crsd_con.xmlhelp.set_elem(hae.find("{*}uIAYLL"), iayll)
+    crsd_con.xmlhelp.set_elem(hae.find("{*}uIAXLL"), np.deg2rad(iaxll))
+    crsd_con.xmlhelp.set_elem(hae.find("{*}uIAYLL"), np.deg2rad(iayll))
     crsd_con.assert_iac_matches_ecf(
         [0, 0], crsd_con.xmlhelp.load("{*}SceneCoordinates/{*}IARP/{*}ECF")
     )

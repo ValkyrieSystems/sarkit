@@ -1507,7 +1507,9 @@ class CrsdConsistency(con.ConsistencyChecker):
         iacps = self.xmlhelp.load("{*}SceneCoordinates/{*}ImageAreaCornerPoints")
         # lay out the XY corners in clockwise order
         xy_lim_corners = [x1y1, [x1y1[0], x2y2[1]], x2y2, [x2y2[0], x1y1[1]]]
-        xy_lim_ecf = [self.iac_to_ecf(xy) for xy in xy_lim_corners]
+        xy_lim_ecf = [
+            skcrsd.iac_to_ecf(self.crsdroot.getroottree(), xy) for xy in xy_lim_corners
+        ]
         xy_lim_llh = sarkit.wgs84.cartesian_to_geodetic(xy_lim_ecf)
         # find which IACP most closely corresponds to the first XY corner
         num_roll = np.argmin(np.linalg.norm(xy_lim_llh[0, :2] - iacps))
@@ -2416,33 +2418,20 @@ class CrsdConsistency(con.ConsistencyChecker):
 
     def assert_iac_matches_ecf(self, iac_coord, ecf_coord, tol=1.0):
         """Asserts that the IAC and ECF coordinates are a matched set"""
-        assert np.linalg.norm(ecf_coord - self.iac_to_ecf(iac_coord)) < tol
+        assert (
+            np.linalg.norm(
+                ecf_coord - skcrsd.iac_to_ecf(self.crsdroot.getroottree(), iac_coord)
+            )
+            < tol
+        )
 
     def iac_to_ecf(self, iac_coord):
-        """Converts ImageAreaCoordinates to ECF"""
-        if (
-            self.crsdroot.find("{*}SceneCoordinates/{*}ReferenceSurface/{*}Planar")
-            is not None
-        ):
-            iarp = self.xmlhelp.load("{*}SceneCoordinates/{*}IARP/{*}ECF")
-            uiax = self.xmlhelp.load(
-                "{*}SceneCoordinates/{*}ReferenceSurface/{*}Planar/{*}uIAX"
-            )
-            uiay = self.xmlhelp.load(
-                "{*}SceneCoordinates/{*}ReferenceSurface/{*}Planar/{*}uIAY"
-            )
-            return iarp + uiax * iac_coord[0] + uiay * iac_coord[1]
-        else:
-            iarp_llh = self.xmlhelp.load("{*}SceneCoordinates/{*}IARP/{*}LLH")
-            uiax_ll = self.xmlhelp.load(
-                "{*}SceneCoordinates/{*}ReferenceSurface/{*}HAE/{*}uIAXLL"
-            )
-            uiay_ll = self.xmlhelp.load(
-                "{*}SceneCoordinates/{*}ReferenceSurface/{*}HAE/{*}uIAYLL"
-            )
-            llh_coord = iarp_llh.copy()
-            llh_coord[:2] += uiax_ll * iac_coord[0] + uiay_ll * iac_coord[1]
-            return sarkit.wgs84.geodetic_to_cartesian(llh_coord)
+        """Converts ImageAreaCoordinates to ECF
+
+        .. deprecated:: 1.7.0
+           Use :py:func:`sarkit.crsd.iac_to_ecf` instead.
+        """
+        return skcrsd.iac_to_ecf(self.crsdroot.getroottree(), iac_coord)
 
 
 # Improve rendered docstring

@@ -66,6 +66,8 @@ CPHD Signal Model
    compute_t_ref
    compute_t_ref_from_pvps
 
+.. _skcphd_scenecoords:
+
 Scene Coordinates & Collection Geometry
 =======================================
 

@@ -59,6 +59,23 @@ XML Metadata
    ImageAreaCornerPointsType
    ParameterType
 
+Scene Coordinates
+=================
+
+.. admonition:: See also
+
+   CRSD explicitly references CPHD D & I SceneCoordinates branch. See :ref:`skcphd_scenecoords` in :mod:`sarkit.cphd`.
+
+Convenience functions that operate on parsed XML trees:
+
+.. autosummary::
+   :toctree: generated/
+
+   ecf_to_iac
+   iac_to_ecf
+   llh_to_iac
+   iac_to_llh
+
 Receive Channel Parameters
 ==========================
 
@@ -152,6 +169,12 @@ from ._io import (
     mask_support_array,
     read_file_header,
 )
+from ._scenecoords import (
+    ecf_to_iac,
+    iac_to_ecf,
+    iac_to_llh,
+    llh_to_iac,
+)
 from ._xml import (
     AddedPxpType,
     BoolType,
@@ -221,9 +244,13 @@ __all__ = [
     "compute_ref_point_parameters",
     "compute_reference_geometry",
     "dtype_to_binary_format_string",
+    "ecf_to_iac",
     "get_ppp_dtype",
     "get_pvp_dtype",
+    "iac_to_ecf",
+    "iac_to_llh",
     "interpolate_support_array",
+    "llh_to_iac",
     "mask_support_array",
     "read_file_header",
 ]
