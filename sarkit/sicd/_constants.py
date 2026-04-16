@@ -42,7 +42,7 @@ VERSION_INFO: Final[dict[str, VersionInfoType]] = {
     "urn:SICD:1.5": {
         "version": "1.5",
         "date": "2025-06-10",
-        "schema": SCHEMA_DIR / "NGA.STND.0024-4_1.5_Schema_2025_06_10.xsd",
+        "schema": SCHEMA_DIR / "NGA.STND.0024-4_1.5_Schema.xsd",
     },
 }
 

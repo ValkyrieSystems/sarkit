@@ -186,9 +186,24 @@ SICD 1.4.0
 
 SICD 1.5
 --------
+.. [NGA.STND.0024-1_1.5] National Center for Geospatial Intelligence Standards,
+   "Sensor Independent Complex Data (SICD), Vol. 1, Design & Implementation Description Document,
+   Version 1.5", 2025.
+   https://nsgreg.nga.mil/doc/view?i=5696
 
-.. WARNING:: SICD v1.5 Volumes 1-3 are labeled as "Draft" with status set to "Not Valid" while the schema's status is
-   "Valid".
+.. [NGA.STND.0024-2_1.5] National Center for Geospatial Intelligence Standards,
+   "Sensor Independent Complex Data (SICD), Vol. 2, File Format Description Document,
+   Version 1.5", 2025.
+   https://nsgreg.nga.mil/doc/view?i=5697
+
+.. [NGA.STND.0024-3_1.5] National Center for Geospatial Intelligence Standards,
+   "Sensor Independent Complex Data (SICD), Vol. 3, Image Projections Description Document,
+   Version 1.5", 2025.
+   https://nsgreg.nga.mil/doc/view?i=5698
+
+.. [NGA.STND.0024-4_1.5] National Center for Geospatial Intelligence Standards,
+   "Sensor Independent Complex Data (SICD) XML Schema, Version 1.5", 2025.
+   https://nsgreg.nga.mil/doc/view?i=5699
 
 """
 
