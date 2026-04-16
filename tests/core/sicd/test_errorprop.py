@@ -15,10 +15,10 @@ def test_compute_ric_basis_vectors():
         assert np.linalg.norm(uvec) == pytest.approx(1.0)
 
 
-@pytest.mark.parametrize("frame", ("ECF", "RICF", "RICI"))
+@pytest.mark.parametrize("frame", ("ECF", "RIC_ECF", "RIC_ECI"))
 def test_compute_ecef_pv_transformation(frame):
     t = sicdproj.compute_ecef_pv_transformation([1, 2, 3], [4, 5, 6], frame)
-    if frame != "RICI":
+    if frame != "RIC_ECI":
         assert t @ t.T == pytest.approx(np.eye(6))
     assert t[:3, :3] @ t[:3, :3].T == pytest.approx(np.eye(3))
 
@@ -55,7 +55,7 @@ def test_compute_composite_error_no_apo_mono():
         sicdproj.ErrorStatParams(
             component_mono=sicdproj.ComponentErrorStatMono(
                 C_AIF_APV=np.eye(6),
-                AIF="RICF",
+                AIF="RIC_ECF",
                 VAR_RB=1.0,
                 VAR_CLK_SF=1.1,
                 VAR_TROP=1.2,
@@ -132,9 +132,9 @@ def test_compute_composite_error_no_apo_bi():
         sicdproj.ErrorStatParams(
             component_bi=sicdproj.ComponentErrorStatBi(
                 C_XIF_XPV=np.eye(6),
-                XIF="RICF",
+                XIF="RIC_ECF",
                 C_RIF_RPV=np.eye(6),
-                RIF="RICI",
+                RIF="RIC_ECI",
                 CC_XIF_RIF_XPV_RPV=np.eye(6),
                 C_XRTF=np.eye(4),
                 C_ATM=np.eye(2),

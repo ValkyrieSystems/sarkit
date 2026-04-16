@@ -76,7 +76,7 @@ def compute_ecef_pv_transformation(p_ecef, v_ecef, frame):
     ----------
     p_ecef, v_ecef : (3,) array_like
         Position and velocity in ECEF coordinates
-    frame : {'ECF', 'RICF', 'RICI'}
+    frame : {'ECF', 'RIC_ECF', 'RIC_ECI'}
         Name of coordinate frame
 
     Returns
@@ -86,9 +86,9 @@ def compute_ecef_pv_transformation(p_ecef, v_ecef, frame):
     """
     if frame == "ECF":
         return np.eye(6)
-    if frame == "RICF":
+    if frame == "RIC_ECF":
         return _compute_ricf_rotation_matrix(p_ecef, v_ecef)
-    if frame == "RICI":
+    if frame == "RIC_ECI":
         return _compute_rici_rotation_matrix(p_ecef, v_ecef)
     raise ValueError(frame)
 
