@@ -1348,6 +1348,7 @@ def r_rdot_to_dem_surface(
     delta_dist_dem: float,
     *,
     delta_dist_rrc: float = 10.0,
+    delta_hd_lim: float = 0.001,
     bistat_max_npts: int = 9999,
     **kwargs,
 ) -> npt.NDArray:
@@ -1376,6 +1377,13 @@ def r_rdot_to_dem_surface(
         Max horizontal distance between surface points (m) for which the surface is well approximated by a straight line
     delta_dist_rrc : float, optional
         Max distance between adjacent points along R/Rdot contour (m)
+    delta_hd_lim : float, optional
+        Height difference threshold for determining if a point on the R/Rdot contour is on DEM surface (m)
+
+        .. deprecated:: 1.7.0
+           ``delta_hd_lim`` was removed from SICD v1.5 volume 3 "Projection to a DEM Surface".
+           This argument has no effect.
+
     bistat_max_npts : int, optional
         Threshold for number of bistatic contour points to compute, above which an exception is raised.
         This is an implementation detail to prevent infinite loops that is not in the document.
