@@ -1,7 +1,13 @@
 import numpy as np
 import numpy.typing as npt
 
+import sarkit._constants
 import sarkit.wgs84
+
+from . import _params as params
+from . import _sensitivity
+
+C = sarkit._constants.speed_of_light
 
 
 def compute_ric_basis_vectors(p_ric: npt.ArrayLike, v_ric: npt.ArrayLike):
@@ -70,7 +76,7 @@ def compute_ecef_pv_transformation(p_ecef, v_ecef, frame):
     ----------
     p_ecef, v_ecef : (3,) array_like
         Position and velocity in ECEF coordinates
-    frame : {'ECF', 'RICF', 'RICI'}
+    frame : {'ECF', 'RIC_ECF', 'RIC_ECI'}
         Name of coordinate frame
 
     Returns
@@ -80,8 +86,375 @@ def compute_ecef_pv_transformation(p_ecef, v_ecef, frame):
     """
     if frame == "ECF":
         return np.eye(6)
-    if frame == "RICF":
+    if frame == "RIC_ECF":
         return _compute_ricf_rotation_matrix(p_ecef, v_ecef)
-    if frame == "RICI":
+    if frame == "RIC_ECI":
         return _compute_rici_rotation_matrix(p_ecef, v_ecef)
     raise ValueError(frame)
+
+
+def compute_composite_error_no_apo_mono(
+    proj_set_0: params.ProjectionSetsMono,
+    sens_mat: _sensitivity.SensitivityMatricesMono,
+    errorstat_params: params.ErrorStatParams,
+) -> np.ndarray | None:
+    """Compute composite COA slant plane error covariance for monostatic with no APOs.
+
+    Parameters
+    ----------
+    proj_set_0 : ProjectionSetsMono
+        Monostatic COA projection set for a projection pair: IL0 and PT0 that do not have APOs applied
+    sens_mat : SensitivityMatricesMono
+        Monostatic sensitivity matrices for projection pair: IL0 and PT0
+    errorstat_params : ErrorStatParams
+        IPDD Error Statistics Parameters
+
+    Returns
+    -------
+    ndarray or None
+        2x2 composite COA slant plane error covariance matrix if ErrorStatistics are provided, otherwise ``None``.
+    """
+    comps = errorstat_params.component_mono
+    if comps is None and errorstat_params.C_SCP_RGAZ is None:
+        return None
+
+    if comps is None:
+        # 12.3.1
+        return errorstat_params.C_SCP_RGAZ
+
+    # 12.2.2
+    # (1)
+    m_rrdot_apv = np.concatenate(
+        (sens_mat.M_RRdot_delta_ARP, sens_mat.M_RRdot_delta_VARP), axis=1
+    )
+
+    # (2)
+    t_ecef_aif = compute_ecef_pv_transformation(
+        proj_set_0.ARP_COA, proj_set_0.VARP_COA, comps.AIF
+    )
+
+    # 12.3.2
+    # (1)
+    c_apv_rrdot = (
+        m_rrdot_apv @ t_ecef_aif @ comps.C_AIF_APV @ (m_rrdot_apv @ t_ecef_aif).T
+    )
+
+    # (2)
+    c_rb_rrdot = np.array([[comps.VAR_RB, 0], [0, 0]])
+
+    # (3)
+    c_clk_sf_rrdot = (
+        sens_mat.M_RRdot_CLK_SF @ sens_mat.M_RRdot_CLK_SF.T * comps.VAR_CLK_SF
+    )
+
+    # (4)
+    c_trop_rrdot = np.array([[comps.VAR_TROP, 0], [0, 0]])
+
+    # (5)
+    c_iono_rrdot = np.array([[comps.VAR_IONO, 0], [0, 0]])
+
+    # (6)
+    c_ui_rrdot = sens_mat.M_RRdot_IL @ errorstat_params.C_UI @ sens_mat.M_RRdot_IL.T
+
+    # (7)
+    c_ilpt_rrdot = (
+        c_apv_rrdot
+        + c_rb_rrdot
+        + c_clk_sf_rrdot
+        + c_trop_rrdot
+        + c_iono_rrdot
+        + c_ui_rrdot
+    )
+
+    # (8)
+    m_rgaz_rrdot = -sens_mat.M_SPXY_RRdot  # 12.2.1 (3)
+    c_ilpt_rgaz = m_rgaz_rrdot @ c_ilpt_rrdot @ m_rgaz_rrdot.T
+
+    return c_ilpt_rgaz
+
+
+def compute_composite_error_apo_mono(
+    sens_mat: _sensitivity.SensitivityMatricesMono,
+    apoerrors: params.ApoErrorParams,
+):
+    """Compute composite COA slant plane error covariance for monostatic with APOs.
+
+    Parameters
+    ----------
+    sens_mat : SensitivityMatricesMono
+        Monostatic sensitivity matrices for projection pair: IL0 and PT0
+    apoerrors : ApoErrorParams
+        IPDD APO Error Parameters
+
+    Returns
+    -------
+    ndarray or None
+        2x2 composite COA slant plane error covariance matrix if APO ErrorStatistics are provided, otherwise ``None``.
+    """
+    has_components = apoerrors.C_APOM is not None
+    if apoerrors.C_SCPAPO_RGAZ is not None and not has_components:
+        # 12.3.3
+        return apoerrors.C_SCPAPO_RGAZ
+
+    if has_components:
+        # 12.3.4
+        # (1)
+        m_rrdot_xrt = (C / 2) * np.array([[-1, 1], [0, 0]])
+
+        # (2)
+        m_rrdot_apom = np.concatenate(
+            (sens_mat.M_RRdot_delta_ARP, sens_mat.M_RRdot_delta_VARP, m_rrdot_xrt),
+            axis=1,
+        )
+
+        # (3)
+        c_ilpt_rrdot = m_rrdot_apom @ apoerrors.C_APOM @ m_rrdot_apom.T
+
+        # (4)
+        m_rgaz_rrdot = -sens_mat.M_SPXY_RRdot  # 12.2.1 (3)
+        c_ilpt_rgaz = m_rgaz_rrdot @ c_ilpt_rrdot @ m_rgaz_rrdot.T
+
+        return c_ilpt_rgaz
+    return None
+
+
+def _proj_sens_params_bi(sens_mat):
+    """Relevant portions of 12.2 for bistatic"""
+    m_rgaz_rrdot = -sens_mat.M_SPXY_RRdot  # 12.2.1 (3)
+
+    # 12.2.3
+    # (1)
+    m_rrdot_xpv = np.concatenate(
+        (sens_mat.M_RRdot_delta_Xmt, sens_mat.M_RRdot_delta_VXmt), axis=1
+    )
+
+    # (2)
+    m_rrdot_rpv = np.concatenate(
+        (sens_mat.M_RRdot_delta_Rcv, sens_mat.M_RRdot_delta_VRcv), axis=1
+    )
+    return m_rgaz_rrdot, m_rrdot_xpv, m_rrdot_rpv
+
+
+def compute_composite_error_no_apo_bi(
+    proj_set_0: params.ProjectionSetsBi,
+    sens_mat: _sensitivity.SensitivityMatricesBi,
+    errorstat_params: params.ErrorStatParams,
+) -> np.ndarray | None:
+    """Compute composite COA slant plane error covariance for bistatic with no APOs.
+
+    Parameters
+    ----------
+    proj_set_0 : ProjectionSetsBi
+        Bistatic COA projection set for a projection pair: IL0 and PT0 that do not have APOs applied
+    sens_mat : SensitivityMatricesBi
+        Bistatic sensitivity matrices for projection pair: IL0 and PT0
+    errorstat_params : ErrorStatParams
+        IPDD Error Statistics Parameters
+
+    Returns
+    -------
+    ndarray or None
+        2x2 composite COA slant plane error covariance matrix if ErrorStatistics are provided, otherwise ``None``.
+    """
+    m_rgaz_rrdot, m_rrdot_xpv, m_rrdot_rpv = _proj_sens_params_bi(sens_mat)
+    comps = errorstat_params.component_bi
+    if comps is None and errorstat_params.C_SCP_RRdot is None:
+        return None
+
+    if comps is None:
+        # 12.4.1
+        c_ilpt_rrdot = errorstat_params.C_SCP_RRdot
+        return m_rgaz_rrdot @ c_ilpt_rrdot @ m_rgaz_rrdot.T
+
+    # 12.2.3
+    # (3)
+    t_ecef_xif = compute_ecef_pv_transformation(
+        proj_set_0.Xmt_COA, proj_set_0.VXmt_COA, comps.XIF
+    )
+
+    # (4)
+    t_ecef_rif = compute_ecef_pv_transformation(
+        proj_set_0.Rcv_COA, proj_set_0.VRcv_COA, comps.RIF
+    )
+
+    # 12.4.2
+    # (1)
+    c_ecef_xpv = t_ecef_xif @ comps.C_XIF_XPV @ t_ecef_xif.T
+
+    # (2)
+    c_ecef_rpv = t_ecef_rif @ comps.C_RIF_RPV @ t_ecef_rif.T
+
+    # (3)
+    cc_ecef_xpv_rpv = t_ecef_xif @ comps.CC_XIF_RIF_XPV_RPV @ t_ecef_rif.T
+
+    # (4)
+    c_ecef_xpv_rpv = np.block(
+        [
+            [c_ecef_xpv, cc_ecef_xpv_rpv],
+            [cc_ecef_xpv_rpv.T, c_ecef_rpv],
+        ]
+    )
+
+    # (5)
+    m_rrdot_xpv_rpv = np.concatenate((m_rrdot_xpv, m_rrdot_rpv), axis=1)
+
+    # (6)
+    c_xpv_rpv_rrdot = m_rrdot_xpv_rpv @ c_ecef_xpv_rpv @ m_rrdot_xpv_rpv.T
+
+    # (7) - no op
+    # (8)
+    m_rrdot_xrtf = np.concatenate((sens_mat.M_RRdot_XTF, sens_mat.M_RRdot_RTF), axis=1)
+    c_xrtf_rrdot = m_rrdot_xrtf @ comps.C_XRTF @ m_rrdot_xrtf.T
+
+    # (9)
+    m_rrdot_atm = (C / 2) * np.array([[-1, -1], [0, 0]])  # 12.2.3 (6)
+    c_atm_rrdot = m_rrdot_atm @ comps.C_ATM @ m_rrdot_atm.T
+
+    # (10)
+    c_ui_rrdot = sens_mat.M_RRdot_IL @ errorstat_params.C_UI @ sens_mat.M_RRdot_IL.T
+
+    # (11)
+    c_ilpt_rrdot = c_xpv_rpv_rrdot + c_xrtf_rrdot + c_atm_rrdot + c_ui_rrdot
+
+    # (12)
+    c_ilpt_rgaz = m_rgaz_rrdot @ c_ilpt_rrdot @ m_rgaz_rrdot.T
+
+    return c_ilpt_rgaz
+
+
+def compute_composite_error_apo_bi(
+    sens_mat: _sensitivity.SensitivityMatricesBi,
+    apoerrors: params.ApoErrorParams,
+):
+    """Compute composite COA slant plane error covariance for bistatic with APOs.
+
+    Parameters
+    ----------
+    sens_mat : SensitivityMatricesBi
+        Bistatic sensitivity matrices for projection pair: IL0 and PT0
+    apoerrors : ApoErrorParams
+        IPDD APO Error Parameters
+
+    Returns
+    -------
+    ndarray or None
+        2x2 composite COA slant plane error covariance matrix if APO ErrorStatistics are provided, otherwise ``None``.
+    """
+    m_rgaz_rrdot, m_rrdot_xpv, m_rrdot_rpv = _proj_sens_params_bi(sens_mat)
+    has_components = apoerrors.C_APOXR is not None
+    if apoerrors.C_SCPAPO_RRdot is not None and not has_components:
+        # 12.4.3
+        c_ilpt_rrdot = apoerrors.C_SCPAPO_RRdot
+        return m_rgaz_rrdot @ c_ilpt_rrdot @ m_rgaz_rrdot.T
+
+    if has_components:
+        # 12.4.4
+        # (1)
+        m_rrdot_apoxr = np.concatenate(
+            [m_rrdot_xpv, sens_mat.M_RRdot_XTF, m_rrdot_rpv, sens_mat.M_RRdot_RTF],
+            axis=1,
+        )
+
+        # (2)
+        c_ilpt_rrdot = m_rrdot_apoxr @ apoerrors.C_APOXR @ m_rrdot_apoxr.T
+
+        # (3)
+        c_ilpt_rgaz = m_rgaz_rrdot @ c_ilpt_rrdot @ m_rgaz_rrdot.T
+
+        return c_ilpt_rgaz
+    return None
+
+
+def compute_i2s_error(
+    c_ilpt_rgaz: npt.ArrayLike,
+    c_il_sel: npt.ArrayLike,
+    var_hae: float,
+    sens_mats: _sensitivity.SensitivityMatricesLike,
+) -> np.ndarray:
+    """Compute the image-to-scene projection error statistics for a projection pair: IL0 and PT0
+
+    Parameters
+    ----------
+    c_ilpt_rgaz : (2, 2) array_like
+        Predicted error covariance for composite RGAZ image error
+    c_il_sel : (2, 2) array_like
+        Predicted error covariance for image location
+    var_hae : float
+        Surface height error variance
+    sens_mats : SensitivityMatricesLike
+        Sensitivity matrices for projection pair: IL0 and PT0
+
+    Returns
+    -------
+    (3, 3) ndarray
+        image-to-scene projection error covariance matrix in ECEF
+    """
+    c_ilpt_rgaz = np.asarray(c_ilpt_rgaz)
+    c_il_sel = np.asarray(c_il_sel)
+
+    # 12.5
+    # (1)
+    mil_spxy_rgaz = -np.eye(2)  # 12.2.1 (4)
+    c_rgaz_gpxy = (
+        sens_mats.M_GPXY_SPXY
+        @ mil_spxy_rgaz
+        @ c_ilpt_rgaz
+        @ (sens_mats.M_GPXY_SPXY @ mil_spxy_rgaz).T
+    )
+    c_rgaz_pt = sens_mats.M_PT_GPXY @ c_rgaz_gpxy @ sens_mats.M_PT_GPXY.T
+
+    # (2)
+    c_il_sel_gpxy = sens_mats.M_GPXY_IL @ c_il_sel @ sens_mats.M_GPXY_IL.T
+    c_il_sel_pt = sens_mats.M_PT_GPXY @ c_il_sel_gpxy @ sens_mats.M_PT_GPXY.T
+
+    # (3) unused
+    # (4)
+    c_hae_pt = sens_mats.MIL_PT_HAE @ sens_mats.MIL_PT_HAE.T * var_hae
+
+    # (5)
+    c_pt = c_rgaz_pt + c_il_sel_pt + c_hae_pt
+
+    return c_pt
+
+
+def compute_s2i_error(
+    c_ilpt_rgaz: npt.ArrayLike,
+    c_pt_sel: npt.ArrayLike,
+    sens_mats: _sensitivity.SensitivityMatricesLike,
+) -> np.ndarray:
+    """Compute the scene-to-image projection error statistics for a projection pair: IL0 and PT0
+
+    Parameters
+    ----------
+    c_ilpt_rgaz : (2, 2) array_like
+        Predicted error covariance for composite RGAZ image error
+    c_pt_sel : (3, 3) array_like
+        Predicted error covariance for scene point position in ECEF
+    sens_mats : SensitivityMatricesLike
+        Sensitivity matrices for projection pair: IL0 and PT0
+
+    Returns
+    -------
+    (2, 2) ndarray
+        scene-to-image projection error covariance matrix in image coordinates
+    """
+    c_ilpt_rgaz = np.asarray(c_ilpt_rgaz)
+    c_pt_sel = np.asarray(c_pt_sel)
+
+    mpt_spxy_rgaz = np.eye(2)  # 12.2.1 (4)
+    # 12.6
+    # (1)
+    c_rgaz_il = (
+        sens_mats.M_IL_SPXY
+        @ mpt_spxy_rgaz
+        @ c_ilpt_rgaz
+        @ (sens_mats.M_IL_SPXY @ mpt_spxy_rgaz).T
+    )
+
+    # (2)
+    c_pt_sel_il = sens_mats.M_IL_PT @ c_pt_sel @ sens_mats.M_IL_PT.T
+
+    # (3)
+    c_il = c_rgaz_il + c_pt_sel_il
+
+    return c_il

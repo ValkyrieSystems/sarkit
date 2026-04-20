@@ -7,9 +7,12 @@ import lxml.etree
 import numpy as np
 import pytest
 
+import sarkit._constants
+import sarkit.sicd as sksicd
 import sarkit.sicd.projection as sicdproj
-import sarkit.sicd.projection._sensitivity
 import sarkit.wgs84
+
+C = sarkit._constants.speed_of_light
 
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
 
@@ -72,6 +75,32 @@ def test_metadata_params_is_monostatic(example_proj_metadata):
     example_proj_metadata.Collect_Type = "NOT_A_REAL_COLLECT_TYPE"
     with pytest.raises(ValueError, match="must be MONOSTATIC or BISTATIC"):
         example_proj_metadata.is_monostatic()
+
+
+@pytest.mark.parametrize("xmlfile", (DATAPATH / "syntax_only/sicd").glob("*.xml"))
+def test_errorstatparams(xmlfile):
+    errparams = sicdproj.ErrorStatParams.from_xml(lxml.etree.parse(xmlfile))
+    for field in dataclasses.fields(errparams):
+        val = getattr(errparams, field.name)
+        if val is None:
+            continue
+        if field.name in ("C_SCP_RGAZ", "C_AIF_APV", "C_SCP_RRdot", "C_ATM", "C_UI"):
+            # "deconstructed" covariance matrices positive semi-definite by construction
+            assert np.all(np.linalg.eigvalsh(val) >= 0.0)
+        if field.name.startswith("VAR_"):
+            assert val >= 0.0
+
+
+@pytest.mark.parametrize("xmlfile", (DATAPATH / "syntax_only/sicd").glob("*.xml"))
+def test_apoerrorparams(xmlfile):
+    apoerrparams = sicdproj.ApoErrorParams.from_xml(lxml.etree.parse(xmlfile))
+    for field in dataclasses.fields(apoerrparams):
+        val = getattr(apoerrparams, field.name)
+        if val is None:
+            continue
+        if field.name in ("C_SCPAPO_RGAZ", "C_SCPAPO_RRdot"):
+            # "deconstructed" covariance matrices positive semi-definite by construction
+            assert np.all(np.linalg.eigvalsh(val) >= 0.0)
 
 
 def test_image_plane_parameters_roundtrip(example_proj_metadata):
@@ -273,10 +302,7 @@ def test_r_rdot_to_hae_surface(mdata_name, scalar_hae, request):
     "mdata_name",
     (
         "example_proj_metadata",
-        pytest.param(
-            "example_proj_metadata_bi",
-            marks=pytest.mark.xfail(raises=NotImplementedError),
-        ),
+        "example_proj_metadata_bi",
     ),
 )
 def test_r_rdot_to_dem_surface(mdata_name, request):
@@ -327,7 +353,7 @@ def test_r_rdot_to_dem_surface(mdata_name, request):
         return ecef2dem_func
 
     dem_funcs = {
-        "is_rrc": get_ripply_dem(0),
+        "is_rrc": lambda x: np.zeros(shape=np.asarray(x).shape[:-1]),
         "some_ripples": get_ripply_dem(4.0),
         "more_ripples": get_ripply_dem(8.0),
         "too_low": lambda x: get_ripply_dem(0)(x) - 1000.0,
@@ -354,6 +380,59 @@ def test_r_rdot_to_dem_surface(mdata_name, request):
             ) == pytest.approx(float(expected_r))
     assert len(results["more_ripples"]) > len(results["some_ripples"])
     assert len(results["is_rrc"]) > 1
+
+
+def test_r_rdot_to_dem_surface_mono_as_bi(example_proj_metadata):
+    """Asserts similar solutions are found when using bistatic method with monostatic projection set"""
+    r_rdot_to_haedem_func = functools.partial(
+        sicdproj.r_rdot_to_dem_surface,
+        example_proj_metadata.LOOK,
+        example_proj_metadata.SCP,
+        ecef2dem_func=lambda x: (
+            sarkit.wgs84.cartesian_to_geodetic(x)[..., -1]
+            - example_proj_metadata.SCP_HAE
+        ),
+        hae_min=example_proj_metadata.SCP_HAE - 10.0,
+        hae_max=example_proj_metadata.SCP_HAE + 10.0,
+        delta_dist_dem=1.0,
+    )
+    # Project to constant HAE surface around SCP - assumes validity close to SCP
+    for imcoord in np.random.default_rng(12345).uniform(
+        low=-24.0, high=24.0, size=(32, 2)
+    ):
+        proj_set = sicdproj.compute_projection_sets(example_proj_metadata, imcoord)
+        assert isinstance(proj_set, sicdproj.ProjectionSetsMono)
+        proj_set_bi = sicdproj.ProjectionSetsBi.from_mono(proj_set)
+
+        s_mono = r_rdot_to_haedem_func(projection_set=proj_set)
+        s_mono_as_bi = r_rdot_to_haedem_func(projection_set=proj_set_bi)
+        assert np.allclose(s_mono, s_mono_as_bi, atol=0.01)
+
+
+def test_r_rdot_to_dem_surface_max_bistatic_contour_points(example_proj_metadata_bi):
+    r_rdot_to_haedem_func = functools.partial(
+        sicdproj.r_rdot_to_dem_surface,
+        example_proj_metadata_bi.LOOK,
+        example_proj_metadata_bi.SCP,
+        sicdproj.compute_projection_sets(example_proj_metadata_bi, [0, 0]),
+        ecef2dem_func=lambda x: (
+            sarkit.wgs84.cartesian_to_geodetic(x)[..., -1]
+            - example_proj_metadata_bi.SCP_HAE
+        ),
+        hae_min=example_proj_metadata_bi.SCP_HAE - 10.0,
+        hae_max=example_proj_metadata_bi.SCP_HAE + 10.0,
+        delta_dist_dem=1.0,
+    )
+    # limit not reached in "nominal" case
+    r_rdot_to_haedem_func()
+
+    # limit reached when set poorly
+    with pytest.raises(RuntimeError, match="Limit .+ reached before a contour point"):
+        r_rdot_to_haedem_func(bistat_max_npts=1)
+
+    # limit reached if dumb kwarg is used
+    with pytest.raises(RuntimeError, match="Limit .+ reached before a contour point"):
+        r_rdot_to_haedem_func(delta_dist_rrc=0)
 
 
 def _projection_sets_smoketest(mdata, gridlocs):
@@ -483,9 +562,7 @@ def test_apo_bi(example_proj_metadata_bi):
 
 
 def test_sensitivity_matrices(example_proj_metadata):
-    mats = sarkit.sicd.projection._sensitivity.compute_sensitivity_matrices(
-        example_proj_metadata
-    )
+    mats = sicdproj.compute_sensitivity_matrices(example_proj_metadata)
 
     # sensitivity when image plane is already slant should be nearly -identity due to relative orientation of slant and
     # image plane vectors
@@ -493,5 +570,399 @@ def test_sensitivity_matrices(example_proj_metadata):
 
     assert np.allclose(mats.M_SPXY_GPXY @ mats.M_GPXY_SPXY, np.eye(2))
     assert np.allclose(mats.M_SPXY_IL @ mats.M_IL_SPXY, np.eye(2))
-    assert np.allclose(mats.M_GPXY_IL @ mats.M_IL_GPXY, np.eye(2))
-    np.allclose(mats.M_SPXY_PT @ mats.M_PT_GPXY, mats.M_SPXY_GPXY)
+    assert np.allclose(mats.M_SPXY_PT @ mats.M_PT_GPXY, mats.M_SPXY_GPXY)
+
+
+@pytest.mark.parametrize(
+    "xmlpath",
+    [DATAPATH / "example-sicd-1.3.0.xml", DATAPATH / "example-sicd-1.4.0.xml"],
+)
+def test_m_spxy_gpxy(xmlpath):
+    xmltree = lxml.etree.parse(xmlpath)
+    proj_metadata = sicdproj.MetadataParams.from_xml(xmltree)
+    pt0 = proj_metadata.SCP + 1000 * np.array([0.6, -0.7, 0.8])
+    mats = sicdproj.compute_sensitivity_matrices(proj_metadata, pt0)
+    gpxy1 = [1, 0]
+    gpxy2 = [0, 1]
+    pt1 = pt0 + mats.M_PT_GPXY @ gpxy1
+    pt2 = pt0 + mats.M_PT_GPXY @ gpxy2
+    u_spz = np.cross(*mats.M_SPXY_PT)
+
+    def _pt_to_spxy(pt):
+        il, _, success = sicdproj.scene_to_image(proj_metadata, pt)
+        assert success
+
+        spp, _, success = sksicd.image_to_ground_plane(xmltree, il, pt0, u_spz)
+        assert success
+        return mats.M_SPXY_PT @ (spp - pt0)
+
+    spxy0 = _pt_to_spxy(pt0)
+    spxy1 = _pt_to_spxy(pt1)
+    spxy2 = _pt_to_spxy(pt2)
+
+    assert spxy0 == pytest.approx(0.0, abs=0.02)
+    assert np.allclose(spxy1 - spxy0, mats.M_SPXY_GPXY[:, 0], atol=0.02)
+    assert np.allclose(spxy2 - spxy0, mats.M_SPXY_GPXY[:, 1], atol=0.02)
+
+    assert np.allclose(mats.M_SPXY_GPXY @ mats.M_GPXY_SPXY, np.eye(2))
+
+
+@pytest.mark.parametrize(
+    "xmlpath",
+    [DATAPATH / "example-sicd-1.3.0.xml", DATAPATH / "example-sicd-1.4.0.xml"],
+)
+def test_mil_pt_hae(xmlpath):
+    xmltree = lxml.etree.parse(xmlpath)
+    proj_metadata = sicdproj.MetadataParams.from_xml(xmltree)
+    pt0 = proj_metadata.SCP + 1000 * np.array([0.6, -0.7, 0.8])
+    # pick an arbitrary gpz sufficiently different from up
+    gpz = pt0 / np.linalg.norm(pt0) + proj_metadata.uRow
+    ugpz = gpz / np.linalg.norm(gpz)
+    mats = sicdproj.compute_sensitivity_matrices(proj_metadata, pt0, ugpz)
+
+    il0, _, success = sicdproj.scene_to_image(proj_metadata, pt0)
+    assert success
+
+    pt1 = pt0 + sarkit.wgs84.up(sarkit.wgs84.cartesian_to_geodetic(pt0))
+    spp1, _, success = sksicd.image_to_ground_plane(xmltree, il0, pt1, ugpz)
+    assert success
+
+    assert np.allclose(
+        (spp1 - pt0).reshape(mats.MIL_PT_HAE.shape), mats.MIL_PT_HAE, atol=0.02
+    )
+
+
+def _pt_to_rrdot(proj_metadata, projset0, pt):
+    if isinstance(projset0, sicdproj.ProjectionSetsMono):
+        args = [
+            proj_metadata.LOOK,
+            projset0.ARP_COA,
+            projset0.VARP_COA,
+            projset0.ARP_COA,
+            projset0.VARP_COA,
+            pt,
+        ]
+    else:
+        args = [
+            proj_metadata.LOOK,
+            projset0.Xmt_COA,
+            projset0.VXmt_COA,
+            projset0.Rcv_COA,
+            projset0.VRcv_COA,
+            pt,
+        ]
+    rrdot_params = sicdproj.compute_pt_r_rdot_parameters(*args)
+    return np.array([rrdot_params.R_Avg_PT, rrdot_params.Rdot_Avg_PT])
+
+
+@pytest.mark.parametrize(
+    "xmlpath",
+    [DATAPATH / "example-sicd-1.3.0.xml", DATAPATH / "example-sicd-1.4.0.xml"],
+)
+def test_m_rrdot_spxy(xmlpath):
+    xmltree = lxml.etree.parse(xmlpath)
+    proj_metadata = sicdproj.MetadataParams.from_xml(xmltree)
+    pt0 = proj_metadata.SCP + 1000 * np.array([0.6, -0.7, 0.8])
+    spxy1 = [1, 0]
+    spxy2 = [0, 1]
+    mats = sicdproj.compute_sensitivity_matrices(proj_metadata, pt0)
+    pt1 = pt0 + mats.M_SPXY_PT.T @ spxy1
+    pt2 = pt0 + mats.M_SPXY_PT.T @ spxy2
+
+    il0, _, success = sksicd.scene_to_image(xmltree, pt0)
+    assert success
+    projset0 = sicdproj.compute_projection_sets(proj_metadata, il0)
+
+    rrdot0 = _pt_to_rrdot(proj_metadata, projset0, pt0)
+    rrdot1 = _pt_to_rrdot(proj_metadata, projset0, pt1)
+    rrdot2 = _pt_to_rrdot(proj_metadata, projset0, pt2)
+
+    assert np.allclose(rrdot1 - rrdot0, mats.M_RRdot_SPXY[:, 0], atol=1e-6)
+    assert np.allclose(rrdot2 - rrdot0, mats.M_RRdot_SPXY[:, 1], atol=1e-6)
+
+    assert np.allclose(mats.M_RRdot_SPXY @ mats.M_SPXY_RRdot, np.eye(2))
+
+
+@pytest.mark.parametrize(
+    "xmlpath",
+    [DATAPATH / "example-sicd-1.3.0.xml", DATAPATH / "example-sicd-1.4.0.xml"],
+)
+def test_m_il_pt(xmlpath):
+    xmltree = lxml.etree.parse(xmlpath)
+    proj_metadata = sicdproj.MetadataParams.from_xml(xmltree)
+    pt0 = proj_metadata.SCP + 1000 * np.array([0.6, -0.7, 0.8])
+    pt1 = pt0 + [1, 0, 0]
+    pt2 = pt0 + [0, 1, 0]
+    pt3 = pt0 + [0, 0, 1]
+
+    (il0, il1, il2, il3), _, success = sksicd.scene_to_image(
+        xmltree, [pt0, pt1, pt2, pt3]
+    )
+    assert success
+
+    mats = sicdproj.compute_sensitivity_matrices(proj_metadata, pt0)
+    assert np.allclose(il1 - il0, mats.M_IL_PT[:, 0], atol=0.02)
+    assert np.allclose(il2 - il0, mats.M_IL_PT[:, 1], atol=0.02)
+    assert np.allclose(il3 - il0, mats.M_IL_PT[:, 2], atol=0.02)
+
+
+@pytest.mark.parametrize(
+    "xmlpath",
+    [DATAPATH / "example-sicd-1.3.0.xml", DATAPATH / "example-sicd-1.4.0.xml"],
+)
+def test_m_gpxy_il(xmlpath):
+    xmltree = lxml.etree.parse(xmlpath)
+    proj_metadata = sicdproj.MetadataParams.from_xml(xmltree)
+    pt0 = proj_metadata.SCP + 1000 * np.array([0.6, -0.7, 0.8])
+    il0, _, success = sksicd.scene_to_image(xmltree, pt0)
+    assert success
+    il1 = il0 + [1, 0]
+    il2 = il0 + [0, 1]
+
+    u_gpn0 = pt0 / np.linalg.norm(pt0)
+    gpps, _, success = sksicd.image_to_ground_plane(
+        xmltree, [il0, il1, il2], pt0, u_gpn0
+    )
+    assert success
+
+    mats = sicdproj.compute_sensitivity_matrices(proj_metadata, pt0, u_gpn0)
+    gpxy = (gpps - pt0) @ mats.M_PT_GPXY
+    assert gpxy[0] == pytest.approx(0.0, abs=0.02)
+
+    assert np.allclose(gpxy[1:] - gpxy[0], mats.M_GPXY_IL.T, atol=0.02)
+
+
+@pytest.mark.parametrize(
+    "xmlpath",
+    [DATAPATH / "example-sicd-1.3.0.xml", DATAPATH / "example-sicd-1.4.0.xml"],
+)
+def test_m_spxy_il(xmlpath):
+    xmltree = lxml.etree.parse(xmlpath)
+    proj_metadata = sicdproj.MetadataParams.from_xml(xmltree)
+    pt0 = proj_metadata.SCP + 1000 * np.array([0.6, -0.7, 0.8])
+    il0, _, success = sksicd.scene_to_image(xmltree, pt0)
+    assert success
+    il1 = il0 + [1, 0]
+    il2 = il0 + [0, 1]
+
+    mats = sicdproj.compute_sensitivity_matrices(proj_metadata, pt0)
+    u_spz = np.cross(*mats.M_SPXY_PT)
+    spps, _, success = sksicd.image_to_ground_plane(
+        xmltree, [il0, il1, il2], pt0, u_spz
+    )
+    assert success
+
+    spxy = (spps - pt0) @ mats.M_SPXY_PT.T
+    assert spxy[0] == pytest.approx(0.0, abs=0.02)
+
+    assert np.allclose(spxy[1:] - spxy[0], mats.M_SPXY_IL.T, atol=0.02)
+
+    assert np.allclose(mats.M_SPXY_IL @ mats.M_IL_SPXY, np.eye(2))
+
+
+@pytest.mark.parametrize(
+    "xmlpath",
+    [DATAPATH / "example-sicd-1.3.0.xml", DATAPATH / "example-sicd-1.4.0.xml"],
+)
+def test_m_il_rrdot(xmlpath):
+    xmltree = lxml.etree.parse(xmlpath)
+    proj_metadata = sicdproj.MetadataParams.from_xml(xmltree)
+    pt0 = proj_metadata.SCP + 1000 * np.array([0.6, -0.7, 0.8])
+    mats = sicdproj.compute_sensitivity_matrices(proj_metadata, pt0)
+
+    u_gpn0 = pt0 / np.linalg.norm(pt0)
+
+    il0, _, success = sksicd.scene_to_image(xmltree, pt0)
+    assert success
+    projset0 = sicdproj.compute_projection_sets(proj_metadata, il0)
+
+    delta_rrdot = [1, 0.1]
+
+    if isinstance(projset0, sicdproj.ProjectionSetsMono):
+        projset1 = dataclasses.replace(projset0, R_COA=projset0.R_COA + delta_rrdot[0])
+        projset2 = dataclasses.replace(
+            projset0, Rdot_COA=projset0.Rdot_COA + delta_rrdot[1]
+        )
+        gpp1 = sicdproj.r_rdot_to_ground_plane_mono(
+            proj_metadata.LOOK, projset1, pt0, u_gpn0
+        )
+        gpp2 = sicdproj.r_rdot_to_ground_plane_mono(
+            proj_metadata.LOOK, projset2, pt0, u_gpn0
+        )
+    else:
+        projset1 = dataclasses.replace(
+            projset0, R_Avg_COA=projset0.R_Avg_COA + delta_rrdot[0]
+        )
+        projset2 = dataclasses.replace(
+            projset0, Rdot_Avg_COA=projset0.Rdot_Avg_COA + delta_rrdot[1]
+        )
+        gpp1, _, success = sicdproj.r_rdot_to_ground_plane_bi(
+            proj_metadata.LOOK, proj_metadata.SCP, projset1, pt0, u_gpn0
+        )
+        assert success
+        gpp2, _, success = sicdproj.r_rdot_to_ground_plane_bi(
+            proj_metadata.LOOK, proj_metadata.SCP, projset2, pt0, u_gpn0
+        )
+        assert success
+
+    (il1, il2), _, success = sksicd.scene_to_image(xmltree, [gpp1, gpp2])
+    assert success
+
+    assert np.allclose(il1 - il0, mats.M_IL_RRdot[:, 0] * delta_rrdot[0], atol=0.02)
+    assert np.allclose(il2 - il0, mats.M_IL_RRdot[:, 1] * delta_rrdot[1], atol=0.02)
+
+    assert np.allclose(mats.M_IL_RRdot @ mats.M_RRdot_IL, np.eye(2))
+
+
+@pytest.mark.parametrize(
+    "param,matrix",
+    (("delta_ARP_SCP_COA", "M_RRdot_delta_ARP"), ("delta_VARP", "M_RRdot_delta_VARP")),
+)
+def test_monostatic_posvel_matrices(param, matrix):
+    xmltree = lxml.etree.parse(DATAPATH / "example-sicd-1.3.0.xml")
+    proj_metadata = sicdproj.MetadataParams.from_xml(xmltree)
+    pt0 = proj_metadata.SCP + 1000 * np.array([0.6, -0.7, 0.8])
+    u_gpn0 = pt0 / np.linalg.norm(pt0)
+    mats = sicdproj.compute_sensitivity_matrices(proj_metadata, pt0, u_gpn0)
+    il0, _, success = sksicd.scene_to_image(xmltree, pt0)
+    assert success
+    projset0 = sicdproj.compute_projection_sets(proj_metadata, il0)
+
+    def delta_param_to_rrdot(delta_param):
+        kwargs = {
+            "delta_tx_SCP_COA": 0.0,
+            "delta_tr_SCP_COA": 0.0,
+            "delta_ARP_SCP_COA": np.zeros(3),
+            "delta_VARP": np.zeros(3),
+        } | {param: np.asarray(delta_param)}
+        apos = sicdproj.AdjustableParameterOffsets(**kwargs)
+        adjusted_projset = sicdproj.apply_apos(proj_metadata, projset0, apos)
+        gpp = sicdproj.r_rdot_to_ground_plane_mono(
+            proj_metadata.LOOK, adjusted_projset, pt0, u_gpn0
+        )
+        return _pt_to_rrdot(proj_metadata, projset0, gpp)
+
+    rrdot0 = delta_param_to_rrdot([0, 0, 0])
+    rrdot1 = delta_param_to_rrdot([1, 0, 0])
+    rrdot2 = delta_param_to_rrdot([0, 1, 0])
+    rrdot3 = delta_param_to_rrdot([0, 0, 1])
+
+    sens_mat = getattr(mats, matrix)
+    assert np.allclose(rrdot1 - rrdot0, sens_mat[:, 0], atol=1e-3)
+    assert np.allclose(rrdot2 - rrdot0, sens_mat[:, 1], atol=1e-3)
+    assert np.allclose(rrdot3 - rrdot0, sens_mat[:, 2], atol=1e-3)
+
+
+@pytest.mark.parametrize(
+    "param,matrix",
+    (
+        ("delta_Xmt_SCP_COA", "M_RRdot_delta_Xmt"),
+        ("delta_VXmt", "M_RRdot_delta_VXmt"),
+        ("delta_Rcv_SCP_COA", "M_RRdot_delta_Rcv"),
+        ("delta_VRcv", "M_RRdot_delta_VRcv"),
+    ),
+)
+def test_bistatic_posvel_matrices(param, matrix):
+    xmltree = lxml.etree.parse(DATAPATH / "example-sicd-1.4.0.xml")
+    proj_metadata = sicdproj.MetadataParams.from_xml(xmltree)
+    pt0 = proj_metadata.SCP + 1000 * np.array([0.6, -0.7, 0.8])
+    u_gpn0 = pt0 / np.linalg.norm(pt0)
+    mats = sicdproj.compute_sensitivity_matrices(proj_metadata, pt0, u_gpn0)
+    il0, _, success = sksicd.scene_to_image(xmltree, pt0)
+    assert success
+    projset0 = sicdproj.compute_projection_sets(proj_metadata, il0)
+
+    def delta_param_to_rrdot(delta_param):
+        kwargs = {
+            "delta_tx_SCP_COA": 0.0,
+            "delta_tr_SCP_COA": 0.0,
+            "delta_Xmt_SCP_COA": np.zeros(3),
+            "delta_VXmt": np.zeros(3),
+            "f_Clk_X_SF": 0.0,
+            "delta_Rcv_SCP_COA": np.zeros(3),
+            "delta_VRcv": np.zeros(3),
+            "f_Clk_R_SF": 0.0,
+        } | {param: np.asarray(delta_param)}
+        apos = sicdproj.AdjustableParameterOffsets(**kwargs)
+        adjusted_projset = sicdproj.apply_apos(proj_metadata, projset0, apos)
+        gpp, _, success = sicdproj.r_rdot_to_ground_plane_bi(
+            proj_metadata.LOOK, proj_metadata.SCP, adjusted_projset, pt0, u_gpn0
+        )
+        assert success
+        return _pt_to_rrdot(proj_metadata, projset0, gpp)
+
+    rrdot0 = delta_param_to_rrdot([0, 0, 0])
+    rrdot1 = delta_param_to_rrdot([1, 0, 0])
+    rrdot2 = delta_param_to_rrdot([0, 1, 0])
+    rrdot3 = delta_param_to_rrdot([0, 0, 1])
+
+    sens_mat = getattr(mats, matrix)
+    assert np.allclose(rrdot1 - rrdot0, sens_mat[:, 0], atol=2e-2)
+    assert np.allclose(rrdot2 - rrdot0, sens_mat[:, 1], atol=2e-2)
+    assert np.allclose(rrdot3 - rrdot0, sens_mat[:, 2], atol=2e-2)
+
+
+def test_m_rrdot_xtf_rtf():
+    """Difficult to test XTF/RTF in isolation as model used for APOs differs slightly from that used for error
+    propagation (see note in 12.4.4 (1))."""
+    xmltree = lxml.etree.parse(DATAPATH / "example-sicd-1.4.0.xml")
+    proj_metadata = sicdproj.MetadataParams.from_xml(xmltree)
+    pt0 = proj_metadata.SCP + 1000 * np.array([0.6, -0.7, 0.8])
+    u_gpn0 = pt0 / np.linalg.norm(pt0)
+    mats = sicdproj.compute_sensitivity_matrices(proj_metadata, pt0, u_gpn0)
+    il0, _, success = sksicd.scene_to_image(xmltree, pt0)
+    assert success
+    projset0 = sicdproj.compute_projection_sets(proj_metadata, il0)
+
+    def delta_param_to_delta_gpp(delta_param):
+        kwargs = {
+            "delta_tx_SCP_COA": 0.0,
+            "delta_tr_SCP_COA": 0.0,
+            "delta_Xmt_SCP_COA": np.zeros(3),
+            "delta_VXmt": np.zeros(3),
+            "f_Clk_X_SF": 0.0,
+            "delta_Rcv_SCP_COA": np.zeros(3),
+            "delta_VRcv": np.zeros(3),
+            "f_Clk_R_SF": 0.0,
+        } | delta_param
+        apos = sicdproj.AdjustableParameterOffsets(**kwargs)
+        adjusted_projset = sicdproj.apply_apos(proj_metadata, projset0, apos)
+        gpp, _, success = sicdproj.r_rdot_to_ground_plane_bi(
+            proj_metadata.LOOK, proj_metadata.SCP, adjusted_projset, pt0, u_gpn0
+        )
+        assert success
+        return gpp - pt0
+
+    # M_RRdot_XTR/RTF does not apportion sensitivity to tx/tr evenly, so tx+tr effects need to be examined together
+    tscale_tx = 1e-4 - 2e-6
+    tscale_tr = 1e-4 + 3e-6
+    delta_gpp_time_proj = delta_param_to_delta_gpp(
+        {"delta_tx_SCP_COA": tscale_tx, "delta_tr_SCP_COA": tscale_tr}
+    )
+    delta_gpp_time_model = (
+        mats.M_PT_GPXY
+        @ mats.M_GPXY_SPXY
+        @ mats.M_SPXY_RRdot
+        @ (mats.M_RRdot_XTF[:, 0] * tscale_tx + mats.M_RRdot_RTF[:, 0] * tscale_tr)
+    )
+    relative_diff_time = np.linalg.norm(
+        delta_gpp_time_model - delta_gpp_time_proj
+    ) / np.linalg.norm(delta_gpp_time_proj)
+    assert relative_diff_time < 1e-3
+
+    fscale = 1e-8
+    for param, sens_mat in (
+        ("f_Clk_X_SF", mats.M_RRdot_XTF),
+        ("f_Clk_R_SF", mats.M_RRdot_RTF),
+    ):
+        delta_gpp_freq_proj = delta_param_to_delta_gpp({param: fscale})
+        delta_gpp_freq_model = (
+            mats.M_PT_GPXY
+            @ mats.M_GPXY_SPXY
+            @ mats.M_SPXY_RRdot
+            @ (sens_mat[:, 1] * fscale)
+        )
+        relative_diff_freq = np.linalg.norm(
+            delta_gpp_freq_model - delta_gpp_freq_proj
+        ) / np.linalg.norm(delta_gpp_freq_proj)
+        assert relative_diff_freq < 1e-3

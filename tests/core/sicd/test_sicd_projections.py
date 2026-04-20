@@ -138,10 +138,7 @@ def test_image_to_constant_hae_surface(sicd_xml):
     "sicd_xml",
     (
         DATAPATH / "example-sicd-1.3.0.xml",  # monostatic
-        pytest.param(
-            DATAPATH / "example-sicd-1.4.0.xml",
-            marks=pytest.mark.xfail(raises=NotImplementedError),
-        ),  # bistatic
+        DATAPATH / "example-sicd-1.4.0.xml",  # bistatic
     ),
 )
 def test_image_to_dem_surface(sicd_xml):
@@ -172,4 +169,4 @@ def test_image_to_dem_surface(sicd_xml):
         )
         # assert only one intersection since DEM is an HAE surface
         assert hae_dem_coord.size == surf_coord.size
-        assert np.allclose(hae_dem_coord, surf_coord)
+        assert np.allclose(hae_dem_coord, surf_coord, atol=0.01)

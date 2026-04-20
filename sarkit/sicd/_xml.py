@@ -62,6 +62,11 @@ class CmplxType(skxt.CmplxType):
 
 
 @skxt.inheritdocstring
+class LineSampType(skxt.LineSampType):
+    pass
+
+
+@skxt.inheritdocstring
 class XyzType(skxt.XyzType):
     pass
 
@@ -255,7 +260,27 @@ class XsdHelper(skxml.XsdHelper):
             ),
             "{urn:SICD:1.4.0}Matrix6x6Type": MtxType((6, 6)),
         }
-        easy = sicd_110 | sicd_121 | sicd_130 | sicd_140
+        sicd_15 = {
+            k.replace("urn:SICD:1.4.0", "urn:SICD:1.5"): v for k, v in sicd_140.items()
+        }
+        sicd_15 |= {
+            "{urn:SICD:1.5}LSVertexType": LineSampType(),
+            (
+                "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType"
+                "/{urn:SICD:1.5}Area"
+                "/{urn:SICD:1.5}Plane"
+                "/{urn:SICD:1.5}SegmentList"
+                "/{urn:SICD:1.5}Segment"
+                "/{urn:SICD:1.5}SegmentPolygon"
+            ): skxt.NdArrayType("SV", LineSampType()),
+            (
+                "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType"
+                "/{urn:SICD:1.5}Area"
+                "/{urn:SICD:1.5}Plane"
+                "/{urn:SICD:1.5}Polygon"
+            ): skxt.NdArrayType("Vertex", LineSampType()),
+        }
+        easy = sicd_110 | sicd_121 | sicd_130 | sicd_140 | sicd_15
         if tag is not None and lxml.etree.QName(tag).localname == "CalibrationDate":
             return skxt.XdtType(force_utc=False)
         if typename.startswith("{http://www.w3.org/2001/XMLSchema}"):

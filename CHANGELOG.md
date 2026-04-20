@@ -8,9 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Support for SICD v1.5 including bistatic DEM projection and expanded projection sensitivity and error propagation
+  functionality in `sarkit.sicd.projection`
 - Additional CPHD consistency checks for optional antenna & polarization fields introduced in v1.1.0
 - `--txsequences` argument to `crsdinfo` for listing transmit pulse sequences
 - Methods for converting to & from image area coordinates in `sarkit.crsd`
+
+### Fixed
+- Frame enumerations in `sarkit.sicd.projection.compute_ecef_pv_transformation`
 
 
 ## [1.6.0] - 2026-03-30
