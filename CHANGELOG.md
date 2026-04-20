@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+## [1.7.0] - 2026-04-20
+
 ### Added
 - Support for SICD v1.5 including bistatic DEM projection and expanded projection sensitivity and error propagation
   functionality in `sarkit.sicd.projection`
@@ -243,7 +246,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Limited SICD Reading and Writing
 - Limited SIDD NITF Reading and Writing
 
-[unreleased]: https://github.com/ValkyrieSystems/sarkit/compare/v1.6.0...HEAD
+[unreleased]: https://github.com/ValkyrieSystems/sarkit/compare/v1.7.0...HEAD
+[1.7.0]: https://github.com/ValkyrieSystems/sarkit/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/ValkyrieSystems/sarkit/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/ValkyrieSystems/sarkit/compare/v1.4.1...v1.5.0
 [1.4.1]: https://github.com/ValkyrieSystems/sarkit/compare/v1.4.0...v1.4.1
