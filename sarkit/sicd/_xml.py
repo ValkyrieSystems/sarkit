@@ -315,7 +315,7 @@ class ElementWrapper(skxml.ElementWrapper):
         )
 
 
-def compute_scp_coa(sicd_xmltree: lxml.etree.ElementTree) -> lxml.etree.ElementTree:
+def compute_scp_coa(sicd_xmltree: lxml.etree.ElementTree) -> lxml.etree.Element:
     """Return a SICD/SCPCOA XML containing parameters computed from other metadata.
 
     The namespace of the new SICD/SCPCOA element is retained from ``sicd_xmltree``.
@@ -467,37 +467,43 @@ def compute_scp_coa(sicd_xmltree: lxml.etree.ElementTree) -> lxml.etree.ElementT
                 * np.dot(bp_coa, bpdot_coa)
             )
 
-        def _steps_10_to_15(xmt_coa, vxmt_coa, u_xmt_coa, r_xmt_scp):
-            xmt_dec = np.linalg.norm(xmt_coa)
-            u_ec_xmt_coa = xmt_coa / xmt_dec
-            ea_xmt_coa = np.arccos(np.dot(u_ec_xmt_coa, u_scp))
-            rg_xmt_scp = scp_dec * ea_xmt_coa
+        def _steps_10_to_15(apc_coa, vapc_coa, u_apc_coa, r_apc_scp, rdot_acp_scp):
+            """Compute platform geometry parameters
 
-            left_xmt = np.cross(u_ec_xmt_coa, vxmt_coa)
-            side_of_track_xmt = "L" if np.dot(left_xmt, u_xmt_coa) < 0 else "R"
+            SICD v1.5 DIDD 4.9.2 describes these steps in terms of xmt and suggests replacement of some
+            parameters for the bistatic computation.  That list is incomplete.  This function
+            replaces "xmt" with "apc" to avoid mention of either platform internally.
+            """
+            apc_dec = np.linalg.norm(apc_coa)
+            u_ec_apc_coa = apc_coa / apc_dec
+            ea_apc_coa = np.arccos(np.dot(u_ec_apc_coa, u_scp))
+            rg_apc_scp = scp_dec * ea_apc_coa
 
-            vxmt_m = np.linalg.norm(vxmt_coa)
-            dca_xmt = np.arccos(-rdot_xmt_scp / vxmt_m)
+            left_apc = np.cross(u_ec_apc_coa, vapc_coa)
+            side_of_track_apc = "L" if np.dot(left_apc, u_apc_coa) < 0 else "R"
 
-            xmt_gpz_coa = np.dot((xmt_coa - scp), u_gpz)
-            xmt_etp_coa = xmt_coa - xmt_gpz_coa * u_gpz
-            u_gpx_x = (xmt_etp_coa - scp) / np.linalg.norm(xmt_etp_coa - scp)
+            vapc_m = np.linalg.norm(vapc_coa)
+            dca_apc = np.arccos(-rdot_acp_scp / vapc_m)
 
-            graz_xmt = np.arcsin(xmt_gpz_coa / r_xmt_scp)
-            incd_xmt = 90 - np.rad2deg(graz_xmt)
+            apc_gpz_coa = np.dot((apc_coa - scp), u_gpz)
+            apc_etp_coa = apc_coa - apc_gpz_coa * u_gpz
+            u_gpx_x = (apc_etp_coa - scp) / np.linalg.norm(apc_etp_coa - scp)
 
-            az_xmt_n = np.dot(u_north, u_gpx_x)
-            az_xmt_e = np.dot(u_east, u_gpx_x)
-            azim_xmt = np.arctan2(az_xmt_e, az_xmt_n)
+            graz_apc = np.arcsin(apc_gpz_coa / r_apc_scp)
+            incd_apc = 90 - np.rad2deg(graz_apc)
+
+            az_apc_n = np.dot(u_north, u_gpx_x)
+            az_apc_e = np.dot(u_east, u_gpx_x)
+            azim_apc = np.arctan2(az_apc_e, az_apc_n)
 
             return {
-                "SideOfTrack": side_of_track_xmt,
-                "SlantRange": r_xmt_scp,
-                "GroundRange": rg_xmt_scp,
-                "DopplerConeAng": np.rad2deg(dca_xmt),
-                "GrazeAng": np.rad2deg(graz_xmt),
-                "IncidenceAng": incd_xmt,
-                "AzimAng": np.rad2deg(azim_xmt) % 360,
+                "SideOfTrack": side_of_track_apc,
+                "SlantRange": r_apc_scp,
+                "GroundRange": rg_apc_scp,
+                "DopplerConeAng": np.rad2deg(dca_apc),
+                "GrazeAng": np.rad2deg(graz_apc),
+                "IncidenceAng": incd_apc,
+                "AzimAng": np.rad2deg(azim_apc) % 360,
             }
 
         scpcoa["Bistatic"]["BistaticAng"] = np.rad2deg(bistat_ang_coa)
@@ -507,13 +513,13 @@ def compute_scp_coa(sicd_xmltree: lxml.etree.ElementTree) -> lxml.etree.ElementT
             "Pos": xmt_coa,
             "Vel": vxmt_coa,
             "Acc": axmt_coa,
-            **_steps_10_to_15(xmt_coa, vxmt_coa, u_xmt_coa, r_xmt_scp),
+            **_steps_10_to_15(xmt_coa, vxmt_coa, u_xmt_coa, r_xmt_scp, rdot_xmt_scp),
         }
         scpcoa["Bistatic"]["RcvPlatform"] = {
             "Time": tr_coa,
             "Pos": rcv_coa,
             "Vel": vrcv_coa,
             "Acc": arcv_coa,
-            **_steps_10_to_15(rcv_coa, vrcv_coa, u_rcv_coa, r_rcv_scp),
+            **_steps_10_to_15(rcv_coa, vrcv_coa, u_rcv_coa, r_rcv_scp, rdot_rcv_scp),
         }
     return scpcoa.elem
