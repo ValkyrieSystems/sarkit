@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Calculation of SCPCOA/Bistatic/RcvPlatform/DopplerConeAng in `sarkit.sicd.compute_scp_coa`
+
 
 ## [1.7.0] - 2026-04-20
 
