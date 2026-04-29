@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Additional SICD consistency checks for v1.4.0+ conditional fields and v1.5-introduced polygons
+- Conversions between {row, col}, {irow, icol}, and {xrow, ycol} SICD coordinate systems
 
 
 ## [1.7.1] - 2026-04-27
