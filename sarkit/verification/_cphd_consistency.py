@@ -310,7 +310,7 @@ class CphdConsistency(con.ConsistencyChecker):
         assert channel_id in self.pvps
         return self.pvps[channel_id]
 
-    def get_polygon(self, polygon_node, check=False, reverse=False):
+    def get_polygon(self, polygon_node, check=False):
         """Returns the polygon from the specified node, with basic polygon verification."""
         vertex_nodes = sorted(list(polygon_node), key=lambda x: int(x.attrib["index"]))
         polygon = np.asarray(
@@ -321,12 +321,11 @@ class CphdConsistency(con.ConsistencyChecker):
                 assert [int(x.attrib["index"]) for x in vertex_nodes] == list(
                     range(1, len(vertex_nodes) + 1)
                 )
-            if "size" in polygon_node.attrib:
-                size = int(polygon_node.attrib["size"])
-                with self.need(
-                    f"{_get_root_path(polygon_node)} size attribute matches the number of vertices"
-                ):
-                    assert size == len(vertex_nodes)
+            size = int(polygon_node.attrib["size"])
+            with self.need(
+                f"{_get_root_path(polygon_node)} size attribute matches the number of vertices"
+            ):
+                assert size == len(vertex_nodes)
             shg_polygon = shg.Polygon(polygon)
             with self.need(f"{_get_root_path(polygon_node)} is simple"):
                 assert shg_polygon.is_simple

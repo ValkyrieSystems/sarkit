@@ -157,6 +157,14 @@ def _get_desdata_location(ntf):
     raise ValueError("Unable to find SICD DES")
 
 
+def _get_root_path(node):
+    path = []
+    while node is not None:
+        path.append(etree.QName(node).localname)
+        node = node.getparent()
+    return "/".join(reversed(path[:-1]))
+
+
 def per_grid_dim(method):
     method.per_grid_dim = True
     return method
@@ -602,6 +610,30 @@ class SicdConsistency(con.ConsistencyChecker):
             icp_strs.append(icp_strs[0])
             with self.need("DESSHLPG consistent with image corners"):
                 assert des_header["DESSHLPG"].value == "".join(icp_strs)
+
+    def check_bistatic_fields(self) -> None:
+        """Optional fields are consistent with CollectType = BISTATIC for SICD v1.4.0+"""
+        with self.precondition():
+            assert (
+                self.sicdroot.findtext("{*}CollectionInfo/{*}CollectType") == "BISTATIC"
+            )
+            this_ns = etree.QName(self.sicdroot).namespace
+            sicd_versions = list(sksicd.VERSION_INFO)
+            assert sicd_versions.index(this_ns) >= sicd_versions.index("urn:SICD:1.4.0")
+            required_fields = (
+                "{*}CollectionInfo/{*}IlluminatorName",
+                "{*}Position/{*}GRPPoly",
+                "{*}Position/{*}TxAPCPoly",
+                "{*}Position/{*}RcvAPC",
+            )
+            for field in required_fields:
+                with self.need(
+                    f"{field.replace('{*}', '')} required for CollectType=BISTATIC"
+                ):
+                    assert self.sicdroot.find(field) is not None
+
+            with self.need("Antenna/TwoWay not allowed when CollectType=BISTATIC"):
+                assert self.sicdroot.find("{*}Antenna/{*}TwoWay") is None
 
     def check_grid_sign(self) -> None:
         """Grid signs match."""
@@ -1244,6 +1276,46 @@ class SicdConsistency(con.ConsistencyChecker):
             with self.need("SegmentList segments have unique identifiers"):
                 assert len(set(segment_ids)) == len(segment_ids)
 
+    def _need_valid_polygon(self, polygon_node):
+        """Returns the polygon from the specified node, with basic polygon verification."""
+        vertex_nodes = sorted(list(polygon_node), key=lambda x: int(x.attrib["index"]))
+        polygon = np.asarray(
+            [self.xmlhelp.load_elem(vertex) for vertex in vertex_nodes]
+        )
+        root_path = _get_root_path(polygon_node)
+        with self.need(f"{root_path} indices are all present"):
+            assert [int(x.attrib["index"]) for x in vertex_nodes] == list(
+                range(1, len(vertex_nodes) + 1)
+            )
+        size = int(polygon_node.attrib["size"])
+        with self.need(f"{root_path} size attribute matches the number of vertices"):
+            assert size == len(vertex_nodes)
+        shg_polygon = shg.Polygon(polygon)
+        with self.need(f"{root_path} is simple"):
+            assert shg_polygon.is_simple
+        with self.need(f"{root_path} is clockwise"):
+            assert not shg_polygon.exterior.is_ccw
+        return polygon
+
+    def check_segment_polygons(self) -> None:
+        """SegmentPolygons are simple, valid and clockwise."""
+        segment_polygons = self.sicdroot.findall(
+            "{*}RadarCollection/{*}Area/{*}Plane/{*}SegmentList/{*}Segment/{*}SegmentPolygon"
+        )
+        with self.precondition():
+            assert segment_polygons
+            for segment_polygon in segment_polygons:
+                self._need_valid_polygon(segment_polygon)
+
+    def check_area_plane_polygon(self) -> None:
+        """RadarCollection/Area/Plane/Polygon is simple, valid and clockwise."""
+        area_plane_poly_elem = self.sicdroot.find(
+            "{*}RadarCollection/{*}Area/{*}Plane/{*}Polygon"
+        )
+        with self.precondition():
+            assert area_plane_poly_elem is not None
+            self._need_valid_polygon(area_plane_poly_elem)
+
     def _compute_area_plane_corners_ecef(self):
         plane = self.sicdroot.find("./{*}RadarCollection/{*}Area/{*}Plane")
         ref_ecf = self.xmlhelp.load_elem(plane.find("./{*}RefPt/{*}ECF"))
@@ -1826,6 +1898,34 @@ class SicdConsistency(con.ConsistencyChecker):
             with self.need("RangeBias >= 0.0"):
                 range_bias = float(components.findtext("./{*}RadarSensor/{*}RangeBias"))
                 assert range_bias >= con.Approx(0.0)
+
+    def check_errorstatistics_conditionals(self) -> None:
+        """Presence of ErrorStatistics child elements is consistent with CollectType."""
+        with self.precondition():
+            this_ns = etree.QName(self.sicdroot).namespace
+            sicd_versions = list(sksicd.VERSION_INFO)
+            assert sicd_versions.index(this_ns) >= sicd_versions.index("urn:SICD:1.4.0")
+            is_bistatic = (
+                self.sicdroot.findtext("{*}CollectionInfo/{*}CollectType") == "BISTATIC"
+            )
+            coltype = "BISTATIC" if is_bistatic else "MONOSTATIC"
+            if is_bistatic:
+                forbidden_fields = (
+                    "{*}ErrorStatistics/{*}CompositeSCP",
+                    "{*}ErrorStatistics/{*}Components",
+                    "{*}ErrorStatistics/{*}AdjustableParameterOffsets",
+                )
+            else:
+                forbidden_fields = (
+                    "{*}ErrorStatistics/{*}BistaticCompositeSCP",
+                    "{*}ErrorStatistics/{*}BistaticComponents",
+                    "{*}ErrorStatistics/{*}BistaticAdjustableParameterOffsets",
+                )
+            for field in forbidden_fields:
+                with self.need(
+                    f"{field.replace('{*}', '')} not allowed when CollectType={coltype}"
+                ):
+                    assert self.sicdroot.find(field) is None
 
     def check_txsequence_indices(self) -> None:
         """Checks consistency of the TxSequence/TxStep indexing."""
