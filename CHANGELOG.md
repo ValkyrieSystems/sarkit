@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Additional SICD consistency checks for v1.4.0+ conditional fields and v1.5-introduced polygons
+
 
 ## [1.7.1] - 2026-04-27
 

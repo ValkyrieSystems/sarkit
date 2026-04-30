@@ -1999,3 +1999,100 @@ def test_smart_open_contract(example_sicd, monkeypatch):
     monkeypatch.setattr(sarkit.verification._sicdcheck, "open", mock_open)
     assert not main([str(example_sicd)])
     mock_open.assert_called_once_with(str(example_sicd), "rb")
+
+
+def test_check_bistatic_fields():
+    xmltree = lxml.etree.parse(DATAPATH / "example-sicd-1.5.xml")
+    assert xmltree.findtext(".//{*}CollectType") == "BISTATIC"
+
+    req_elem = xmltree.find("{*}CollectionInfo/{*}IlluminatorName")
+    req_elem.getparent().remove(req_elem)
+
+    ant_elem = xmltree.find("{*}Antenna")
+    ant_elem.remove(ant_elem[0])
+    ant_elem[0].tag = ant_elem[0].tag.replace("Rcv", "TwoWay")
+
+    sicd_con = SicdConsistency.from_parts(xmltree)
+    sicd_con.check("check_against_schema")
+    assert sicd_con.passes() and not sicd_con.failures()
+    sicd_con.check("check_bistatic_fields")
+    testing.assert_failures(sicd_con, "IlluminatorName required")
+    testing.assert_failures(sicd_con, "TwoWay not allowed")
+
+
+def _invalid_index(poly_elem):
+    poly_elem[0].set("index", "-24")
+
+
+def _invalid_size(poly_elem):
+    poly_elem.set("size", str(len(poly_elem) + 1))
+
+
+def _not_simple(poly_elem):
+    old_index = poly_elem[-2].get("index")
+    poly_elem[-2].set("index", poly_elem[-1].get("index"))
+    poly_elem[-1].set("index", old_index)
+
+
+def _not_clockwise(poly_elem):
+    for vertex in poly_elem:
+        vertex.set("index", str(len(poly_elem) - 1 - int(vertex.get("index"))))
+
+
+@pytest.mark.parametrize(
+    "elem_path,check",
+    [
+        (
+            "{*}RadarCollection/{*}Area/{*}Plane/{*}SegmentList/{*}Segment/{*}SegmentPolygon",
+            "check_segment_polygons",
+        ),
+        ("{*}RadarCollection/{*}Area/{*}Plane/{*}Polygon", "check_area_plane_polygon"),
+    ],
+)
+@pytest.mark.parametrize(
+    "perturb_func,fail_pattern",
+    [
+        [_invalid_index, "indices are all present"],
+        [_invalid_size, "size attribute matches"],
+        [_not_simple, "is simple"],
+        [_not_clockwise, "is clockwise"],
+    ],
+)
+def test_valid_polygons(elem_path, check, perturb_func, fail_pattern):
+    xmltree = lxml.etree.parse(DATAPATH / "example-sicd-1.5.xml")
+    perturb_func(xmltree.find(elem_path))
+    sicd_con = SicdConsistency.from_parts(xmltree)
+    sicd_con.check(check)
+    testing.assert_failures(sicd_con, fail_pattern)
+
+
+def test_check_errorstatistics_conditionals_bi():
+    xmltree = lxml.etree.parse(DATAPATH / "example-sicd-1.5.xml")
+    assert xmltree.findtext(".//{*}CollectType") == "BISTATIC"
+    sicd_ew = sksicd.ElementWrapper(xmltree.getroot())
+    sicd_ew["ErrorStatistics"]["CompositeSCP"]["Rg"] = 1.0
+    sicd_ew["ErrorStatistics"]["CompositeSCP"]["Az"] = 1.0
+    sicd_ew["ErrorStatistics"]["CompositeSCP"]["RgAz"] = 1.0
+
+    sicd_con = SicdConsistency.from_parts(xmltree)
+    sicd_con.check("check_against_schema")
+    assert sicd_con.passes() and not sicd_con.failures()
+
+    sicd_con.check("check_errorstatistics_conditionals")
+    testing.assert_failures(sicd_con, "CompositeSCP not allowed")
+
+
+def test_check_errorstatistics_conditionals_mono():
+    xmltree = lxml.etree.parse(DATAPATH / "example-sicd-1.5.xml")
+    sicd_ew = sksicd.ElementWrapper(xmltree.getroot())
+    sicd_ew["CollectionInfo"]["CollectType"] = "MONOSTATIC"
+    sicd_ew["ErrorStatistics"]["BistaticCompositeSCP"]["RAvg"] = 1.0
+    sicd_ew["ErrorStatistics"]["BistaticCompositeSCP"]["RdotAvg"] = 1.0
+    sicd_ew["ErrorStatistics"]["BistaticCompositeSCP"]["RAvgRdotAvg"] = 1.0
+
+    sicd_con = SicdConsistency.from_parts(xmltree)
+    sicd_con.check("check_against_schema")
+    assert sicd_con.passes() and not sicd_con.failures()
+
+    sicd_con.check("check_errorstatistics_conditionals")
+    testing.assert_failures(sicd_con, "BistaticCompositeSCP not allowed")
