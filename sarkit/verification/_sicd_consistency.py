@@ -105,22 +105,6 @@ def _sample_valid_pixels(xmlhelp, shape=(5, 7)):
     return np.array([point.coords[0] for point in intersecting_points.geoms])
 
 
-def _grid_index_to_coord(xmlhelp, grid_index):
-    spacing = np.array(
-        [
-            xmlhelp.load("./{*}Grid/{*}Row/{*}SS"),
-            xmlhelp.load("./{*}Grid/{*}Col/{*}SS"),
-        ]
-    )
-    origin = np.array(
-        [
-            xmlhelp.load("./{*}ImageData/{*}SCPPixel/{*}Row"),
-            xmlhelp.load("./{*}ImageData/{*}SCPPixel/{*}Col"),
-        ]
-    )
-    return (grid_index - origin) * spacing
-
-
 def _create_rectangle(x0, y0, num_x, num_y):
     return shg.box(x0, y0, x0 + num_x - 1, y0 + num_y - 1, ccw=False)
 
@@ -712,7 +696,7 @@ class SicdConsistency(con.ConsistencyChecker):
             f"./{{*}}Grid/{{*}}{direction}/{{*}}DeltaKCOAPoly"
         )
         if dkcoapoly is not None:
-            points = _grid_index_to_coord(self.xmlhelp, vertices)
+            points = sksicd.rowcol_to_xrowycol(self.sicdroot.getroottree(), vertices)
 
             deltaks = npp.polyval2d(points[:, 0], points[:, 1], dkcoapoly)
             min_dk = deltaks.min()
@@ -845,7 +829,7 @@ class SicdConsistency(con.ConsistencyChecker):
             assert delta_krow_poly is not None
             assert delta_kcol_poly is not None
             grid = _sample_valid_pixels(self.xmlhelp)
-            image_coords = _grid_index_to_coord(self.xmlhelp, grid)
+            image_coords = sksicd.rowcol_to_xrowycol(self.sicdroot.getroottree(), grid)
             row_bw = self.xmlhelp.load("./{*}Grid/{*}Row/{*}ImpRespBW")
             col_bw = self.xmlhelp.load("./{*}Grid/{*}Col/{*}ImpRespBW")
             sgn = self.xmlhelp.load("./{*}Grid/{*}Row/{*}Sgn")
@@ -926,7 +910,9 @@ class SicdConsistency(con.ConsistencyChecker):
         col = self.xmlhelp.load("./{*}ImageData/{*}FirstCol") + np.asarray(
             [0, ncols - 1, ncols - 1, 0]
         )
-        icp_coords = _grid_index_to_coord(self.xmlhelp, np.stack([row, col], axis=-1))
+        icp_coords = sksicd.rowcol_to_xrowycol(
+            self.sicdroot.getroottree(), np.stack([row, col], axis=-1)
+        )
         icp_converted_ecef = sarkit.wgs84.geodetic_to_cartesian(
             np.concatenate((icp_ll, np.full((len(icp_ll), 1), scp_height)), axis=1)
         )
@@ -1168,7 +1154,7 @@ class SicdConsistency(con.ConsistencyChecker):
             los_arp_to_scp = scp_pos - arp_pos
             along_track_error = np.abs(np.dot(los_arp_to_scp, _unit(arp_vel)))
             grid = _sample_valid_pixels(self.xmlhelp)
-            coords = _grid_index_to_coord(self.xmlhelp, grid)
+            coords = sksicd.rowcol_to_xrowycol(self.sicdroot.getroottree(), grid)
             time_ca = npp.polyval(coords[..., 1], time_ca_poly)
             ca_vel = 1.0 / np.abs(
                 npp.polyval(coords[..., 1], npp.polyder(time_ca_poly))
@@ -1420,7 +1406,9 @@ class SicdConsistency(con.ConsistencyChecker):
 
             # fetch the valid area and convert into grid (xrow, ycol) coordinates
             grid = _get_valid_data_vertices(self.xmlhelp)
-            valid_area_spxy = _grid_index_to_coord(self.xmlhelp, grid)
+            valid_area_spxy = sksicd.rowcol_to_xrowycol(
+                self.sicdroot.getroottree(), grid
+            )
             with self.need("Area plane surface intersects with grid plane area"):
                 assert shg.Polygon(vertices_spxy).intersects(
                     shg.Polygon(valid_area_spxy)
