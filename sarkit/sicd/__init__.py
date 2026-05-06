@@ -61,6 +61,19 @@ XML Metadata
    ImageCornersType
    compute_scp_coa
 
+Image Indices & Image Coordinates
+=================================
+
+.. autosummary::
+   :toctree: generated/
+
+   rowcol_to_irowicol
+   rowcol_to_xrowycol
+   irowicol_to_rowcol
+   irowicol_to_xrowycol
+   xrowycol_to_rowcol
+   xrowycol_to_irowicol
+
 Projections
 ===========
 For most of the functions from SICD Volume 3, see the `sarkit.sicd.projection` namespace.
@@ -207,6 +220,14 @@ SICD 1.5
 
 """
 
+from ._calculations import (
+    irowicol_to_rowcol,
+    irowicol_to_xrowycol,
+    rowcol_to_irowicol,
+    rowcol_to_xrowycol,
+    xrowycol_to_irowicol,
+    xrowycol_to_rowcol,
+)
 from ._constants import (
     ILOC_MAX,
     IS_SIZE_MAX,
@@ -295,6 +316,12 @@ __all__ = [
     "image_to_constant_hae_surface",
     "image_to_dem_surface",
     "image_to_ground_plane",
+    "irowicol_to_rowcol",
+    "irowicol_to_xrowycol",
     "jbp_from_nitf_metadata",
+    "rowcol_to_irowicol",
+    "rowcol_to_xrowycol",
     "scene_to_image",
+    "xrowycol_to_irowicol",
+    "xrowycol_to_rowcol",
 ]
