@@ -627,25 +627,30 @@ def image_segment_sizing_calculations(
 
     icp_latlon = xml_helper.load("./{*}GeoData/{*}ImageCorners")
 
-    icp_ecef = [
-        sarkit.wgs84.geodetic_to_cartesian([np.deg2rad(lat), np.deg2rad(lon), 0])
-        for lat, lon in icp_latlon
-    ]
+    if num_is == 1:
+        iscp_latlon = icp_latlon[np.newaxis, ...]
+    else:
+        icp_ecef = [
+            sarkit.wgs84.geodetic_to_cartesian([np.deg2rad(lat), np.deg2rad(lon), 0])
+            for lat, lon in icp_latlon
+        ]
 
-    iscp_ecef = np.zeros((num_is, 4, 3))
-    for imidx in range(num_is):
-        wgt1 = (num_rows - 1 - first_row_is[imidx]) / (num_rows - 1)
-        wgt2 = first_row_is[imidx] / (num_rows - 1)
-        iscp_ecef[imidx][0] = wgt1 * icp_ecef[0] + wgt2 * icp_ecef[3]
-        iscp_ecef[imidx][1] = wgt1 * icp_ecef[1] + wgt2 * icp_ecef[2]
+        iscp_ecef = np.zeros((num_is, 4, 3))
+        for imidx in range(num_is):
+            wgt1 = (num_rows - 1 - first_row_is[imidx]) / (num_rows - 1)
+            wgt2 = first_row_is[imidx] / (num_rows - 1)
+            iscp_ecef[imidx][0] = wgt1 * icp_ecef[0] + wgt2 * icp_ecef[3]
+            iscp_ecef[imidx][1] = wgt1 * icp_ecef[1] + wgt2 * icp_ecef[2]
 
-    for imidx in range(num_is - 1):
-        iscp_ecef[imidx][2] = iscp_ecef[imidx + 1][1]
-        iscp_ecef[imidx][3] = iscp_ecef[imidx + 1][0]
-    iscp_ecef[num_is - 1][2] = icp_ecef[2]
-    iscp_ecef[num_is - 1][3] = icp_ecef[3]
+        for imidx in range(num_is - 1):
+            iscp_ecef[imidx][2] = iscp_ecef[imidx + 1][1]
+            iscp_ecef[imidx][3] = iscp_ecef[imidx + 1][0]
+        iscp_ecef[num_is - 1][2] = icp_ecef[2]
+        iscp_ecef[num_is - 1][3] = icp_ecef[3]
 
-    iscp_latlon = np.rad2deg(sarkit.wgs84.cartesian_to_geodetic(iscp_ecef)[:, :, :2])
+        iscp_latlon = np.rad2deg(
+            sarkit.wgs84.cartesian_to_geodetic(iscp_ecef)[:, :, :2]
+        )
 
     # 3.2.2 File Header and Image Sub-Header Parameters
     seginfos = []

@@ -1,3 +1,4 @@
+import copy
 import pathlib
 
 import jbpy
@@ -514,3 +515,18 @@ def test_remote_read(example_sicd):
         ) as file_object:
             with sksicd.NitfReader(file_object) as r:
                 _ = r.read_image()
+
+
+def test_tiny_sicd(example_sicd, tmp_path):
+    subimage_file = tmp_path / "sub.sicd"
+    with example_sicd.open("rb") as ifile, sksicd.NitfReader(ifile) as reader:
+        subimage, subimage_xmltree = reader.read_sub_image(0, 0, 1, 1)
+        metadata = copy.deepcopy(reader.metadata)
+        metadata.xmltree = subimage_xmltree
+        with (
+            subimage_file.open("wb") as ofile,
+            sksicd.NitfWriter(ofile, metadata) as writer,
+        ):
+            writer.write_image(subimage)
+
+    assert subimage_file.exists()
