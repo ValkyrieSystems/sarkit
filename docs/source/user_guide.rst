@@ -353,11 +353,16 @@ Accessing keys that are not schema-valid raises a `KeyError`:
    Traceback (most recent call last):
    KeyError: 'NotValid'
 
-Unlike normal dictionaries, `KeyError` can still be raised by `get()` when the key is not schema-valid
+Unlike normal dictionaries, `KeyError` can still be raised by `get()` and `setdefault()` when the key is not
+schema-valid
 
 .. doctest::
 
    >>> wrappedsicd.get("NotValid", default=None)
+   Traceback (most recent call last):
+   KeyError: 'NotValid'
+
+   >>> wrappedsicd.setdefault("NotValid", "foo")
    Traceback (most recent call last):
    KeyError: 'NotValid'
 
@@ -428,7 +433,9 @@ Use :py:meth:`~sarkit.xmlhelp.ElementWrapper.add` to add repeatable children.
    ('AB', 'CD', 'EF')
 
 
-:py:meth:`~sarkit.xmlhelp.ElementWrapper.findall` and :py:meth:`~sarkit.xmlhelp.ElementWrapper.find` can find children with specific traits.  This is particularly helpful for CPHD and CRSD when a lot of Identifier references exist.
+:py:meth:`~sarkit.xmlhelp.ElementWrapper.findall` and :py:meth:`~sarkit.xmlhelp.ElementWrapper.find` can find children
+with specific traits.
+This is particularly helpful for CPHD and CRSD when a lot of Identifier references exist.
 
 .. doctest::
 

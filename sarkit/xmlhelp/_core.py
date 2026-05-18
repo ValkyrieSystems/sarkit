@@ -272,6 +272,15 @@ class ElementWrapper(collections.abc.MutableMapping):
 
         return default
 
+    def setdefault(self, localname: str, default=None):
+        """Return value from an ElementWrapper if present. If not, insert ``localname`` with a value of ``default``
+        and return ``default``. If the localname is not schema-valid a KeyError is raised.
+        """
+        if localname in self:
+            return self[localname]
+        self[localname] = default
+        return default
+
     def _handle_subelem(
         self, subelem: "lxml.etree.Element | None", subelem_localname: str
     ):

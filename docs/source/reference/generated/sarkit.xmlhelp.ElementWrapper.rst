@@ -13,8 +13,9 @@
          :toctree:
       
          ElementWrapper.add
-         ElementWrapper.get
          ElementWrapper.find
          ElementWrapper.findall
          ElementWrapper.from_dict
+         ElementWrapper.get
+         ElementWrapper.setdefault
          ElementWrapper.to_dict

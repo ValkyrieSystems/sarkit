@@ -199,3 +199,19 @@ def test_elementwrapper_tofromdict():
     }
     # transcoders can add zeros to sparse polynomials/matrices, etc.
     assert orig_elempaths.issubset(fromdict_elempaths)
+
+
+def test_elementwrapper_setdefault():
+    root_ns = "urn:SIDD:3.0.0"
+    siddroot = lxml.etree.Element(f"{{{root_ns}}}SIDD")
+    xmlhelp = sksidd.XsdHelper(root_ns)
+    wrapped_siddroot = skxml.ElementWrapper(siddroot, xsdhelper=xmlhelp)
+
+    assert wrapped_siddroot["ProductCreation"].setdefault("ProductName", "foo") == "foo"
+    assert wrapped_siddroot["ProductCreation"]["ProductName"] == "foo"
+    assert wrapped_siddroot["ProductCreation"].setdefault("ProductName", "bar") == "foo"
+    with pytest.raises(ValueError):
+        wrapped_siddroot["Display"].setdefault("NumBands")
+    assert wrapped_siddroot["Display"].setdefault("NumBands", 24) == 24
+    with pytest.raises(KeyError):
+        wrapped_siddroot["ProductCreation"].setdefault("NotARealFieldName")

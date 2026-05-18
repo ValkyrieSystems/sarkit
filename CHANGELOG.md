@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Failure when writing very small SICDs
+- `ElementWrapper.setdefault` now properly inserts subelements
 
 
 ## [1.8.0] - 2026-05-06
