@@ -73,6 +73,13 @@ def example_crsdsar_file(example_crsdsar):
 
 
 @pytest.fixture(scope="session")
+def multi_crsdsar_file(multi_crsdsar):
+    assert not main([str(multi_crsdsar), "-v"])
+    with multi_crsdsar.open("rb") as f:
+        yield f
+
+
+@pytest.fixture(scope="session")
 def example_crsdtx_file(example_crsdtx):
     assert not main([str(example_crsdtx), "-vvv"])
     with example_crsdtx.open("rb") as f:
@@ -204,6 +211,10 @@ def test_from_file_crsd(example_crsd_file):
     crsdcon = CrsdConsistency.from_file(example_crsd_file)
     crsdcon.check()
     assert not crsdcon.failures()
+
+
+def test_multi_crsd(multi_crsdsar_file):
+    """no-op; consistency checker runs in fixture"""
 
 
 def test_from_file_xml():
