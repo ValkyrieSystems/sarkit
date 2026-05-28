@@ -2236,7 +2236,7 @@ class CrsdConsistency(con.ConsistencyChecker):
             for ppp_array_node in self.crsdroot.findall(
                 "{*}Data/{*}Transmit/{*}TxSequence"
             ):
-                array_id = ppp_array_node.findtext("{*}Identifier")
+                array_id = ppp_array_node.findtext("{*}TxId")
 
                 ppp_array_offset_size[array_id] = (
                     int(ppp_array_node.findtext("{*}PPPArrayByteOffset")),
@@ -2265,7 +2265,7 @@ class CrsdConsistency(con.ConsistencyChecker):
                 self.crsdroot.findtext("{*}Data/{*}Receive/{*}NumBytesPVP")
             )
             for channel_node in self.crsdroot.findall("{*}Data/{*}Receive/{*}Channel"):
-                array_id = channel_node.findtext("{*}Identifier")
+                array_id = channel_node.findtext("{*}ChId")
 
                 pvp_array_offset_size[array_id] = (
                     int(channel_node.findtext("{*}PVPArrayByteOffset")),
@@ -2297,7 +2297,7 @@ class CrsdConsistency(con.ConsistencyChecker):
             signal_dtype = skcrsd.binary_format_string_to_dtype(signal_dtype_str)
             num_bytes_samp = signal_dtype.itemsize
             for channel_node in self.crsdroot.findall("{*}Data/{*}Receive/{*}Channel"):
-                array_id = channel_node.findtext("{*}Identifier")
+                array_id = channel_node.findtext("{*}ChId")
 
                 signal_array_offset_size[array_id] = (
                     int(channel_node.findtext("{*}SignalArrayByteOffset")),
