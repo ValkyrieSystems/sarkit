@@ -4,6 +4,7 @@ Select calculations from the CRSD D&I
 
 import copy
 import functools
+from typing import Any
 
 import lxml.etree
 import numpy as np
@@ -16,8 +17,25 @@ from . import _io as skcrsd_io
 from . import _xml as skcrsd_xml
 
 
-def compute_ref_point_parameters(rpt: npt.ArrayLike):
-    """Computes the reference point parameters as in CRSD D&I 8.2"""
+def compute_ref_point_parameters(
+    rpt: npt.ArrayLike,
+) -> tuple[np.ndarray, tuple[np.ndarray, np.ndarray, np.ndarray]]:
+    """Compute the reference point parameters as in CRSD D&I 8.2
+
+    Parameters
+    ----------
+    rpt : (..., 3) array_like
+        Reference point position with ECEF X, Y, Z components (m) in last dimension.
+
+    Returns
+    -------
+    rpt_llh : (..., 3) ndarray
+        Reference point position in WGS 84 geodetic with [latitude (deg), longitude (deg), and ellipsoidal height (m)]
+        in the last dimension.
+    enu_vecs : tuple of ((..., 3) ndarray, (..., 3) ndarray, (..., 3) ndarray)
+        Unit vectors for the East, North, Up coordinate frame with origin at the reference point.
+        The basis vectors are in ECEF coordinates with X, Y, Z components (m) in last dimension.
+    """
     rpt_llh = sarkit.wgs84.cartesian_to_geodetic(rpt)
     rpt_lat = rpt_llh[..., 0]
     rpt_lon = rpt_llh[..., 1]
@@ -44,7 +62,8 @@ def compute_ref_point_parameters(rpt: npt.ArrayLike):
         ],
         axis=-1,
     )
-    return rpt_llh, (ueast, unor, uup)
+    enu_vecs = (ueast, unor, uup)
+    return rpt_llh, enu_vecs
 
 
 def compute_apc_to_pt_geometry_parameters(
@@ -54,8 +73,60 @@ def compute_apc_to_pt_geometry_parameters(
     ueast: npt.ArrayLike,
     unor: npt.ArrayLike,
     uup: npt.ArrayLike,
-):
-    """Computes APC geometry parameters as in CRSD D&I 8.3"""
+) -> dict[str, Any]:
+    """Compute APC geometry parameters as in CRSD D&I 8.3
+
+    Parameters
+    ----------
+    apc : (..., 3) array_like
+        Antenna phase center position with ECEF X, Y, Z components (m) in last dimension.
+    vapc : (..., 3) array_like
+        Antenna phase center velocity with ECEF X, Y, Z components (m/s) in last dimension.
+    pt : (..., 3) array_like
+        Fixed scene point position with ECEF X, Y, Z components (m) in last dimension.
+    ueast, unor, uup : (..., 3) array_like
+        Unit vectors for the East, North, Up coordinate frame, respectively, with origin at ``pt``.
+        The basis vectors are in ECEF coordinates with X, Y, Z components (m) in last dimension.
+
+    Returns
+    -------
+    dict
+        Computed PT parameters keyed by their names from CRSD D&I:
+
+        ``R_APC_PT`` : ndarray
+            Range (m) from ``apc`` to ``pt``
+
+        ``Rdot_APC_PT`` : ndarray
+            Range rate (m/s) of ``apc`` relative to ``pt``
+
+        ``Rg_PT`` : ndarray
+            Ground range (m) to ``pt``
+
+        ``SideOfTrack`` : str, or list of str, or list of list of str, or ...
+            Possibly nested list of Side of Track for the scene point relative to the APC ground track.
+            ``"L"`` for left, ``"R"`` for right.
+
+        ``uAPC``: (..., 3) ndarray
+            Unit vector that points from ``pt`` to ``apc`` with ECEF X, Y, Z components (m) in last dimension
+
+        ``uAPCDot`` : (..., 3) ndarray
+            Time derivative of ``uAPC``
+
+        ``DCA`` : ndarray
+            Doppler Cone Angle (deg) between ``vapc`` and the line-of-sight from ``apc`` to ``pt`` (``-uAPC``)
+
+        ``SQNT`` : ndarray
+            Ground squint angle (deg) to ``pt``
+
+        ``AZIM`` : ndarray
+            Azimuth angle (deg) to ``apc`` projected into the earth tangent plane
+
+        ``GRAZ`` : ndarray
+            Grazing angle (deg) for the line-of-sight from ``apc`` to ``pt``
+
+        ``INCD`` : ndarray
+            Incidence angle (deg) for the line-of-sight from ``apc`` to ``pt``
+    """
     apc = np.asarray(apc)
     vapc = np.asarray(vapc)
     pt = np.asarray(pt)
@@ -132,12 +203,89 @@ def compute_apc_to_pt_geometry_parameters(
     }
 
 
-def compute_arp_to_rpt_geometry(xmt, vxmt, rcv, vrcv, pt, ueast, unor, uup):
-    """Computes ARP geometry as in CRSD D&I 8.4.2"""
+def compute_arp_to_rpt_geometry(
+    xmt: npt.ArrayLike,
+    vxmt: npt.ArrayLike,
+    rcv: npt.ArrayLike,
+    vrcv: npt.ArrayLike,
+    pt: npt.ArrayLike,
+    ueast: npt.ArrayLike,
+    unor: npt.ArrayLike,
+    uup: npt.ArrayLike,
+) -> dict[str, Any]:
+    """Compute aperture reference point geometry as in CRSD D&I 8.4.2
+
+    Parameters
+    ----------
+    xmt : (..., 3) array_like
+        Transmit APC positions with ECEF X, Y, Z components (m) in last dimension
+    vxmt : (..., 3) array_like
+        Transmit APC velocities with ECEF X, Y, Z components (m/s) in last dimension
+    rcv : (..., 3) array_like
+        Receive APC positions with ECEF X, Y, Z components (m) in last dimension
+    vrcv : (..., 3) array_like
+        Receive APC velocities with ECEF X, Y, Z components (m/s) in last dimension
+    pt : (..., 3) array_like
+        Fixed scene point position with ECEF X, Y, Z components (m) in last dimension.
+    ueast, unor, uup : (..., 3) array_like
+        Unit vectors for the East, North, Up coordinate frame, respectively, with origin at ``pt``.
+        The basis vectors are in ECEF coordinates with X, Y, Z components (m) in last dimension.
+
+    Returns
+    -------
+    dict
+        Computed ARP to RPT geometry parameters keyed by their names from CRSD D&I:
+
+        ``ARP_COA`` : (..., 3) ndarray
+            Aperture reference point position with ECEF X, Y, Z components (m) in last dimension
+
+        ``VARP_COA`` : (..., 3) ndarray
+            Aperture reference point velocity with ECEF X, Y, Z components (m/s) in last dimension
+
+        ``Bistat_Ang`` : ndarray
+            Bistatic angle (rad)
+
+        ``Bistat_Ang_Rate`` : ndarray
+            Time-derivative of the bistatic angle (rad/s)
+
+        ``ARP_SideOfTrack`` : str, or list of str, or list of list of str, or ...
+            Possibly nested list of Side of Track for the scene point relative to the ARP ground track.
+            ``"L"`` for left, ``"R"`` for right.
+
+        ``R_ARP_RPT`` : ndarray
+            Range (m) from ARP to ``pt``
+
+        ``ARP_Rg_RPT`` : ndarray
+            Ground range (m) to ``pt``
+
+        ``ARP_DCA`` : ndarray
+            Doppler Cone Angle (deg) between ``VARP_COA`` and the line-of-sight from ``ARP_COA`` to ``pt``
+
+        ``ARP_SQNT`` : ndarray
+            Ground squint angle (deg) to ``pt``
+
+        ``ARP_AZIM`` : ndarray
+            Azimuth angle (deg) to ARP projected into the earth tangent plane
+
+        ``ARP_GRAZ`` : ndarray
+            Grazing angle (deg) for the line-of-sight from ARP to ``pt``
+
+        ``ARP_INCD`` : ndarray
+            Incidence angle (deg) for the line-of-sight from ARP to ``pt``
+
+        ``ARP_TWST`` : ndarray
+            Twist angle (deg) between the earth tangent plane and the bistatic slant plane
+
+        ``ARP_SLOPE`` : ndarray
+            Slope angle (deg) between the bistatic slant plane and the earth tangent plane
+
+        ``ARP_LO_ANG`` : ndarray
+            Layover angle (deg) from north at ``pt`` to the layover direction
+    """
     xmt_geom = compute_apc_to_pt_geometry_parameters(xmt, vxmt, pt, ueast, unor, uup)
     rcv_geom = compute_apc_to_pt_geometry_parameters(rcv, vrcv, pt, ueast, unor, uup)
-    bp = (xmt_geom["uAPC"] + rcv_geom["uAPC"]) / 2
-    bpdot = (xmt_geom["uAPCDot"] + rcv_geom["uAPCDot"]) / 2
+    bp = np.asarray((xmt_geom["uAPC"] + rcv_geom["uAPC"]) / 2)
+    bpdot = np.asarray((xmt_geom["uAPCDot"] + rcv_geom["uAPCDot"]) / 2)
     bp_mag = np.linalg.norm(bp, axis=-1)
     bistat_ang = 2 * np.arccos(bp_mag)
     bistat_ang_rate = np.asarray((-4 / np.sin(bistat_ang)) * np.inner(bp, bpdot))
@@ -161,7 +309,7 @@ def compute_arp_to_rpt_geometry(xmt, vxmt, rcv, vrcv, pt, ueast, unor, uup):
     arp_geom = compute_apc_to_pt_geometry_parameters(arp, varp, pt, ueast, unor, uup)
 
     # (11)
-    ugpz = uup
+    ugpz = np.asarray(uup)
     bp_gpz = np.inner(bp, ugpz)
     bp_etp = bp - bp_gpz[..., np.newaxis] * ugpz
     bp_gpx = np.linalg.norm(bp_etp, axis=-1)
@@ -208,8 +356,27 @@ def compute_arp_to_rpt_geometry(xmt, vxmt, rcv, vrcv, pt, ueast, unor, uup):
     }
 
 
-def compute_h_v_los_unit_vectors(apc: npt.ArrayLike, gpt: npt.ArrayLike):
-    """Compute H, V, LOS unit vectors as in CRSD D&I 9.4.3"""
+def compute_h_v_los_unit_vectors(
+    apc: npt.ArrayLike, gpt: npt.ArrayLike
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Compute H, V, LOS unit vectors as in CRSD D&I 9.4.3
+
+    Parameters
+    ----------
+    apc : (..., 3) array_like
+        Antenna phase center position with ECEF X, Y, Z components (m) in last dimension.
+    gpt : (..., 3) array_like
+        Scene point position with ECEF X, Y, Z components (m) in last dimension.
+
+    Returns
+    -------
+    uhor : (..., 3) ndarray
+        Unit vector that points in the +H (horizontal) direction with ECEF X, Y, Z components (m) in last dimension.
+    uvert : (..., 3) ndarray
+        Unit vector that points in the +V (vertical) direction with ECEF X, Y, Z components (m) in last dimension.
+    ulos : (..., 3) ndarray
+        Unit vector that points from ``apc`` to ``gpt`` with ECEF X, Y, Z components (m) in last dimension.
+    """
     apc = np.asarray(apc)
     gpt = np.asarray(gpt)
 
@@ -230,8 +397,43 @@ def compute_h_v_los_unit_vectors(apc: npt.ArrayLike, gpt: npt.ArrayLike):
     return uhor, uvert, ulos
 
 
-def compute_h_v_pol_parameters(apc, uacx, uacy, gpt, xr, ampx, ampy, phasex, phasey):
-    """Compute H, V polarization parameters as in CRSD D&I 9.4.4"""
+def compute_h_v_pol_parameters(
+    apc: npt.ArrayLike,
+    uacx: npt.ArrayLike,
+    uacy: npt.ArrayLike,
+    gpt: npt.ArrayLike,
+    xr: int,
+    ampx: float,
+    ampy: float,
+    phasex: float,
+    phasey: float,
+) -> tuple[float, float, float, float]:
+    """Compute H, V polarization parameters as in CRSD D&I 9.4.4
+
+    Parameters
+    ----------
+    apc : (3,) array_like
+        Antenna phase center position with ECEF X, Y, Z components (m) in last dimension.
+    uacx, uacy : (3,) array_like
+        Antenna coordinate frame unit vectors in the +ACX and +ACY directions respectively
+        with ECEF X, Y, Z components (m) in last dimension.
+    gpt : (3,) array_like
+        Scene point position with ECEF X, Y, Z components (m) in last dimension.
+    xr : {-1, 1}
+        Indicates if the polarization orientation parameters are for a transmit signal (``1``)
+        or for a receive signal (``-1``)
+    ampx, ampy : float
+        E-field relative amplitude components in the ACX and ACY directions respectively
+    phasex, phasey : float
+        E-field phase components in the ACX and ACY directions respectively
+
+    Returns
+    -------
+    amph, ampv : float
+        E-field relative amplitude components in the H and V directions respectively
+    phaseh, phasev : float
+        E-field phase components in the H and V directions respectively
+    """
     # (1)
     uhor, uvert, ulos = compute_h_v_los_unit_vectors(apc, gpt)
 
