@@ -83,15 +83,16 @@ def test_compute_dwelltimes():
 
 
 @pytest.mark.parametrize("use_mask", (True, False))
-def test_interpolate_support_array(use_mask):
+@pytest.mark.parametrize("in_shape", [(), (24,), (3, 40, 50)])
+def test_interpolate_support_array(use_mask, in_shape):
     dcx_0, dcy_0 = -0.75, -0.8
     num_rows, num_cols = 51, 29
 
     dcx = np.linspace(dcx_0, -dcx_0, num_rows, endpoint=True)
     dcy = np.linspace(dcy_0, -dcy_0, num_cols, endpoint=True)
 
-    dcx_ss = np.diff(dcx[:2])
-    dcy_ss = np.diff(dcy[:2])
+    dcx_ss = dcx[1] - dcx[0]
+    dcy_ss = dcy[1] - dcy[0]
 
     dcxx, dcyy = np.meshgrid(dcx, dcy, indexing="ij")
 
@@ -99,7 +100,7 @@ def test_interpolate_support_array(use_mask):
     valid = np.sqrt(dcxx**2 + dcyy**2) < 0.9
 
     rng = np.random.default_rng()
-    dcx_i, dcy_i = 2 * rng.random((2, 3, 40, 50)) - 1
+    dcx_i, dcy_i = 2 * rng.random((2,) + in_shape) - 1
     v, dv = skcrsd.interpolate_support_array(
         dcx_i,
         dcy_i,
@@ -110,6 +111,8 @@ def test_interpolate_support_array(use_mask):
         sa,
         dv_sa=valid if use_mask else None,
     )
+    assert v.shape == in_shape
+    assert dv.shape == in_shape
 
     sa_masked = sa.copy()
     sa_masked[~valid] = np.nan
