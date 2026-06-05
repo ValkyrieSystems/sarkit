@@ -29,7 +29,7 @@ current_env:
     expire_in: 1 week
 
 min_env:
-  image: python:3.11
+  image: python:3.12
   stage: build
   script:
   - pdm lock -G :all --strategy direct_minimal_versions

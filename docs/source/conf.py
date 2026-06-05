@@ -89,6 +89,7 @@ numpydoc_show_inherited_class_members = {
     "sarkit.cphd.ElementWrapper": False,
     "sarkit.crsd.ElementWrapper": False,
     "sarkit.sicd.ElementWrapper": False,
+    "sarkit.sidd.calculations.CoordinateSystem": False,
     "sarkit.sidd.ElementWrapper": False,
     "sarkit.xmlhelp.ElementWrapper": False,
 }

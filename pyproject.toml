@@ -4,7 +4,7 @@ description = "Suite of SAR-related tools in Python."
 authors = [
     {name = "Valkyrie Systems Corporation", email = "info@govsco.com"},
 ]
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
@@ -14,7 +14,6 @@ classifiers = [
   "Topic :: Scientific/Engineering",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
@@ -37,7 +36,7 @@ test = [
     "nox>=2024.3.2",
 ]
 doc = [
-    "sphinx>=7.2.6,<9",  # v9 broke some autodoc features
+    "sphinx>=9.1.0",
     "numpydoc>=1.7.0",
     "sphinx-rtd-theme>=2.0.0",
     "sphinxcontrib-autoprogram>=0.1.9",
