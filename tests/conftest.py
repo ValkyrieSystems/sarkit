@@ -516,7 +516,7 @@ def example_crsdrcv(tmp_path_factory, example_crsdsar):
     _remove(crsd_etree, "{*}PVP/{*}TxPulseIndex")
     for pvp_offset in crsd_etree.findall("{*}PVP/*/{*}Offset"):
         if int(pvp_offset.text) > tx_pulse_index_offset:
-            pvp_offset.text = str(int(pvp_offset.text) - 8)
+            pvp_offset.text = str(int(pvp_offset.text) - 1)
     crsd_etree.find("{*}Data/{*}Receive/{*}NumBytesPVP").text = str(
         int(crsd_etree.findtext("{*}Data/{*}Receive/{*}NumBytesPVP")) - 8
     )

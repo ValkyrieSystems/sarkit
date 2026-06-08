@@ -620,7 +620,7 @@
       <Format>X=F8;Y=F8;Z=F8;</Format>
     </RcvVel>
     <FRCV1>
-      <Offset>8</Offset>
+      <Offset>27</Offset>
       <Size>1</Size>
       <Format>F8</Format>
     </FRCV1>
@@ -680,7 +680,7 @@
       <Format>F8</Format>
     </DGRGC>
     <TxPulseIndex>
-      <Offset>27</Offset>
+      <Offset>8</Offset>
       <Size>1</Size>
       <Format>I8</Format>
     </TxPulseIndex>
