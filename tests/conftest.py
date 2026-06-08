@@ -208,6 +208,33 @@ def example_crsdsar(tmp_path_factory):
     pvps["DFIC0"][1] = -10
     pvps["FICRate"][1] = 10
 
+    # Gain/Phase arrays
+    gp_arrays = {}
+    crsd_ew = skcrsd.ElementWrapper(crsd_etree.getroot())
+    for gp_ew in crsd_ew["SupportArray"]["GainPhaseArray"]:
+        sa_id = gp_ew["Identifier"]
+        sadata_ew = crsd_ew["Data"]["Support"].find("SupportArray", SAId=sa_id)
+        x = (
+            gp_ew["X0"]
+            + np.arange(sadata_ew["NumRows"])[..., np.newaxis] * gp_ew["XSS"]
+        )
+        y = gp_ew["Y0"] + np.arange(sadata_ew["NumCols"]) * gp_ew["YSS"]
+        arr = np.zeros(
+            (sadata_ew["NumRows"], sadata_ew["NumCols"]),
+            dtype=skcrsd.binary_format_string_to_dtype(gp_ew["ElementFormat"]),
+        )
+        x_coef = -12.0 / max(abs(x)) ** 2
+        y_coef = -12.0 / max(abs(y)) ** 2
+        arr["Gain"] = x_coef * x**2 + y_coef * y**2
+        arr["Phase"] = x + y
+        nodata = (x**2 + y**2) > 1
+        arr[nodata] = np.nan
+        if nodata.any():
+            gp_ew["NODATA"] = np.full(
+                (), np.nan, dtype=arr.dtype.newbyteorder(">")
+            ).tobytes()
+        gp_arrays[sa_id] = arr
+
     tmp_crsd = (
         tmp_path_factory.mktemp("data") / good_crsd_xml_path.with_suffix(".crsd").name
     )
@@ -220,6 +247,8 @@ def example_crsdsar(tmp_path_factory):
         cw.write_ppp(sequence_id, ppps)
         cw.write_pvp(channel_id, pvps)
         cw.write_signal(channel_id, signal)
+        for sa_id, arr in gp_arrays.items():
+            cw.write_support_array(sa_id, arr)
     yield tmp_crsd
 
 

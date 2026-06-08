@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Antenna parameters computations `compute_eb` and `compute_apat` in `sarkit.crsd`
+
 ### Fixed
 - Failure when writing very small SICDs
 - `ElementWrapper.setdefault` now properly inserts subelements

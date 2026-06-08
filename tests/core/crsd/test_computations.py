@@ -159,3 +159,78 @@ def test_compute_reference_geometry_tx(example_crsdtx):
     basis_version = lxml.etree.QName(crsdxml.getroot()).namespace
     schema = lxml.etree.XMLSchema(file=skcrsd.VERSION_INFO[basis_version]["schema"])
     schema.assertValid(crsdxml)
+
+
+def test_compute_eb():
+    eb0 = [0.5, 0.3]
+    eb = skcrsd.compute_eb(eb0, [12, 10], 10, 0.8, 0.3)
+    assert not np.allclose(eb0, eb[0])
+    np.testing.assert_array_equal(eb0, eb[1])
+
+    eb = skcrsd.compute_eb(
+        np.zeros((3, 4, 5, 2)),
+        np.ones((3, 1, 5)),
+        np.ones((4, 1)),
+        np.ones((3, 1, 1)),
+        np.ones(
+            5,
+        ),
+    )
+    assert eb.shape == (3, 4, 5, 2)
+
+
+def test_compute_apat(example_crsdsar):
+    with open(example_crsdsar, "rb") as f, skcrsd.Reader(f) as r:
+        crsdxml = r.metadata.xmltree
+        crsd_ew = skcrsd.ElementWrapper(crsdxml.getroot())
+        apat_ew = crsd_ew["Antenna"]["AntPattern"][0]
+        array_gp = r.read_support_array(apat_ew["ArrayGPId"])
+        elem_gp = r.read_support_array(apat_ew["ElemGPId"])
+
+    array_meta = skcrsd.ArrayElemSaMetadata.from_xml(crsdxml, apat_ew["ArrayGPId"])
+
+    # array pattern valid within DCX/DCY= ~ +/-0.00038
+    # element pattern valid within DCX/DCY unit circle
+    rng = np.random.default_rng()
+    ap = 0.0007 * rng.random((6, 5, 3, 2)) - 0.00035
+    eb = 0.0007 * rng.random((3, 2)) - 0.00035
+
+    gp_bs, dv = skcrsd.compute_apat(
+        eb,
+        ap,
+        apat_ew["FreqZero"],
+        apat_params=skcrsd.ApatParams.from_xml(crsdxml, apat_ew["Identifier"]),
+        array_sa=array_gp,
+        array_sa_metadata=array_meta,
+        elem_sa=elem_gp,
+        elem_sa_metadata=skcrsd.ArrayElemSaMetadata.from_xml(
+            crsdxml, apat_ew["ElemGPId"]
+        ),
+    )
+    assert gp_bs.shape == (6, 5, 3)
+    assert gp_bs.shape == dv.shape
+    assert np.array_equal(dv, np.abs(ap - eb).max(axis=-1) < np.abs(array_meta.dcx_0))
+
+    ap = [
+        [0.0, 0.0],
+        [1.0, 1.0],
+        [0.0, 0.0],
+    ]
+    eb = [
+        [0.0, 0.0],
+        [1.0, 1.0],
+        [0.0005, 0.0005],  # outside array but within element
+    ]
+    gp_bs, dv = skcrsd.compute_apat(
+        eb,
+        ap,
+        apat_ew["FreqZero"],
+        apat_params=skcrsd.ApatParams.from_xml(crsdxml, apat_ew["Identifier"]),
+        array_sa=array_gp,
+        array_sa_metadata=array_meta,
+        elem_sa=elem_gp,
+        elem_sa_metadata=skcrsd.ArrayElemSaMetadata.from_xml(
+            crsdxml, apat_ew["ElemGPId"]
+        ),
+    )
+    assert np.array_equal(dv, [True, False, False])
