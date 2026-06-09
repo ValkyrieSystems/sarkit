@@ -83,15 +83,16 @@ def test_compute_dwelltimes():
 
 
 @pytest.mark.parametrize("use_mask", (True, False))
-def test_interpolate_support_array(use_mask):
+@pytest.mark.parametrize("in_shape", [(), (24,), (3, 40, 50)])
+def test_interpolate_support_array(use_mask, in_shape):
     dcx_0, dcy_0 = -0.75, -0.8
     num_rows, num_cols = 51, 29
 
     dcx = np.linspace(dcx_0, -dcx_0, num_rows, endpoint=True)
     dcy = np.linspace(dcy_0, -dcy_0, num_cols, endpoint=True)
 
-    dcx_ss = np.diff(dcx[:2])
-    dcy_ss = np.diff(dcy[:2])
+    dcx_ss = dcx[1] - dcx[0]
+    dcy_ss = dcy[1] - dcy[0]
 
     dcxx, dcyy = np.meshgrid(dcx, dcy, indexing="ij")
 
@@ -99,7 +100,7 @@ def test_interpolate_support_array(use_mask):
     valid = np.sqrt(dcxx**2 + dcyy**2) < 0.9
 
     rng = np.random.default_rng()
-    dcx_i, dcy_i = 2 * rng.random((2, 3, 40, 50)) - 1
+    dcx_i, dcy_i = 2 * rng.random((2,) + in_shape) - 1
     v, dv = skcrsd.interpolate_support_array(
         dcx_i,
         dcy_i,
@@ -110,6 +111,8 @@ def test_interpolate_support_array(use_mask):
         sa,
         dv_sa=valid if use_mask else None,
     )
+    assert v.shape == in_shape
+    assert dv.shape == in_shape
 
     sa_masked = sa.copy()
     sa_masked[~valid] = np.nan
@@ -159,3 +162,78 @@ def test_compute_reference_geometry_tx(example_crsdtx):
     basis_version = lxml.etree.QName(crsdxml.getroot()).namespace
     schema = lxml.etree.XMLSchema(file=skcrsd.VERSION_INFO[basis_version]["schema"])
     schema.assertValid(crsdxml)
+
+
+def test_compute_eb():
+    eb0 = [0.5, 0.3]
+    eb = skcrsd.compute_eb(eb0, [12, 10], 10, 0.8, 0.3)
+    assert not np.allclose(eb0, eb[0])
+    np.testing.assert_array_equal(eb0, eb[1])
+
+    eb = skcrsd.compute_eb(
+        np.zeros((3, 4, 5, 2)),
+        np.ones((3, 1, 5)),
+        np.ones((4, 1)),
+        np.ones((3, 1, 1)),
+        np.ones(
+            5,
+        ),
+    )
+    assert eb.shape == (3, 4, 5, 2)
+
+
+def test_compute_apat(example_crsdsar):
+    with open(example_crsdsar, "rb") as f, skcrsd.Reader(f) as r:
+        crsdxml = r.metadata.xmltree
+        crsd_ew = skcrsd.ElementWrapper(crsdxml.getroot())
+        apat_ew = crsd_ew["Antenna"]["AntPattern"][0]
+        array_gp = r.read_support_array(apat_ew["ArrayGPId"])
+        elem_gp = r.read_support_array(apat_ew["ElemGPId"])
+
+    array_meta = skcrsd.ArrayElemSaMetadata.from_xml(crsdxml, apat_ew["ArrayGPId"])
+
+    # array pattern valid within DCX/DCY= ~ +/-0.00038
+    # element pattern valid within DCX/DCY unit circle
+    rng = np.random.default_rng()
+    ap = 0.0007 * rng.random((6, 5, 3, 2)) - 0.00035
+    eb = 0.0007 * rng.random((3, 2)) - 0.00035
+
+    gp_bs, dv = skcrsd.compute_apat(
+        eb,
+        ap,
+        apat_ew["FreqZero"],
+        apat_params=skcrsd.ApatParams.from_xml(crsdxml, apat_ew["Identifier"]),
+        array_sa=array_gp,
+        array_sa_metadata=array_meta,
+        elem_sa=elem_gp,
+        elem_sa_metadata=skcrsd.ArrayElemSaMetadata.from_xml(
+            crsdxml, apat_ew["ElemGPId"]
+        ),
+    )
+    assert gp_bs.shape == (6, 5, 3)
+    assert gp_bs.shape == dv.shape
+    assert np.array_equal(dv, np.abs(ap - eb).max(axis=-1) < np.abs(array_meta.dcx_0))
+
+    ap = [
+        [0.0, 0.0],
+        [1.0, 1.0],
+        [0.0, 0.0],
+    ]
+    eb = [
+        [0.0, 0.0],
+        [1.0, 1.0],
+        [0.0005, 0.0005],  # outside array but within element
+    ]
+    gp_bs, dv = skcrsd.compute_apat(
+        eb,
+        ap,
+        apat_ew["FreqZero"],
+        apat_params=skcrsd.ApatParams.from_xml(crsdxml, apat_ew["Identifier"]),
+        array_sa=array_gp,
+        array_sa_metadata=array_meta,
+        elem_sa=elem_gp,
+        elem_sa_metadata=skcrsd.ArrayElemSaMetadata.from_xml(
+            crsdxml, apat_ew["ElemGPId"]
+        ),
+    )
+    assert np.array_equal(dv, [True, False, False])
