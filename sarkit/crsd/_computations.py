@@ -3,8 +3,9 @@ Select calculations from the CRSD D&I
 """
 
 import copy
+import dataclasses
 import functools
-from typing import Any
+from typing import Any, Self
 
 import lxml.etree
 import numpy as np
@@ -509,6 +510,13 @@ def interpolate_support_array(
     sa = np.asarray(sa)
     x = np.atleast_1d(x)
     y = np.atleast_1d(y)
+    if sa.dtype.names is not None:
+        sa_out = np.empty(shape=x.shape, dtype=sa.dtype)
+        for name in sa.dtype.names:
+            sa_out[name], dv = interpolate_support_array(
+                x, y, x_0, y_0, x_ss, y_ss, sa[name], dv_sa
+            )
+        return sa_out, dv
     num_rows, num_cols = sa.shape
     dv = np.ones_like(x, dtype=bool)
 
@@ -835,3 +843,216 @@ def compute_reference_geometry(
         }
 
     return refgeom.elem
+
+
+def compute_eb(
+    eb0: npt.ArrayLike,
+    f: npt.ArrayLike,
+    fa_0: npt.ArrayLike,
+    ebfs_dcxsf: npt.ArrayLike,
+    ebfs_dcysf: npt.ArrayLike,
+) -> np.ndarray:
+    """Compute the electrical boresight (EB) pointing vector at frequency ``f``.
+
+    Parameters
+    ----------
+    eb0 : (..., 2) array_like
+        Electrical boresight steering vector at antenna reference frequency with DCX, DCY in last dimension.
+    f : array_like
+        Frequencies in Hz at which to compute the electrical boresight.
+    fa_0 : array_like
+        Antenna pattern reference frequency in Hz.
+    ebfs_dcxsf, ebfs_dcysf : array_like
+        EB frequency shift scale factors for DCX and DCY, respectively (dimensionless).
+
+    Returns
+    -------
+    (..., 2) ndarray
+        EB steering vector at frequency ``f``.
+    """
+    fa_0 = np.asarray(fa_0)
+    eb0 = np.asarray(eb0)
+
+    # 9.2.4
+    # (1)
+    delta_f_frac = (np.asarray(f) - fa_0) / fa_0
+
+    # (2)
+    eb_dcx = eb0[..., 0] / (1 + np.asarray(ebfs_dcxsf) * delta_f_frac)
+    eb_dcy = eb0[..., 1] / (1 + np.asarray(ebfs_dcysf) * delta_f_frac)
+
+    return np.stack((eb_dcx, eb_dcy), axis=-1)
+
+
+@dataclasses.dataclass(kw_only=True)
+class ApatParams:
+    """Set of Antenna Pattern parameters"""
+
+    fa_0: float
+    cG_BS: np.ndarray  # noqa N815
+    EBFS_DCXSF: float
+    EBFS_DCYSF: float
+    MLFD_DCXSF: float
+    MLFD_DCYSF: float
+
+    @classmethod
+    def from_xml(cls, crsd_xmltree: lxml.etree.ElementTree, apat_id: str) -> Self:
+        """Extract relevant antenna pattern parameters from CRSD XML.
+
+        Parameters
+        ----------
+        crsd_xmltree : lxml.etree.ElementTree
+            CRSD XML metadata
+        apat_id : str
+            String that uniquely identifies the antenna pattern
+
+        Returns
+        -------
+        ApatParams
+            The antenna pattern parameter object initialized with values from the XML.
+        """
+        crsd_ew = skcrsd_xml.ElementWrapper(crsd_xmltree.getroot())
+        apat_ew = crsd_ew["Antenna"].find("AntPattern", Identifier=apat_id)
+        return cls(
+            fa_0=apat_ew["FreqZero"],
+            cG_BS=apat_ew["GainBSPoly"],
+            EBFS_DCXSF=apat_ew["EBFreqShift"]["DCXSF"],
+            EBFS_DCYSF=apat_ew["EBFreqShift"]["DCYSF"],
+            MLFD_DCXSF=apat_ew["MLFreqDilation"]["DCXSF"],
+            MLFD_DCYSF=apat_ew["MLFreqDilation"]["DCYSF"],
+        )
+
+
+@dataclasses.dataclass(kw_only=True)
+class ArrayElemSaMetadata:
+    """Gain/Phase array metadata"""
+
+    NumRows: int
+    NumCols: int
+    dcx_0: float
+    dcy_0: float
+    dcx_ss: float
+    dcy_ss: float
+
+    @classmethod
+    def from_xml(cls, crsd_xmltree: lxml.etree.ElementTree, sa_id: str) -> Self:
+        """Extract relevant support array metadata parameters from CRSD XML.
+
+        Parameters
+        ----------
+        crsd_xmltree : lxml.etree.ElementTree
+            CRSD XML metadata
+        sa_id : str
+            Unique support array identifier
+
+        Returns
+        -------
+        ArrayElemSaMetadata
+            The support array metadata parameter object initialized with values from the XML.
+        """
+        crsd_ew = skcrsd_xml.ElementWrapper(crsd_xmltree.getroot())
+        sa_data_ew = crsd_ew["Data"]["Support"].find("SupportArray", SAId=sa_id)
+        sa_ew = crsd_ew["SupportArray"].find("GainPhaseArray", Identifier=sa_id)
+        return cls(
+            NumRows=sa_data_ew["NumRows"],
+            NumCols=sa_data_ew["NumCols"],
+            dcx_0=sa_ew["X0"],
+            dcy_0=sa_ew["Y0"],
+            dcx_ss=sa_ew["XSS"],
+            dcy_ss=sa_ew["YSS"],
+        )
+
+
+def compute_apat(
+    eb0: npt.ArrayLike,
+    ap: npt.ArrayLike,
+    f: npt.ArrayLike,
+    *,
+    apat_params: ApatParams,
+    array_sa: npt.ArrayLike,
+    array_sa_metadata: ArrayElemSaMetadata,
+    elem_sa: npt.ArrayLike,
+    elem_sa_metadata: ArrayElemSaMetadata,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Compute the antenna beam shape pattern for selected antenna pointing vectors and frequencies.
+
+    Parameters
+    ----------
+    eb0 : (..., 2) array_like
+        Electrical boresight steering vector at antenna reference frequency with DCX, DCY in last dimension.
+    ap : (..., 2) array_like
+        Selected antenna pointing vectors with DCX, DCY in last dimension.
+    f : array_like
+        Frequencies in Hz at which to compute the electrical boresight.
+    apat_params : ApatParams
+        Input set of APAT parameters
+    array_sa : array_like
+        APAT array gain/phase support array
+    array_sa_metadata : ArrayElemSaMetadata
+        APAT array gain/phase support array metadata
+    elem_sa : array_like
+        APAT element gain/phase support array
+    elem_sa_metadata : ArrayElemSaMetadata
+        APAT element gain/phase support array metadata
+
+    Returns
+    -------
+    gp_bs : (...) ndarray
+        Beam shape gain phase for selected pointing vectors and frequencies.
+    dv : (...) ndarray
+        Data valid flag for each element in ``gp_bs``
+    """
+    ap = np.asarray(ap)
+
+    # 9.3.4
+    # (1)
+    eb = compute_eb(
+        eb0, f, apat_params.fa_0, apat_params.EBFS_DCXSF, apat_params.EBFS_DCYSF
+    )
+
+    # (2)
+    delta_f_frac = (np.asarray(f) - apat_params.fa_0) / apat_params.fa_0
+    delta_g_bs = npp.polyval(delta_f_frac, apat_params.cG_BS)
+
+    # (3)
+    arr_sf_dcx = 1 + apat_params.MLFD_DCXSF * delta_f_frac
+    arr_sf_dcy = 1 + apat_params.MLFD_DCYSF * delta_f_frac
+
+    # (4)
+    delta_ap_dcx = (ap[..., 0] - eb[..., 0]) * arr_sf_dcx
+    delta_ap_dcy = (ap[..., 1] - eb[..., 1]) * arr_sf_dcy
+
+    # (5)
+    gp_arr, dv_arr = interpolate_support_array(
+        delta_ap_dcx,
+        delta_ap_dcy,
+        array_sa_metadata.dcx_0,
+        array_sa_metadata.dcy_0,
+        array_sa_metadata.dcx_ss,
+        array_sa_metadata.dcy_ss,
+        array_sa,
+        ~array_sa.mask["Gain"] if np.ma.isMaskedArray(array_sa) else None,  # type: ignore
+    )
+
+    # (6)
+    gp_elem, dv_elem = interpolate_support_array(
+        ap[..., 0],
+        ap[..., 1],
+        elem_sa_metadata.dcx_0,
+        elem_sa_metadata.dcy_0,
+        elem_sa_metadata.dcx_ss,
+        elem_sa_metadata.dcy_ss,
+        elem_sa,
+        ~elem_sa.mask["Gain"] if np.ma.isMaskedArray(elem_sa) else None,  # type: ignore
+    )
+
+    # (7)
+    # bs = beam shape, not boresight
+    gp_bs = np.empty(
+        np.broadcast_shapes(gp_arr.shape, gp_elem.shape), dtype=gp_arr.dtype
+    )
+    gp_bs["Gain"] = delta_g_bs + gp_arr["Gain"] + gp_elem["Gain"]
+    gp_bs["Phase"] = gp_arr["Phase"] + gp_elem["Phase"]
+    dv = dv_arr & dv_elem
+
+    return gp_bs, dv

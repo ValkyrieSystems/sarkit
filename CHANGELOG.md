@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Antenna parameters computations `compute_eb` and `compute_apat` in `sarkit.crsd`
+
 
 ## [1.8.1] - 2026-06-03
 
