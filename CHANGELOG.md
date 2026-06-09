@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Antenna parameters computations `compute_eb` and `compute_apat` in `sarkit.crsd`
+
+### Fixed
+- Erroneous output dimensionality for scalar inputs to `sarkit.crsd.interpolate_support_array`
+
 
 ## [1.8.1] - 2026-06-03
 
