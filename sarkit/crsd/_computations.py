@@ -508,8 +508,8 @@ def interpolate_support_array(
         Data valid array, where `True` indicates that ``values`` contains a valid value
     """
     sa = np.asarray(sa)
-    x = np.atleast_1d(x)
-    y = np.atleast_1d(y)
+    x = np.asarray(x)
+    y = np.asarray(y)
     if sa.dtype.names is not None:
         sa_out = np.empty(shape=x.shape, dtype=sa.dtype)
         for name in sa.dtype.names:
