@@ -43,11 +43,11 @@ def test_raw(example_crsdsar):
         check=True,
     )
     raw_xml = proc.stdout
-
+    parser = lxml.etree.XMLParser(remove_blank_text=True)
     assert len(raw_xml) <= len(pretty_xml)
-    assert lxml.etree.tostring(
-        lxml.etree.fromstring(raw_xml), pretty_print=True
-    ) == lxml.etree.tostring(lxml.etree.fromstring(pretty_xml), pretty_print=True)
+    assert lxml.etree.canonicalize(
+        lxml.etree.fromstring(raw_xml, parser=parser)
+    ) == lxml.etree.canonicalize(lxml.etree.fromstring(pretty_xml, parser=parser))
 
 
 def test_smart_open(example_crsdsar):

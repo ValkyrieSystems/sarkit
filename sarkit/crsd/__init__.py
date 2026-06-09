@@ -103,6 +103,10 @@ Antenna Parameters
    :toctree: generated/
 
    interpolate_support_array
+   compute_eb
+   ApatParams
+   ArrayElemSaMetadata
+   compute_apat
    compute_h_v_los_unit_vectors
    compute_h_v_pol_parameters
 
@@ -142,10 +146,14 @@ CRSD 1.0
 """
 
 from ._computations import (
+    ApatParams,
+    ArrayElemSaMetadata,
+    compute_apat,
     compute_apc_to_pt_geometry_parameters,
     compute_arp_to_rpt_geometry,
     compute_dwelltimes_using_dta,
     compute_dwelltimes_using_poly,
+    compute_eb,
     compute_h_v_los_unit_vectors,
     compute_h_v_pol_parameters,
     compute_ref_point_parameters,
@@ -207,6 +215,8 @@ __all__ = [
     "SECTION_TERMINATOR",
     "VERSION_INFO",
     "AddedPxpType",
+    "ApatParams",
+    "ArrayElemSaMetadata",
     "BoolType",
     "DblType",
     "EdfType",
@@ -235,10 +245,12 @@ __all__ = [
     "XyzPolyType",
     "XyzType",
     "binary_format_string_to_dtype",
+    "compute_apat",
     "compute_apc_to_pt_geometry_parameters",
     "compute_arp_to_rpt_geometry",
     "compute_dwelltimes_using_dta",
     "compute_dwelltimes_using_poly",
+    "compute_eb",
     "compute_h_v_los_unit_vectors",
     "compute_h_v_pol_parameters",
     "compute_ref_point_parameters",
