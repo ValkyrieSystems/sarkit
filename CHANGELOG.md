@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Antenna parameters computations `compute_eb` and `compute_apat` in `sarkit.crsd`
 
+### Changed
+- Minimum supported version of Python raised to 3.12
+
 ### Fixed
 - Erroneous output dimensionality for scalar inputs to `sarkit.crsd.interpolate_support_array`
 
