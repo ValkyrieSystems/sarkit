@@ -98,7 +98,7 @@ class XsdHelper(abc.ABC):
     def _read_xsdtypes_json(self, root_ns: str) -> str:
         """Return the text contents of the appropriate xsdtypes JSON"""
 
-    def get_typeinfo(self, elempath: str, roottag: str):
+    def get_typeinfo(self, elempath: str, roottag: str) -> tuple[str, XsdTypeDef]:
         """Return the typename and typedef for a elementpath"""
         current_typename = self.xsdtypes["/"][roottag]
         current_typedef = self.xsdtypes[current_typename]

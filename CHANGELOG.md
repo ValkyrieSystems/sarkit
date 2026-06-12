@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Antenna parameters computations `compute_eb` and `compute_apat` in `sarkit.crsd`
+- PVP convenience functions `dtype_to_pvp_element` and `get_defined_pvp_dtype` in `sarkit.cphd`
 
 ### Changed
 - Minimum supported version of Python raised to 3.12

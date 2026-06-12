@@ -14,6 +14,7 @@ import numpy.typing as npt
 from sarkit import _iohelp
 
 from . import _constants as cphdconst
+from . import _pvps as cphdpvps
 
 
 def _to_binary_format_string_recursive(dtype):
@@ -281,57 +282,6 @@ def read_file_header(file):
     return file_type_header, kvp_list
 
 
-def get_pvp_dtype(cphd_xmltree):
-    """Get PVP dtype.
-
-    Parameters
-    ----------
-    cphd_xmltree : lxml.etree.ElementTree
-        CPHD XML ElementTree
-
-    Returns
-    -------
-    numpy.dtype
-    """
-
-    pvp_node = cphd_xmltree.find("./{*}PVP")
-    num_bytes_pvp = int(cphd_xmltree.findtext("./{*}Data/{*}NumBytesPVP"))
-
-    bytes_per_word = 8
-    names = []
-    formats = []
-    offsets = []
-
-    def handle_field(field_node):
-        node_name = lxml.etree.QName(field_node).localname
-        if node_name == "AddedPVP":
-            names.append(field_node.find("./{*}Name").text)
-        else:
-            names.append(node_name)
-
-        formats.append(
-            binary_format_string_to_dtype(field_node.find("./{*}Format").text)
-        )
-        offsets.append(int(field_node.find("./{*}Offset").text) * bytes_per_word)
-
-    for pnode in pvp_node:
-        if lxml.etree.QName(pnode).localname in ("TxAntenna", "RcvAntenna"):
-            for subnode in pnode:
-                handle_field(subnode)
-        else:
-            handle_field(pnode)
-
-    dtype = np.dtype(
-        {
-            "names": names,
-            "formats": formats,
-            "offsets": offsets,
-            "itemsize": num_bytes_pvp,
-        }
-    )
-    return dtype
-
-
 class Reader:
     """Read a CPHD file
 
@@ -550,7 +500,7 @@ class Reader:
         )
         count = max(stop_vector - start_vector, 0)
 
-        pvp_dtype = get_pvp_dtype(self.metadata.xmltree).newbyteorder("B")
+        pvp_dtype = cphdpvps.get_pvp_dtype(self.metadata.xmltree).newbyteorder("B")
         slice_offset = pvp_dtype.itemsize * start_vector
         pvp_offset = int(channel_info.find("./{*}PVPArrayByteOffset").text)
         self._file_object.seek(slice_offset + pvp_offset + self._pvp_block_byte_offset)
@@ -882,7 +832,7 @@ class Writer:
         self._file_object.seek(
             self._channel_size_offsets[channel_identifier]["pvp_offset"], os.SEEK_CUR
         )
-        output_dtype = get_pvp_dtype(self._metadata.xmltree).newbyteorder(">")
+        output_dtype = cphdpvps.get_pvp_dtype(self._metadata.xmltree).newbyteorder(">")
         pvp_array.astype(output_dtype, copy=False).tofile(self._file_object)
 
     def write_support_array(
