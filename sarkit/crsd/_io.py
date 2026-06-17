@@ -15,6 +15,7 @@ import sarkit.cphd as skcphd
 from sarkit import _iohelp
 
 from . import _constants as crsdconst
+from . import _pxps as crsdpxps
 
 
 # Happens to match CPHD
@@ -100,83 +101,6 @@ class Metadata:
 
 
 read_file_header = skcphd.read_file_header
-
-
-def _get_pxp_dtype(pxp_node, num_bytes):
-    """Get PXP dtype.
-
-    Parameters
-    ----------
-    pxp_elem: lxml.etree.Element
-        The root element of the PXP data descriptor in the CRSD XML
-    num_bytes: int
-        Number of bytes in a single PXP set
-
-    Returns
-    -------
-    numpy.dtype
-    """
-
-    bytes_per_word = 8
-    names = []
-    formats = []
-    offsets = []
-
-    def handle_field(field_node):
-        node_name = lxml.etree.QName(field_node).localname
-        if node_name in ("AddedPVP", "AddedPPP"):
-            names.append(field_node.find("./{*}Name").text)
-        else:
-            names.append(node_name)
-
-        formats.append(
-            binary_format_string_to_dtype(field_node.find("./{*}Format").text)
-        )
-        offsets.append(int(field_node.find("./{*}Offset").text) * bytes_per_word)
-
-    for pnode in pxp_node:
-        handle_field(pnode)
-
-    dtype = np.dtype(
-        {"names": names, "formats": formats, "offsets": offsets, "itemsize": num_bytes}
-    )
-    return dtype
-
-
-def get_ppp_dtype(crsd_xmltree):
-    """Get PPP dtype.
-
-    Parameters
-    ----------
-    crsd_xmltree : lxml.etree.ElementTree
-        CRSD XML ElementTree
-
-    Returns
-    -------
-    numpy.dtype
-    """
-    return _get_pxp_dtype(
-        crsd_xmltree.find("./{*}PPP"),
-        int(crsd_xmltree.findtext("./{*}Data/{*}Transmit/{*}NumBytesPPP")),
-    )
-
-
-def get_pvp_dtype(crsd_xmltree):
-    """Get PVP dtype.
-
-    Parameters
-    ----------
-    crsd_xmltree : lxml.etree.ElementTree
-        CRSD XML ElementTree
-
-    Returns
-    -------
-    numpy.dtype
-    """
-    return _get_pxp_dtype(
-        crsd_xmltree.find("./{*}PVP"),
-        int(crsd_xmltree.findtext("./{*}Data/{*}Receive/{*}NumBytesPVP")),
-    )
 
 
 class Reader:
@@ -430,7 +354,7 @@ class Reader:
         assert self._pvp_block_byte_offset is not None  # placate mypy
         self._file_object.seek(pvp_offset + self._pvp_block_byte_offset)
 
-        pvp_dtype = get_pvp_dtype(self.metadata.xmltree).newbyteorder("B")
+        pvp_dtype = crsdpxps.get_pvp_dtype(self.metadata.xmltree).newbyteorder("B")
         out = _iohelp.ensure_array(out, (num_vect,), pvp_dtype)
         _iohelp.fromfile(self._file_object, pvp_dtype, num_vect, out=out)
         return out
@@ -495,7 +419,7 @@ class Reader:
         assert self._ppp_block_byte_offset is not None  # placate mypy
         self._file_object.seek(ppp_offset + self._ppp_block_byte_offset)
 
-        ppp_dtype = get_ppp_dtype(self.metadata.xmltree).newbyteorder("B")
+        ppp_dtype = crsdpxps.get_ppp_dtype(self.metadata.xmltree).newbyteorder("B")
         out = _iohelp.ensure_array(out, (num_pulse,), ppp_dtype)
         _iohelp.fromfile(self._file_object, ppp_dtype, num_pulse, out=out)
         return out
@@ -885,7 +809,7 @@ class Writer:
         self._file_object.seek(
             self._channel_size_offsets[channel_identifier]["pvp_offset"], os.SEEK_CUR
         )
-        output_dtype = get_pvp_dtype(self._metadata.xmltree).newbyteorder(">")
+        output_dtype = crsdpxps.get_pvp_dtype(self._metadata.xmltree).newbyteorder(">")
         pvp_array.astype(output_dtype, copy=False).tofile(self._file_object)
 
     def write_ppp(self, sequence_identifier: str, ppp_array: npt.NDArray):
@@ -909,7 +833,7 @@ class Writer:
         self._file_object.seek(
             self._sequence_size_offsets[sequence_identifier]["ppp_offset"], os.SEEK_CUR
         )
-        output_dtype = get_ppp_dtype(self._metadata.xmltree).newbyteorder(">")
+        output_dtype = crsdpxps.get_ppp_dtype(self._metadata.xmltree).newbyteorder(">")
         ppp_array.astype(output_dtype, copy=False).tofile(self._file_object)
 
     def write_support_array(

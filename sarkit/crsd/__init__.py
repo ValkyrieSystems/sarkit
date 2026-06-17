@@ -22,14 +22,26 @@ Data Structure & File Format
    Reader
    Writer
    read_file_header
-   get_pvp_dtype
-   get_ppp_dtype
    binary_format_string_to_dtype
    dtype_to_binary_format_string
    mask_support_array
 
+Per Vector/Pulse Parameters
+
+.. autosummary::
+   :toctree: generated/
+
+   dtype_to_ppp_element
+   dtype_to_pvp_element
+   get_ppp_dtype
+   get_pvp_dtype
+   get_defined_ppp_dtype
+   get_defined_pvp_dtype
+
 XML Metadata
 ============
+
+High-level classes and methods
 
 .. autosummary::
    :toctree: generated/
@@ -37,6 +49,12 @@ XML Metadata
    XmlHelper
    ElementWrapper
    XsdHelper
+
+Transcoders for defined XML parameter types
+
+.. autosummary::
+   :toctree: generated/
+
    TxtType
    EnuType
    BoolType
@@ -56,6 +74,13 @@ XML Metadata
    AddedPxpType
    MtxType
    EdfType
+
+Derived/convenience transcoders
+
+.. autosummary::
+   :toctree: generated/
+
+   DefinedPxpType
    ImageAreaCornerPointsType
    ParameterType
 
@@ -172,10 +197,16 @@ from ._io import (
     Writer,
     binary_format_string_to_dtype,
     dtype_to_binary_format_string,
-    get_ppp_dtype,
-    get_pvp_dtype,
     mask_support_array,
     read_file_header,
+)
+from ._pxps import (
+    dtype_to_ppp_element,
+    dtype_to_pvp_element,
+    get_defined_ppp_dtype,
+    get_defined_pvp_dtype,
+    get_ppp_dtype,
+    get_pvp_dtype,
 )
 from ._scenecoords import (
     ecf_to_iac,
@@ -187,6 +218,7 @@ from ._xml import (
     AddedPxpType,
     BoolType,
     DblType,
+    DefinedPxpType,
     EdfType,
     ElementWrapper,
     EnuType,
@@ -219,6 +251,7 @@ __all__ = [
     "ArrayElemSaMetadata",
     "BoolType",
     "DblType",
+    "DefinedPxpType",
     "EdfType",
     "ElementWrapper",
     "EnuType",
@@ -256,7 +289,11 @@ __all__ = [
     "compute_ref_point_parameters",
     "compute_reference_geometry",
     "dtype_to_binary_format_string",
+    "dtype_to_ppp_element",
+    "dtype_to_pvp_element",
     "ecf_to_iac",
+    "get_defined_ppp_dtype",
+    "get_defined_pvp_dtype",
     "get_ppp_dtype",
     "get_pvp_dtype",
     "iac_to_ecf",

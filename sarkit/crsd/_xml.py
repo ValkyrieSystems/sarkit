@@ -112,6 +112,19 @@ class AddedPxpType(skcphd.AddedPvpType):
     """Transcoder for Added Per-x-Parameter (APxP) XML parameter types."""
 
 
+class DefinedPxpType(skcphd.DefinedPvpType):
+    """
+    Transcoder for Per-x-Parameter (PxP) XML parameter types with a fixed size and format.
+
+    Similar to `PxpType`, except ``dtype`` and ``size`` are optional when using `set_elem`
+
+    Parameters
+    ----------
+    format_string : str
+        Binary format string that defines the PxP's Format
+    """
+
+
 @skxt.inheritdocstring
 class ImageAreaCornerPointsType(skcphd.ImageAreaCornerPointsType):
     pass
@@ -204,11 +217,21 @@ class XsdHelper(skxml.XsdHelper):
             "{http://api.nsgreg.nga.mil/schema/crsd/1.0}Matrix4x4Type": MtxType((4, 4)),
             "{http://api.nsgreg.nga.mil/schema/crsd/1.0}Matrix6x6Type": MtxType((6, 6)),
             "{http://api.nsgreg.nga.mil/schema/crsd/1.0}ParameterType": ParameterType(),
-            "{http://api.nsgreg.nga.mil/schema/crsd/1.0}PerParameterEB": PxpType(),
-            "{http://api.nsgreg.nga.mil/schema/crsd/1.0}PerParameterF8": PxpType(),
-            "{http://api.nsgreg.nga.mil/schema/crsd/1.0}PerParameterI8": PxpType(),
-            "{http://api.nsgreg.nga.mil/schema/crsd/1.0}PerParameterIntFrac": PxpType(),
-            "{http://api.nsgreg.nga.mil/schema/crsd/1.0}PerParameterXYZ": PxpType(),
+            "{http://api.nsgreg.nga.mil/schema/crsd/1.0}PerParameterEB": DefinedPxpType(
+                "DCX=F8;DCY=F8;"
+            ),
+            "{http://api.nsgreg.nga.mil/schema/crsd/1.0}PerParameterF8": DefinedPxpType(
+                "F8"
+            ),
+            "{http://api.nsgreg.nga.mil/schema/crsd/1.0}PerParameterI8": DefinedPxpType(
+                "I8"
+            ),
+            "{http://api.nsgreg.nga.mil/schema/crsd/1.0}PerParameterIntFrac": DefinedPxpType(
+                "Int=I8;Frac=F8;"
+            ),
+            "{http://api.nsgreg.nga.mil/schema/crsd/1.0}PerParameterXYZ": DefinedPxpType(
+                "X=F8;Y=F8;Z=F8;"
+            ),
             "{http://api.nsgreg.nga.mil/schema/crsd/1.0}Poly1DType": PolyType(),
             "{http://api.nsgreg.nga.mil/schema/crsd/1.0}Poly2DType": Poly2dType(),
             "{http://api.nsgreg.nga.mil/schema/crsd/1.0}UserDefinedPxPType": AddedPxpType(),

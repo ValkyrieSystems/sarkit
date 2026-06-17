@@ -13,47 +13,6 @@ import tests.utils
 DATAPATH = pathlib.Path(__file__).parents[3] / "data"
 
 
-def _last_field(structured_dtype):
-    dtype, offset = sorted(
-        ((dtype, offset) for (dtype, offset) in structured_dtype.fields.values()),
-        key=lambda x: x[1],
-    )[-1]
-
-    return dtype, offset
-
-
-def test_get_pvp_dtype():
-    etree = lxml.etree.parse(DATAPATH / "example-crsd-1.0.xml")
-    num_bytes_pvp = int(etree.find("./{*}Data/{*}Receive/{*}NumBytesPVP").text)
-    pvp_dtype = skcrsd.get_pvp_dtype(etree)
-
-    dtype, offset = _last_field(pvp_dtype)
-    assert pvp_dtype.itemsize == dtype.itemsize + offset  # example has no end pad
-
-    end_pad = 10
-    num_bytes_pvp += end_pad
-    etree.find("./{*}Data/{*}Receive/{*}NumBytesPVP").text = str(num_bytes_pvp)
-    pvp_dtype2 = skcrsd.get_pvp_dtype(etree)
-    dtype, offset = _last_field(pvp_dtype)
-    assert pvp_dtype2.itemsize == dtype.itemsize + offset + end_pad
-
-
-def test_get_ppp_dtype():
-    etree = lxml.etree.parse(DATAPATH / "example-crsd-1.0.xml")
-    num_bytes_ppp = int(etree.find("./{*}Data/{*}Transmit/{*}NumBytesPPP").text)
-    ppp_dtype = skcrsd.get_ppp_dtype(etree)
-
-    dtype, offset = _last_field(ppp_dtype)
-    assert ppp_dtype.itemsize == dtype.itemsize + offset  # example has no end pad
-
-    end_pad = 10
-    num_bytes_ppp += end_pad
-    etree.find("./{*}Data/{*}Transmit/{*}NumBytesPPP").text = str(num_bytes_ppp)
-    ppp_dtype2 = skcrsd.get_ppp_dtype(etree)
-    dtype, offset = _last_field(ppp_dtype)
-    assert ppp_dtype2.itemsize == dtype.itemsize + offset + end_pad
-
-
 def _random_array(shape, dtype, reshape=True):
     rng = np.random.default_rng()
     retval = np.frombuffer(
