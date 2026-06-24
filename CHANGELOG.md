@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Dimensionality mismatch in `sarkit.sicd.projection.apply_apos` for non-scalar projection sets
+- Object construction via `sarkit.sicd.projection.AdjustableParameterOffsets.from_xml` when XML contains zeroes
+
 
 ## [1.9.0] - 2026-06-10
 
