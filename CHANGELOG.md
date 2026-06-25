@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- PVP convenience functions `dtype_to_pvp_element` and `get_defined_pvp_dtype` in `sarkit.cphd`
+- PVP convenience functions `dtype_to_pvp_element` and `get_defined_pvp_dtype` in `sarkit.crsd`
+- PPP convenience functions `dtype_to_ppp_element` and `get_defined_ppp_dtype` in `sarkit.crsd`
+
 ### Fixed
 - Dimensionality mismatch in `sarkit.sicd.projection.apply_apos` for non-scalar projection sets
 - Object construction via `sarkit.sicd.projection.AdjustableParameterOffsets.from_xml` when XML contains zeroes
