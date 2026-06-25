@@ -24,7 +24,7 @@ def compute_ric_basis_vectors(p_ric: npt.ArrayLike, v_ric: npt.ArrayLike):
         Radial, in-track, and cross-track unit vectors that specify the RIC frame
     """
 
-    u_r = p_ric / np.linalg.norm(p_ric, keepdims=True, axis=-1)
+    u_r = np.asarray(p_ric) / np.linalg.norm(p_ric, keepdims=True, axis=-1)
     c = np.cross(u_r, np.asarray(v_ric))
     u_c = c / np.linalg.norm(c, keepdims=True, axis=-1)
     u_i = np.cross(u_c, u_r)

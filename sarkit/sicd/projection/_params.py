@@ -817,46 +817,23 @@ class AdjustableParameterOffsets:
             The adjustable parameter offsets list object initialized with values from the XML.
 
         """
-        xmlhelp = ss_xml.XmlHelper(sicd_xmltree)
+        ew = ss_xml.ElementWrapper(sicd_xmltree.getroot())
+        apos = ew["ErrorStatistics"].get("AdjustableParameterOffsets", None)
+        if apos is not None:
+            return cls(
+                delta_ARP_SCP_COA=apos["ARPPosSCPCOA"],
+                delta_VARP=apos["ARPVel"],
+                delta_tx_SCP_COA=apos["TxTimeSCPCOA"],
+                delta_tr_SCP_COA=apos["RcvTimeSCPCOA"],
+            )
+        bi_apos = ew["ErrorStatistics"]["BistaticAdjustableParameterOffsets"]
         return cls(
-            **{
-                "delta_tx_SCP_COA": xmlhelp.load(
-                    "{*}ErrorStatistics/{*}AdjustableParameterOffsets/{*}TxTimeSCPCOA"
-                )
-                or xmlhelp.load(
-                    "{*}ErrorStatistics/{*}BistaticAdjustableParameterOffsets/{*}TxPlatform/{*}TimeSCPCOA"
-                ),
-                "delta_tr_SCP_COA": xmlhelp.load(
-                    "{*}ErrorStatistics/{*}AdjustableParameterOffsets/{*}RcvTimeSCPCOA"
-                )
-                or xmlhelp.load(
-                    "{*}ErrorStatistics/{*}BistaticAdjustableParameterOffsets/{*}RcvPlatform/{*}TimeSCPCOA"
-                ),
-                # Optional Monostatic Adjustable Offsets
-                "delta_ARP_SCP_COA": xmlhelp.load(
-                    "{*}ErrorStatistics/{*}AdjustableParameterOffsets/{*}ARPPosSCPCOA"
-                ),
-                "delta_VARP": xmlhelp.load(
-                    "{*}ErrorStatistics/{*}AdjustableParameterOffsets/{*}ARPVel"
-                ),
-                # Optional Bistatic Adjustable Offsets
-                "delta_Xmt_SCP_COA": xmlhelp.load(
-                    "{*}ErrorStatistics/{*}BistaticAdjustableParameterOffsets/{*}TxPlatform/{*}APCPosSCPCOA"
-                ),
-                "delta_VXmt": xmlhelp.load(
-                    "{*}ErrorStatistics/{*}BistaticAdjustableParameterOffsets/{*}TxPlatform/{*}APCVel"
-                ),
-                "f_Clk_X_SF": xmlhelp.load(
-                    "{*}ErrorStatistics/{*}BistaticAdjustableParameterOffsets/{*}TxPlatform/{*}ClockFreqSF"
-                ),
-                "delta_Rcv_SCP_COA": xmlhelp.load(
-                    "{*}ErrorStatistics/{*}BistaticAdjustableParameterOffsets/{*}RcvPlatform/{*}APCPosSCPCOA"
-                ),
-                "delta_VRcv": xmlhelp.load(
-                    "{*}ErrorStatistics/{*}BistaticAdjustableParameterOffsets/{*}RcvPlatform/{*}APCVel"
-                ),
-                "f_Clk_R_SF": xmlhelp.load(
-                    "{*}ErrorStatistics/{*}BistaticAdjustableParameterOffsets/{*}RcvPlatform/{*}ClockFreqSF"
-                ),
-            }
+            delta_Xmt_SCP_COA=bi_apos["TxPlatform"]["APCPosSCPCOA"],
+            delta_VXmt=bi_apos["TxPlatform"]["APCVel"],
+            delta_tx_SCP_COA=bi_apos["TxPlatform"]["TimeSCPCOA"],
+            f_Clk_X_SF=bi_apos["TxPlatform"]["ClockFreqSF"],
+            delta_Rcv_SCP_COA=bi_apos["RcvPlatform"]["APCPosSCPCOA"],
+            delta_VRcv=bi_apos["RcvPlatform"]["APCVel"],
+            delta_tr_SCP_COA=bi_apos["RcvPlatform"]["TimeSCPCOA"],
+            f_Clk_R_SF=bi_apos["RcvPlatform"]["ClockFreqSF"],
         )

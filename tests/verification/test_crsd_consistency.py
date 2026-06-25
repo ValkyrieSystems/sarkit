@@ -224,7 +224,9 @@ def test_from_file_xml():
     assert not crsdcon.failures()
 
 
-@pytest.mark.parametrize("xml_file", (DATAPATH / "syntax_only/crsd").glob("*.xml"))
+@pytest.mark.parametrize(
+    "xml_file", list((DATAPATH / "syntax_only/crsd").glob("*.xml"))
+)
 def test_smoketest(xml_file):
     main([str(xml_file)])
 
