@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+## [1.10.0] - 2026-06-25
+
 ### Added
 - PVP convenience functions `dtype_to_pvp_element` and `get_defined_pvp_dtype` in `sarkit.cphd`
 - PVP convenience functions `dtype_to_pvp_element` and `get_defined_pvp_dtype` in `sarkit.crsd`
@@ -289,7 +292,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Limited SICD Reading and Writing
 - Limited SIDD NITF Reading and Writing
 
-[unreleased]: https://github.com/ValkyrieSystems/sarkit/compare/v1.9.0...HEAD
+[unreleased]: https://github.com/ValkyrieSystems/sarkit/compare/v1.10.0...HEAD
+[1.10.0]: https://github.com/ValkyrieSystems/sarkit/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/ValkyrieSystems/sarkit/compare/v1.8.1...v1.9.0
 [1.8.1]: https://github.com/ValkyrieSystems/sarkit/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/ValkyrieSystems/sarkit/compare/v1.7.1...v1.8.0
