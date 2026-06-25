@@ -122,7 +122,9 @@ def test_main(file):
     assert not main([str(file), "-vv"])
 
 
-@pytest.mark.parametrize("xml_file", (DATAPATH / "syntax_only/sicd").glob("*.xml"))
+@pytest.mark.parametrize(
+    "xml_file", list((DATAPATH / "syntax_only/sicd").glob("*.xml"))
+)
 def test_smoketest(xml_file):
     main([str(xml_file)])
 

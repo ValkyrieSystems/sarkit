@@ -170,3 +170,132 @@ def test_image_to_dem_surface(sicd_xml):
         # assert only one intersection since DEM is an HAE surface
         assert hae_dem_coord.size == surf_coord.size
         assert np.allclose(hae_dem_coord, surf_coord, atol=0.01)
+
+
+@pytest.fixture
+def mono_1_5():
+    xmltree = lxml.etree.parse(DATAPATH / "example-sicd-1.3.0.xml")
+    old_ew = sksicd.ElementWrapper(xmltree.getroot())
+    assert old_ew["CollectionInfo"]["CollectType"] == "MONOSTATIC"
+    new_ew = sksicd.ElementWrapper(lxml.etree.Element("{urn:SICD:1.5}SICD"))
+    new_ew.from_dict(old_ew.to_dict())
+    schema = lxml.etree.XMLSchema(file=sksicd.VERSION_INFO["urn:SICD:1.5"]["schema"])
+    schema.assertValid(new_ew.elem)
+    return new_ew.elem.getroottree()
+
+
+def image_to_ground(sicdxml):
+    xmlhelp = sksicd.XmlHelper(sicdxml)
+    scp = xmlhelp.load("{*}GeoData/{*}SCP/{*}ECF")
+    image_plane_normal = np.cross(
+        xmlhelp.load("{*}Grid/{*}Row/{*}UVectECF"),
+        xmlhelp.load("{*}Grid/{*}Col/{*}UVectECF"),
+    )
+    im_coords = np.random.default_rng(12345).uniform(
+        low=-24.0, high=24.0, size=(3, 4, 5, 2)
+    )
+    gpp, _, success = sksicd.image_to_ground_plane(
+        sicdxml,
+        im_coords,
+        scp,
+        image_plane_normal,
+    )
+    assert success
+    return gpp
+
+
+def image_to_constant_hae(sicdxml):
+    xmlhelp = sksicd.XmlHelper(sicdxml)
+    scp_hae = xmlhelp.load("{*}GeoData/{*}SCP/{*}LLH/{*}HAE")
+    im_coords = np.random.default_rng(12345).uniform(
+        low=-24.0, high=24.0, size=(3, 4, 5, 2)
+    )
+    surf_coords, _, success = sksicd.image_to_constant_hae_surface(
+        sicdxml,
+        im_coords,
+        scp_hae,
+    )
+    assert success
+    return surf_coords
+
+
+def image_to_dem(sicdxml):
+    xmlhelp = sksicd.XmlHelper(sicdxml)
+    scp_hae = xmlhelp.load("{*}GeoData/{*}SCP/{*}LLH/{*}HAE")
+
+    def hae_dem_func(ecf):
+        return sarkit.wgs84.cartesian_to_geodetic(ecf)[..., -1] - scp_hae
+
+    im_coord = np.random.default_rng(12345).uniform(low=-24.0, high=24.0, size=(2,))
+    hae_dem_coord = sksicd.image_to_dem_surface(
+        sicdxml,
+        im_coord,
+        ecef2dem_func=hae_dem_func,
+        hae_min=scp_hae - 10.0,
+        hae_max=scp_hae + 10.0,
+        delta_dist_dem=1.0,
+    )
+    return hae_dem_coord
+
+
+def scene_to_image(sicdxml):
+    xmlhelp = sksicd.XmlHelper(sicdxml)
+    scp = xmlhelp.load("{*}GeoData/{*}SCP/{*}ECF")
+    scene_coords = scp + np.random.default_rng(12345).uniform(
+        low=-24.0, high=24.0, size=(3, 4, 5, 3)
+    )
+    im_coords, _, success = sksicd.scene_to_image(sicdxml, scene_coords)
+    assert success
+    return im_coords
+
+
+@pytest.mark.parametrize(
+    "projfunc", [image_to_ground, image_to_constant_hae, image_to_dem, scene_to_image]
+)
+def test_proj_with_apos_mono(mono_1_5, projfunc):
+    # project without APOs
+    assert mono_1_5.find(".//{*}AdjustableParameterOffsets") is None
+    pts_no_apo = projfunc(mono_1_5)
+
+    # project with APOs set to 0
+    ew = sksicd.ElementWrapper(mono_1_5.getroot())
+    ew["ErrorStatistics"]["AdjustableParameterOffsets"]["ARPPosSCPCOA"] = [0, 0, 0]
+    ew["ErrorStatistics"]["AdjustableParameterOffsets"]["ARPVel"] = [0, 0, 0]
+    ew["ErrorStatistics"]["AdjustableParameterOffsets"]["TxTimeSCPCOA"] = 0.0
+    ew["ErrorStatistics"]["AdjustableParameterOffsets"]["RcvTimeSCPCOA"] = 0.0
+    pts_zero_apo = projfunc(mono_1_5)
+    assert np.array_equal(pts_no_apo, pts_zero_apo)
+
+    # project with nonzero APOs
+    ew["ErrorStatistics"]["AdjustableParameterOffsets"]["ARPPosSCPCOA"] = [1, 0, 0]
+    pts_nonzero_apo = projfunc(mono_1_5)
+    assert bool(np.all(np.any(pts_no_apo != pts_nonzero_apo, axis=-1)))
+
+
+@pytest.mark.parametrize(
+    "projfunc", [image_to_ground, image_to_constant_hae, image_to_dem, scene_to_image]
+)
+def test_proj_with_apos_bi(projfunc):
+    sicdxml = lxml.etree.parse(DATAPATH / "example-sicd-1.5.xml")
+    assert sicdxml.findtext("{*}CollectionInfo/{*}CollectType") == "BISTATIC"
+
+    # project without APOs
+    assert sicdxml.find(".//{*}BistaticAdjustableParameterOffsets") is None
+    pts_no_apo = projfunc(sicdxml)
+
+    # project with APOs set to 0
+    biapos = sksicd.ElementWrapper(sicdxml.getroot())["ErrorStatistics"][
+        "BistaticAdjustableParameterOffsets"
+    ]
+    for plat in ("TxPlatform", "RcvPlatform"):
+        biapos[plat]["APCPosSCPCOA"] = [0, 0, 0]
+        biapos[plat]["APCVel"] = [0, 0, 0]
+        biapos[plat]["TimeSCPCOA"] = 0.0
+        biapos[plat]["ClockFreqSF"] = 0.0
+    pts_zero_apo = projfunc(sicdxml)
+    assert np.array_equal(pts_no_apo, pts_zero_apo)
+
+    # project with nonzero APOs
+    biapos["TxPlatform"]["APCPosSCPCOA"] = [1, 0, 0]
+    pts_nonzero_apo = projfunc(sicdxml)
+    assert bool(np.all(np.any(pts_no_apo != pts_nonzero_apo, axis=-1)))

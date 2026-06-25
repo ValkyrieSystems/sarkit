@@ -298,7 +298,7 @@ def compute_arp_to_rpt_geometry(
     ]
     r_arp_rpt = np.asarray((xmt_geom["R_APC_PT"] + rcv_geom["R_APC_PT"]) / 2)
     rdot_arp_rpt = np.asarray((xmt_geom["Rdot_APC_PT"] + rcv_geom["Rdot_APC_PT"]) / 2)
-    arp = pt + r_arp_rpt[..., np.newaxis] * uarp
+    arp = np.asarray(pt) + r_arp_rpt[..., np.newaxis] * uarp
     varp = rdot_arp_rpt[..., np.newaxis] * uarp + r_arp_rpt * uarpdot
     r_arp_rpt[bp_mag == 0] = 0
     rdot_arp_rpt[bp_mag == 0] = 0

@@ -77,7 +77,7 @@ def test_metadata_params_is_monostatic(example_proj_metadata):
         example_proj_metadata.is_monostatic()
 
 
-@pytest.mark.parametrize("xmlfile", (DATAPATH / "syntax_only/sicd").glob("*.xml"))
+@pytest.mark.parametrize("xmlfile", list((DATAPATH / "syntax_only/sicd").glob("*.xml")))
 def test_errorstatparams(xmlfile):
     errparams = sicdproj.ErrorStatParams.from_xml(lxml.etree.parse(xmlfile))
     for field in dataclasses.fields(errparams):
@@ -91,7 +91,7 @@ def test_errorstatparams(xmlfile):
             assert val >= 0.0
 
 
-@pytest.mark.parametrize("xmlfile", (DATAPATH / "syntax_only/sicd").glob("*.xml"))
+@pytest.mark.parametrize("xmlfile", list((DATAPATH / "syntax_only/sicd").glob("*.xml")))
 def test_apoerrorparams(xmlfile):
     apoerrparams = sicdproj.ApoErrorParams.from_xml(lxml.etree.parse(xmlfile))
     for field in dataclasses.fields(apoerrparams):

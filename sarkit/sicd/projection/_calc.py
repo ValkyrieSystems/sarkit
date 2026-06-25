@@ -570,7 +570,8 @@ def apply_apos(
         # to form the adjusted COA projection set.
         delta_ARP_COA = (  # noqa N806
             apo_input_set.delta_ARP_SCP_COA
-            + apo_input_set.delta_VARP * (init_proj_set.t_COA - proj_metadata.t_SCP_COA)
+            + apo_input_set.delta_VARP
+            * (init_proj_set.t_COA - proj_metadata.t_SCP_COA)[..., np.newaxis]
         )
         delta_R_ARP = (  # noqa N806
             _constants.speed_of_light
@@ -612,16 +613,20 @@ def apply_apos(
     # The input APOs are used to compute the following offsets to be added to the initial COA
     # projection set to form the adjusted COA projection set
     delta_Xmt_COA = (  # noqa N806
-        init_proj_set.VXmt_COA * delta_tx_COA
+        init_proj_set.VXmt_COA * delta_tx_COA[..., np.newaxis]
         + apo_input_set.delta_Xmt_SCP_COA
         + apo_input_set.delta_VXmt
-        * (init_proj_set.tx_COA + delta_tx_COA - proj_metadata.t_SCP_COA)
+        * (init_proj_set.tx_COA + delta_tx_COA - proj_metadata.t_SCP_COA)[
+            ..., np.newaxis
+        ]
     )
     delta_Rcv_COA = (  # noqa N806
-        init_proj_set.VRcv_COA * delta_tr_COA
+        init_proj_set.VRcv_COA * delta_tr_COA[..., np.newaxis]
         + apo_input_set.delta_Rcv_SCP_COA
         + apo_input_set.delta_VRcv
-        * (init_proj_set.tr_COA + delta_tr_COA - proj_metadata.t_SCP_COA)
+        * (init_proj_set.tr_COA + delta_tr_COA - proj_metadata.t_SCP_COA)[
+            ..., np.newaxis
+        ]
     )
     delta_R_Avg_COA = (  # noqa N806
         _constants.speed_of_light / 2 * (delta_tr_COA - delta_tx_COA)

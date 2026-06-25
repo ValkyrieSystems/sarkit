@@ -151,7 +151,9 @@ def test_main(cphd_file):
     assert not main([str(cphd_file)])
 
 
-@pytest.mark.parametrize("xml_file", (DATAPATH / "syntax_only/cphd").glob("*.xml"))
+@pytest.mark.parametrize(
+    "xml_file", list((DATAPATH / "syntax_only/cphd").glob("*.xml"))
+)
 def test_smoketest(xml_file):
     main([str(xml_file)])
 
