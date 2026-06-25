@@ -22,6 +22,6 @@ VERSION_INFO: Final[dict] = {
     "http://api.nsgreg.nga.mil/schema/crsd/1.0": {
         "version": "1.0",
         "date": "2025-02-25T00:00:00Z",
-        "schema": SCHEMA_DIR / "NGA.STND.0080-2_1.0_CRSD_schema_2025_02_25.xsd",
+        "schema": SCHEMA_DIR / "NGA.STND.0080-2_1.0_CRSD_schema.xsd",
     },
 }

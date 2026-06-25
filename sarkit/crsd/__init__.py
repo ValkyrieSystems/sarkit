@@ -165,7 +165,7 @@ CRSD 1.0
    Version 1.0", 2025.
    https://nsgreg.nga.mil/doc/view?i=5672
 
-.. [NGA.STND.0080-2_1.0_CRSD_schema_2025_02_25.xsd] National Center for Geospatial Intelligence Standards,
+.. [NGA.STND.0080-2_1.0_CRSD_schema] National Center for Geospatial Intelligence Standards,
    "Compensated Radar Signal Data (CRSD) XML Schema, Version 1.0", 2025.
    https://nsgreg.nga.mil/doc/view?i=5673
 """
