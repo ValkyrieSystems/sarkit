@@ -79,7 +79,7 @@ def image_to_ground_plane(
         )
         delta_gp = np.full(gpp_tgt.shape[:-1], np.nan)
         delta_gp[np.isfinite(gpp_tgt).all(axis=-1)] = 0
-        success = np.isfinite(gpp_tgt).all()
+        success = bool(np.isfinite(gpp_tgt).all())
         return gpp_tgt, delta_gp, success
     if method == "bistatic":
         if isinstance(projection_sets, params.ProjectionSetsMono):
