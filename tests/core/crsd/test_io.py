@@ -1,3 +1,4 @@
+import logging
 import pathlib
 import uuid
 
@@ -326,6 +327,29 @@ def test_write_support_array(is_masked, nodata_in_xml, tmp_path):
             assert read_sa_2.ctypes.data == read_sa_3.ctypes.data
             assert read_sa_2.mask.ctypes.data == read_sa_3.mask.ctypes.data
             assert np.array_equal(mx, read_sa_2)
+
+
+def test_missing_on_write(tmp_path, caplog):
+    basis_etree = lxml.etree.parse(DATAPATH / "example-crsd-1.0.xml")
+    meta = skcrsd.Metadata(
+        xmltree=basis_etree,
+    )
+    out_crsd = tmp_path / "out.crsd"
+    with caplog.at_level(logging.WARNING):
+        with open(out_crsd, "wb") as f, skcrsd.Writer(f, meta) as writer:
+            assert writer is not None
+    assert "Not all Signal Arrays written" in caplog.text
+    assert "Not all PVP Arrays written" in caplog.text
+    assert "Not all PPP Arrays written" in caplog.text
+    assert "Not all Support Arrays written" in caplog.text
+    assert "the channel" in caplog.text
+    assert "the sequence" in caplog.text
+    assert "transmit_array" in caplog.text
+    assert "transmit_element" in caplog.text
+    assert "the response" in caplog.text
+    assert "receive_array" in caplog.text
+    assert "receive_element" in caplog.text
+    assert "the xm array" in caplog.text
 
 
 def test_remote_read(example_crsdsar):

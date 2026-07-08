@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Warnings logged when not all CRSD support arrays written
+
 
 ## [1.10.0] - 2026-06-25
 
