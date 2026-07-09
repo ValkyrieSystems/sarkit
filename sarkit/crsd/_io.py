@@ -919,7 +919,7 @@ class Writer:
         sa_names = set(
             node.text
             for node in self._metadata.xmltree.findall(
-                "./{*}Data/{*}SupportArray/{*}SAId"
+                "./{*}Data/{*}Support/{*}SupportArray/{*}SAId"
             )
         )
         missing_sa = sa_names - self._support_arrays_written
