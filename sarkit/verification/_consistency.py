@@ -6,6 +6,7 @@ import argparse
 import ast
 import contextlib
 import functools
+import inspect
 import linecache
 import os
 import re
@@ -15,17 +16,6 @@ from collections.abc import Iterable
 from typing import Optional
 
 import numpy as np
-
-
-class _ExceptionOnUse:
-    """Class to help handle optional dependencies"""
-
-    def __init__(self, exception):
-        self._error_class = type(exception)
-        self._error_message = exception.msg
-
-    def __getattr__(self, name):
-        raise self._error_class(self._error_message)
 
 
 def skipif(condition_func, details=None):
@@ -669,3 +659,39 @@ def start_color(color: str) -> str:
         invert=7,
     )
     return "\x1b[%sm" % color_table[color]
+
+
+def modify_conchecker_docs(obj):
+    """Try to make the rendered documentation looks more useful for ConsistencyChecker subclasses
+
+    There is an autodoc-skip-member event handler in the doc's conf.py that skips the check_ methods
+    but they still show up in the class method summary tables.
+    Explicitly adding a methods section seemingly avoids this.
+    """
+    allfuncs = inspect.getmembers(obj, lambda x: inspect.isfunction)
+    methods_to_doc = []
+    checks = []
+    for funcname, func in allfuncs:
+        if funcname.startswith("check_"):
+            checks.append((funcname, func))
+        elif not funcname.startswith("_"):
+            methods_to_doc.append(funcname)
+
+    method_list = "\n    ".join(methods_to_doc)
+    check_list = "\n    ".join(
+        (f"``{name}``\n        {obj.__doc__}") for name, obj in checks
+    )
+
+    con_doc_footer = f"""
+    Methods
+    -------
+    {method_list}
+
+    Notes
+    -----
+    The following checks are available:
+
+    {check_list}
+
+    """
+    obj.__doc__ += textwrap.dedent(con_doc_footer)

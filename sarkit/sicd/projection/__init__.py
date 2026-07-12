@@ -15,14 +15,26 @@ dataclasses with attributes named as similar as feasible to the IPDD.
 .. autosummary::
    :toctree: generated/
 
-   AdjustableParameterOffsets
    MetadataParams
+   ErrorStatParams
+   ComponentErrorStatMono
+   ComponentErrorStatBi
+   AdjustableParameterOffsets
+   ApoErrorParams
    CoaPosVelsMono
    CoaPosVelsBi
    ProjectionSetsMono
    ProjectionSetsBi
    ScenePointRRdotParams
    ScenePointGpXyParams
+   ProjGeomParamsMono
+   ProjGeomParamsBi
+   SlantPlaneSensitivityMatrices
+   ImageLocationSensitivityMatrices
+   PVTSensitivityMatricesMono
+   PVTSensitivityMatricesBi
+   SensitivityMatricesMono
+   SensitivityMatricesBi
 
 Type Aliases
 ------------
@@ -36,6 +48,11 @@ Type Aliases
    :canonical: ProjectionSetsMono | ProjectionSetsBi
 
    Represent either a monostatic or bistatic ensemble of COA projection sets
+
+.. py:type:: SensitivityMatricesLike
+   :canonical: SensitivityMatricesMono | SensitivityMatricesBi
+
+   Represent either a set of monostatic or bistatic ensemble sensitivity matrices
 
 Image Plane Parameters
 ======================
@@ -120,7 +137,16 @@ Precise R/Rdot to DEM Surface Projection
 
 Projection Sensitivity Parameters
 =================================
-Coming soon...
+.. autosummary::
+   :toctree: generated/
+
+   compute_proj_geom_params_mono
+   compute_proj_geom_params_bi
+   compute_slant_plane_sensitivity_matrices
+   compute_image_location_sensitivity_matrices
+   compute_pvt_sensitivity_matrices_mono
+   compute_pvt_sensitivity_matrices_bi
+   compute_sensitivity_matrices
 
 Projection Error Propagation
 ============================
@@ -128,6 +154,12 @@ Projection Error Propagation
    :toctree: generated/
 
    compute_ecef_pv_transformation
+   compute_composite_error_no_apo_mono
+   compute_composite_error_apo_mono
+   compute_composite_error_no_apo_bi
+   compute_composite_error_apo_bi
+   compute_i2s_error
+   compute_s2i_error
 """
 
 from ._calc import (
@@ -149,14 +181,24 @@ from ._calc import (
     scene_to_image,
 )
 from ._errorprop import (
+    compute_composite_error_apo_bi,
+    compute_composite_error_apo_mono,
+    compute_composite_error_no_apo_bi,
+    compute_composite_error_no_apo_mono,
     compute_ecef_pv_transformation,
+    compute_i2s_error,
     compute_ric_basis_vectors,
+    compute_s2i_error,
 )
 from ._params import (
     AdjustableParameterOffsets,
+    ApoErrorParams,
     CoaPosVelsBi,
     CoaPosVelsLike,
     CoaPosVelsMono,
+    ComponentErrorStatBi,
+    ComponentErrorStatMono,
+    ErrorStatParams,
     MetadataParams,
     ProjectionSetsBi,
     ProjectionSetsLike,
@@ -164,29 +206,73 @@ from ._params import (
     ScenePointGpXyParams,
     ScenePointRRdotParams,
 )
+from ._sensitivity import (
+    ImageLocationSensitivityMatrices,
+    ProjGeomParamsBi,
+    ProjGeomParamsMono,
+    PVTSensitivityMatricesBi,
+    PVTSensitivityMatricesMono,
+    SensitivityMatricesBi,
+    SensitivityMatricesLike,
+    SensitivityMatricesMono,
+    SlantPlaneSensitivityMatrices,
+    compute_image_location_sensitivity_matrices,
+    compute_proj_geom_params_bi,
+    compute_proj_geom_params_mono,
+    compute_pvt_sensitivity_matrices_bi,
+    compute_pvt_sensitivity_matrices_mono,
+    compute_sensitivity_matrices,
+    compute_slant_plane_sensitivity_matrices,
+)
 
 __all__ = [
     "AdjustableParameterOffsets",
+    "ApoErrorParams",
     "CoaPosVelsBi",
     "CoaPosVelsLike",
     "CoaPosVelsMono",
+    "ComponentErrorStatBi",
+    "ComponentErrorStatMono",
+    "ErrorStatParams",
+    "ImageLocationSensitivityMatrices",
     "MetadataParams",
+    "PVTSensitivityMatricesBi",
+    "PVTSensitivityMatricesMono",
+    "ProjGeomParamsBi",
+    "ProjGeomParamsMono",
     "ProjectionSetsBi",
     "ProjectionSetsLike",
     "ProjectionSetsMono",
     "ScenePointGpXyParams",
     "ScenePointRRdotParams",
+    "SensitivityMatricesBi",
+    "SensitivityMatricesLike",
+    "SensitivityMatricesMono",
+    "SlantPlaneSensitivityMatrices",
     "apply_apos",
     "compute_coa_pos_vel",
     "compute_coa_r_rdot",
     "compute_coa_time",
+    "compute_composite_error_apo_bi",
+    "compute_composite_error_apo_mono",
+    "compute_composite_error_no_apo_bi",
+    "compute_composite_error_no_apo_mono",
     "compute_ecef_pv_transformation",
     "compute_gp_xy_parameters",
+    "compute_i2s_error",
+    "compute_image_location_sensitivity_matrices",
+    "compute_proj_geom_params_bi",
+    "compute_proj_geom_params_mono",
     "compute_projection_sets",
     "compute_pt_r_rdot_parameters",
+    "compute_pvt_sensitivity_matrices_bi",
+    "compute_pvt_sensitivity_matrices_mono",
     "compute_ric_basis_vectors",
+    "compute_s2i_error",
     "compute_scp_coa_r_rdot",
     "compute_scp_coa_slant_plane_normal",
+    "compute_sensitivity_matrices",
+    "compute_slant_plane_sensitivity_matrices",
     "image_grid_to_image_plane_point",
     "image_plane_point_to_image_grid",
     "r_rdot_to_constant_hae_surface",

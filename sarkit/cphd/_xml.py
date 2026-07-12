@@ -194,6 +194,49 @@ class AddedPvpType(PvpType):
         self.subelements = {"Name": skxt.TxtType(), **self.subelements}
 
 
+class DefinedPvpType(PvpType):
+    """
+    Transcoder for per-vector parameter (PVP) XML parameter types with a fixed size and format.
+
+    Similar to `PvpType`, except ``dtype`` and ``size`` are optional when using `set_elem`
+
+    Parameters
+    ----------
+    format_string : str
+        Binary format string that defines the PVP's Format
+    """
+
+    def __init__(self, format_string: str) -> None:
+        super().__init__()
+        self.format_string = format_string
+        self.dtype = cphd_io.binary_format_string_to_dtype(format_string)
+
+    def set_elem(self, elem: lxml.etree.Element, val: dict) -> None:
+        """Sets ``elem`` node using the sequence of subelements in the dict ``val``.
+
+        Similar to `PvpType.set_elem`, except the ``dtype`` and ``size`` entries are optional.
+
+        Parameters
+        ----------
+        elem : lxml.etree.Element
+            XML element to set
+        val : dict
+            Subelement values by name:
+
+            * "Offset" : `int`
+            * "Size" : `int`, optional
+            * "dtype" : `numpy.dtype`, optional
+        """
+        local_val = copy.deepcopy(val)
+        dtype = local_val.setdefault("dtype", self.dtype)
+        if dtype != self.dtype:
+            raise ValueError(f"Invalid {dtype=}; expected {self.dtype}")
+        size = local_val.setdefault("Size", self.dtype.itemsize // 8)
+        if size != self.dtype.itemsize // 8:
+            raise ValueError(f"Invalid {size=}; expected {self.dtype.itemsize // 8}")
+        return super().set_elem(elem, local_val)
+
+
 class XmlHelper(skxml.XmlHelper):
     """
     :py:class:`~sarkit.xmlhelp.XmlHelper` for CPHD
@@ -257,9 +300,15 @@ class XsdHelper(skxml.XsdHelper):
                 "Endpoint", LatLonType()
             ),
             "{http://api.nsgreg.nga.mil/schema/cphd/1.0.1}ParameterType": ParameterType(),
-            "{http://api.nsgreg.nga.mil/schema/cphd/1.0.1}PerVectorParameterF8": PvpType(),
-            "{http://api.nsgreg.nga.mil/schema/cphd/1.0.1}PerVectorParameterI8": PvpType(),
-            "{http://api.nsgreg.nga.mil/schema/cphd/1.0.1}PerVectorParameterXYZ": PvpType(),
+            "{http://api.nsgreg.nga.mil/schema/cphd/1.0.1}PerVectorParameterF8": DefinedPvpType(
+                "F8"
+            ),
+            "{http://api.nsgreg.nga.mil/schema/cphd/1.0.1}PerVectorParameterI8": DefinedPvpType(
+                "I8"
+            ),
+            "{http://api.nsgreg.nga.mil/schema/cphd/1.0.1}PerVectorParameterXYZ": DefinedPvpType(
+                "X=F8;Y=F8;Z=F8;"
+            ),
             "{http://api.nsgreg.nga.mil/schema/cphd/1.0.1}Poly1DType": PolyType(),
             "{http://api.nsgreg.nga.mil/schema/cphd/1.0.1}Poly2DType": Poly2dType(),
             "{http://api.nsgreg.nga.mil/schema/cphd/1.0.1}UserDefinedPVPType": AddedPvpType(),
@@ -278,7 +327,9 @@ class XsdHelper(skxml.XsdHelper):
             for k, v in cphd_101.items()
         }
         cphd_110 |= {
-            "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterEB": PvpType(),
+            "{http://api.nsgreg.nga.mil/schema/cphd/1.1.0}PerVectorParameterEB": DefinedPvpType(
+                "DCX=F8;DCY=F8;"
+            ),
         }
         easy = cphd_101 | cphd_110
         if typename.startswith("{http://www.w3.org/2001/XMLSchema}"):

@@ -570,7 +570,8 @@ def apply_apos(
         # to form the adjusted COA projection set.
         delta_ARP_COA = (  # noqa N806
             apo_input_set.delta_ARP_SCP_COA
-            + apo_input_set.delta_VARP * (init_proj_set.t_COA - proj_metadata.t_SCP_COA)
+            + apo_input_set.delta_VARP
+            * (init_proj_set.t_COA - proj_metadata.t_SCP_COA)[..., np.newaxis]
         )
         delta_R_ARP = (  # noqa N806
             _constants.speed_of_light
@@ -612,16 +613,20 @@ def apply_apos(
     # The input APOs are used to compute the following offsets to be added to the initial COA
     # projection set to form the adjusted COA projection set
     delta_Xmt_COA = (  # noqa N806
-        init_proj_set.VXmt_COA * delta_tx_COA
+        init_proj_set.VXmt_COA * delta_tx_COA[..., np.newaxis]
         + apo_input_set.delta_Xmt_SCP_COA
         + apo_input_set.delta_VXmt
-        * (init_proj_set.tx_COA + delta_tx_COA - proj_metadata.t_SCP_COA)
+        * (init_proj_set.tx_COA + delta_tx_COA - proj_metadata.t_SCP_COA)[
+            ..., np.newaxis
+        ]
     )
     delta_Rcv_COA = (  # noqa N806
-        init_proj_set.VRcv_COA * delta_tr_COA
+        init_proj_set.VRcv_COA * delta_tr_COA[..., np.newaxis]
         + apo_input_set.delta_Rcv_SCP_COA
         + apo_input_set.delta_VRcv
-        * (init_proj_set.tr_COA + delta_tr_COA - proj_metadata.t_SCP_COA)
+        * (init_proj_set.tr_COA + delta_tr_COA - proj_metadata.t_SCP_COA)[
+            ..., np.newaxis
+        ]
     )
     delta_R_Avg_COA = (  # noqa N806
         _constants.speed_of_light / 2 * (delta_tr_COA - delta_tx_COA)
@@ -1349,6 +1354,7 @@ def r_rdot_to_dem_surface(
     *,
     delta_dist_rrc: float = 10.0,
     delta_hd_lim: float = 0.001,
+    bistat_max_npts: int = 9999,
     **kwargs,
 ) -> npt.NDArray:
     """Project along a contour of constant range and range rate to a surface described by a Digital Elevation Model.
@@ -1379,6 +1385,14 @@ def r_rdot_to_dem_surface(
     delta_hd_lim : float, optional
         Height difference threshold for determining if a point on the R/Rdot contour is on DEM surface (m)
 
+        .. deprecated:: 1.7.0
+           ``delta_hd_lim`` was removed from SICD v1.5 volume 3 "Projection to a DEM Surface".
+           This argument has no effect.
+
+    bistat_max_npts : int, optional
+        Threshold for number of bistatic contour points to compute, above which an exception is raised.
+        This is an implementation detail to prevent infinite loops that is not in the document.
+
     Returns
     -------
     s : ndarray
@@ -1389,6 +1403,77 @@ def r_rdot_to_dem_surface(
     ----------------
     **kwargs
         Keyword-only arguments for intermediate `r_rdot_to_constant_hae_surface` calls
+
+    Raises
+    ------
+    RuntimeError
+        If number of bistatic contour points exceeds ``bistat_max_npts`` without computing a point above
+        ``hae_max``.
+
+    Examples
+    --------
+    Example of a monostatic collect over the Grand Canyon with layover.
+    ``ecef2dem_func`` is defined using 3 arc-second SRTM via `Open Topo Data's <https://www.opentopodata.org/>`__ free
+    public API and a hard-coded, approximate geoid height.
+
+    .. doctest::
+
+        >>> import itertools
+        >>> import json
+        >>> import urllib.request
+        >>> import numpy as np
+        >>> import sarkit.wgs84
+        >>> import time
+
+        >>> geoid_height = -23.43  # from www.unavco.org
+
+        >>> def height_above_srtm90(ecf):
+        ...     llh = sarkit.wgs84.cartesian_to_geodetic(ecf)
+        ...     max_pts_api = 100
+        ...     haes = []
+        ...     for ll_strs in itertools.batched(
+        ...         (f"{lat:.5f},{lon:.5f}" for lat, lon in llh[:, :2]), max_pts_api
+        ...     ):
+        ...         url = f"https://api.opentopodata.org/v1/srtm90m?locations={'|'.join(ll_strs)}"
+        ...         with urllib.request.urlopen(url) as f:
+        ...             resp = json.load(f)
+        ...             time.sleep(1.05)  # opentopodata is rate limited
+        ...             assert resp["status"] == "OK"
+        ...             height_above_geoid = np.array([x["elevation"] for x in resp["results"]])
+        ...             haes.append(height_above_geoid + geoid_height)
+        ...     dem_hae = np.concatenate(haes)
+        ...     return llh[:, -1] - dem_hae
+
+    The DEM surface contour of the canyon wall intersects the R/Rdot contour in 3 places:
+
+    .. doctest::
+
+        >>> import sarkit.sicd.projection as sicdproj
+
+        >>> pset = sicdproj.ProjectionSetsMono(
+        ...     t_COA=0.611,
+        ...     ARP_COA=[-2.5413e6, -5.1217e6, 4.6498e6],
+        ...     VARP_COA=[7.0914e3, -1.3727e3, 2.3637e3],
+        ...     R_COA=1128574,
+        ...     Rdot_COA=-1.3197e3,
+        ... )
+        >>> scp_llh = [ 36.238989, -112.387843, 1000]
+
+        >>> s = sicdproj.r_rdot_to_dem_surface(
+        ...     look=-1,
+        ...     scp=sarkit.wgs84.geodetic_to_cartesian(scp_llh),
+        ...     projection_set=pset,
+        ...     ecef2dem_func=height_above_srtm90,
+        ...     hae_min=0,
+        ...     hae_max=2000,
+        ...     delta_dist_dem=90.0,
+        ... )
+        >>> s_llh = sarkit.wgs84.cartesian_to_geodetic(s)
+        >>> with np.printoptions(precision=4):
+        ...     print(s_llh)
+        [[  36.2442 -112.3905  650.9127]
+         [  36.2433 -112.39    709.8588]
+         [  36.234  -112.3858 1287.5452]]
     """
     if (
         getattr(
@@ -1438,7 +1523,9 @@ def r_rdot_to_dem_surface(
 
         # Compute contour angle step size
         delta_cos_rrc = delta_dist_rrc * np.abs(sin_ca_b) / r_rrc
-        delta_cos_dem = delta_dist_dem * np.abs(sin_ca_b) / r_rrc / cos_ca_b
+        delta_cos_dem = (
+            delta_dist_dem * np.abs(sin_ca_b) / r_rrc / max(cos_ca_b, 0.01)
+        )  # bound on cos_ca_b in denominator added in v1.5
         delta_cos_ca = -min(delta_cos_rrc, delta_cos_dem)
 
         # Determine number of points along R/Rdot contour to be computed
@@ -1452,36 +1539,104 @@ def r_rdot_to_dem_surface(
             cos_ca[..., np.newaxis] * u_rrx + sin_ca[..., np.newaxis] * u_rry
         )
     else:
-        raise NotImplementedError("Bistatic is not implemented yet")
+        # Compute projection along R/Rdot contour to surface of constant HAE at hae_max, "a"
+        a, _, success = r_rdot_to_constant_hae_surface(
+            look, scp, projection_set, hae_max, **kwargs
+        )
+        if not success:
+            return np.array([])
+
+        # Compute projection along R/Rdot contour to surface of constant HAE at hae_min, "b"
+        b, _, success = r_rdot_to_constant_hae_surface(
+            look, scp, projection_set, hae_min, **kwargs
+        )
+        if not success:
+            return np.array([])
+
+        # At point B, compute spherical earth ground plane unit normal vector
+        u_gpn_b = b / np.linalg.norm(b)
+
+        # At point B, compute bistatic slant plane normal
+        b_r_rdot_params = compute_pt_r_rdot_parameters(
+            look,
+            projection_set.Xmt_COA,
+            projection_set.VXmt_COA,
+            projection_set.Rcv_COA,
+            projection_set.VRcv_COA,
+            b,
+        )
+
+        # Compute cosine and sine of angle between GPN and SPN (slope angle)
+        cos_slope_b = np.dot(u_gpn_b, b_r_rdot_params.uSPN_PT)
+        sin_slope_b = np.sqrt(1 - cos_slope_b**2)
+
+        # Compute nominal spacing along R/Rdot contour
+        delta_rrc_dem = delta_dist_dem / max(sin_slope_b, 0.010)
+        delta_rrc = min(delta_rrc_dem, delta_dist_rrc)
+
+        # point 1 is B
+        pn = [b]
+        u_spn = b_r_rdot_params.uSPN_PT
+
+        for _ in range(bistat_max_npts):
+            # Compute g by moving a distance from last position along last SPN
+            g = pn[-1] + delta_rrc * u_spn
+
+            # Compute bistatic range and range rate parameters
+            g_r_rdot_params = compute_pt_r_rdot_parameters(
+                look,
+                projection_set.Xmt_COA,
+                projection_set.VXmt_COA,
+                projection_set.Rcv_COA,
+                projection_set.VRcv_COA,
+                g,
+            )
+            u_spn = g_r_rdot_params.uSPN_PT
+
+            # Compute difference in average range and range-rate for R/Rdot contour relative to point g
+            delta_r_avg_g = projection_set.R_Avg_COA - g_r_rdot_params.R_Avg_PT
+            delta_rdot_avg_g = projection_set.Rdot_Avg_COA - g_r_rdot_params.Rdot_Avg_PT
+
+            # Compute spherical earth GPN at g and bistatic ground plane parameters
+            u_gpn = g / np.linalg.norm(g)
+            gp_xy_params = compute_gp_xy_parameters(
+                g, u_gpn, g_r_rdot_params.bP_PT, g_r_rdot_params.bPDot_PT
+            )
+
+            # Compute shifts in the ground plane between contour point, p, and ground point, g
+            delta_gx, delta_gy = gp_xy_params.M_GPXY_RRdot @ [
+                delta_r_avg_g,
+                delta_rdot_avg_g,
+            ]
+
+            # Compute displacement from g to R/Rdot contour and position p that is in ground plane and on R/Rdot contour
+            delta_g = delta_gx * gp_xy_params.uGX + delta_gy * gp_xy_params.uGY
+            pn.append(g + delta_g)
+
+            # Compute distance of point a above ground plane containing g and p.
+            a_gz = np.dot(a - pn[-1], u_gpn)
+            if a_gz <= 0:
+                break
+        else:
+            # implementation detail; not in document
+            raise RuntimeError(
+                f"Limit of {bistat_max_npts=} reached before a contour point above HAE_MAX "
+                "was computed"
+            )
 
     # Compute DEM surface points
     delta_hdn = ecef2dem_func(pn)
-    aobn = np.full(delta_hdn.shape, -1)
-    aobn[delta_hdn > delta_hd_lim] = 1
-    aobn[np.abs(delta_hdn) <= delta_hd_lim] = 0
-
     s = []
-    for n_minus_1, ((p, _), (aob, next_aob), (delta_hd, next_delta_hd)) in enumerate(
-        zip(
-            itertools.pairwise(pn),
-            itertools.pairwise(aobn),
-            itertools.pairwise(delta_hdn),
-            strict=True,
-        )
+    for (p, next_p), (delta_hd, next_delta_hd) in zip(
+        itertools.pairwise(pn),
+        itertools.pairwise(delta_hdn),
+        strict=True,
     ):
-        if aob == 0:
+        if delta_hd == 0:
             s.append(p)
-        if (aob * next_aob) == -1:
+        if np.sign(delta_hd) * np.sign(next_delta_hd) == -1:
+            # this linear interpolation is new in v1.5
             frac = delta_hd / (delta_hd - next_delta_hd)
-            cos_ca_s = cos_ca_b + (n_minus_1 + frac) * delta_cos_ca
-            sin_ca_s = look * np.sqrt(1 - cos_ca_s**2)
-            s.append(
-                ctr
-                + r_rrc
-                * (
-                    cos_ca_s[..., np.newaxis] * u_rrx
-                    + sin_ca_s[..., np.newaxis] * u_rry
-                )
-            )
+            s.append(p * (1 - frac) + next_p * frac)
 
     return np.asarray(s)

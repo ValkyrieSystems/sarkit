@@ -3,7 +3,9 @@ Select calculations from the CRSD D&I
 """
 
 import copy
+import dataclasses
 import functools
+from typing import Any, Self
 
 import lxml.etree
 import numpy as np
@@ -16,8 +18,25 @@ from . import _io as skcrsd_io
 from . import _xml as skcrsd_xml
 
 
-def compute_ref_point_parameters(rpt: npt.ArrayLike):
-    """Computes the reference point parameters as in CRSD D&I 8.2"""
+def compute_ref_point_parameters(
+    rpt: npt.ArrayLike,
+) -> tuple[np.ndarray, tuple[np.ndarray, np.ndarray, np.ndarray]]:
+    """Compute the reference point parameters as in CRSD D&I 8.2
+
+    Parameters
+    ----------
+    rpt : (..., 3) array_like
+        Reference point position with ECEF X, Y, Z components (m) in last dimension.
+
+    Returns
+    -------
+    rpt_llh : (..., 3) ndarray
+        Reference point position in WGS 84 geodetic with [latitude (deg), longitude (deg), and ellipsoidal height (m)]
+        in the last dimension.
+    enu_vecs : tuple of ((..., 3) ndarray, (..., 3) ndarray, (..., 3) ndarray)
+        Unit vectors for the East, North, Up coordinate frame with origin at the reference point.
+        The basis vectors are in ECEF coordinates with X, Y, Z components (m) in last dimension.
+    """
     rpt_llh = sarkit.wgs84.cartesian_to_geodetic(rpt)
     rpt_lat = rpt_llh[..., 0]
     rpt_lon = rpt_llh[..., 1]
@@ -44,7 +63,8 @@ def compute_ref_point_parameters(rpt: npt.ArrayLike):
         ],
         axis=-1,
     )
-    return rpt_llh, (ueast, unor, uup)
+    enu_vecs = (ueast, unor, uup)
+    return rpt_llh, enu_vecs
 
 
 def compute_apc_to_pt_geometry_parameters(
@@ -54,8 +74,60 @@ def compute_apc_to_pt_geometry_parameters(
     ueast: npt.ArrayLike,
     unor: npt.ArrayLike,
     uup: npt.ArrayLike,
-):
-    """Computes APC geometry parameters as in CRSD D&I 8.3"""
+) -> dict[str, Any]:
+    """Compute APC geometry parameters as in CRSD D&I 8.3
+
+    Parameters
+    ----------
+    apc : (..., 3) array_like
+        Antenna phase center position with ECEF X, Y, Z components (m) in last dimension.
+    vapc : (..., 3) array_like
+        Antenna phase center velocity with ECEF X, Y, Z components (m/s) in last dimension.
+    pt : (..., 3) array_like
+        Fixed scene point position with ECEF X, Y, Z components (m) in last dimension.
+    ueast, unor, uup : (..., 3) array_like
+        Unit vectors for the East, North, Up coordinate frame, respectively, with origin at ``pt``.
+        The basis vectors are in ECEF coordinates with X, Y, Z components (m) in last dimension.
+
+    Returns
+    -------
+    dict
+        Computed PT parameters keyed by their names from CRSD D&I:
+
+        ``R_APC_PT`` : ndarray
+            Range (m) from ``apc`` to ``pt``
+
+        ``Rdot_APC_PT`` : ndarray
+            Range rate (m/s) of ``apc`` relative to ``pt``
+
+        ``Rg_PT`` : ndarray
+            Ground range (m) to ``pt``
+
+        ``SideOfTrack`` : str, or list of str, or list of list of str, or ...
+            Possibly nested list of Side of Track for the scene point relative to the APC ground track.
+            ``"L"`` for left, ``"R"`` for right.
+
+        ``uAPC``: (..., 3) ndarray
+            Unit vector that points from ``pt`` to ``apc`` with ECEF X, Y, Z components (m) in last dimension
+
+        ``uAPCDot`` : (..., 3) ndarray
+            Time derivative of ``uAPC``
+
+        ``DCA`` : ndarray
+            Doppler Cone Angle (deg) between ``vapc`` and the line-of-sight from ``apc`` to ``pt`` (``-uAPC``)
+
+        ``SQNT`` : ndarray
+            Ground squint angle (deg) to ``pt``
+
+        ``AZIM`` : ndarray
+            Azimuth angle (deg) to ``apc`` projected into the earth tangent plane
+
+        ``GRAZ`` : ndarray
+            Grazing angle (deg) for the line-of-sight from ``apc`` to ``pt``
+
+        ``INCD`` : ndarray
+            Incidence angle (deg) for the line-of-sight from ``apc`` to ``pt``
+    """
     apc = np.asarray(apc)
     vapc = np.asarray(vapc)
     pt = np.asarray(pt)
@@ -132,12 +204,89 @@ def compute_apc_to_pt_geometry_parameters(
     }
 
 
-def compute_arp_to_rpt_geometry(xmt, vxmt, rcv, vrcv, pt, ueast, unor, uup):
-    """Computes ARP geometry as in CRSD D&I 8.4.2"""
+def compute_arp_to_rpt_geometry(
+    xmt: npt.ArrayLike,
+    vxmt: npt.ArrayLike,
+    rcv: npt.ArrayLike,
+    vrcv: npt.ArrayLike,
+    pt: npt.ArrayLike,
+    ueast: npt.ArrayLike,
+    unor: npt.ArrayLike,
+    uup: npt.ArrayLike,
+) -> dict[str, Any]:
+    """Compute aperture reference point geometry as in CRSD D&I 8.4.2
+
+    Parameters
+    ----------
+    xmt : (..., 3) array_like
+        Transmit APC positions with ECEF X, Y, Z components (m) in last dimension
+    vxmt : (..., 3) array_like
+        Transmit APC velocities with ECEF X, Y, Z components (m/s) in last dimension
+    rcv : (..., 3) array_like
+        Receive APC positions with ECEF X, Y, Z components (m) in last dimension
+    vrcv : (..., 3) array_like
+        Receive APC velocities with ECEF X, Y, Z components (m/s) in last dimension
+    pt : (..., 3) array_like
+        Fixed scene point position with ECEF X, Y, Z components (m) in last dimension.
+    ueast, unor, uup : (..., 3) array_like
+        Unit vectors for the East, North, Up coordinate frame, respectively, with origin at ``pt``.
+        The basis vectors are in ECEF coordinates with X, Y, Z components (m) in last dimension.
+
+    Returns
+    -------
+    dict
+        Computed ARP to RPT geometry parameters keyed by their names from CRSD D&I:
+
+        ``ARP_COA`` : (..., 3) ndarray
+            Aperture reference point position with ECEF X, Y, Z components (m) in last dimension
+
+        ``VARP_COA`` : (..., 3) ndarray
+            Aperture reference point velocity with ECEF X, Y, Z components (m/s) in last dimension
+
+        ``Bistat_Ang`` : ndarray
+            Bistatic angle (rad)
+
+        ``Bistat_Ang_Rate`` : ndarray
+            Time-derivative of the bistatic angle (rad/s)
+
+        ``ARP_SideOfTrack`` : str, or list of str, or list of list of str, or ...
+            Possibly nested list of Side of Track for the scene point relative to the ARP ground track.
+            ``"L"`` for left, ``"R"`` for right.
+
+        ``R_ARP_RPT`` : ndarray
+            Range (m) from ARP to ``pt``
+
+        ``ARP_Rg_RPT`` : ndarray
+            Ground range (m) to ``pt``
+
+        ``ARP_DCA`` : ndarray
+            Doppler Cone Angle (deg) between ``VARP_COA`` and the line-of-sight from ``ARP_COA`` to ``pt``
+
+        ``ARP_SQNT`` : ndarray
+            Ground squint angle (deg) to ``pt``
+
+        ``ARP_AZIM`` : ndarray
+            Azimuth angle (deg) to ARP projected into the earth tangent plane
+
+        ``ARP_GRAZ`` : ndarray
+            Grazing angle (deg) for the line-of-sight from ARP to ``pt``
+
+        ``ARP_INCD`` : ndarray
+            Incidence angle (deg) for the line-of-sight from ARP to ``pt``
+
+        ``ARP_TWST`` : ndarray
+            Twist angle (deg) between the earth tangent plane and the bistatic slant plane
+
+        ``ARP_SLOPE`` : ndarray
+            Slope angle (deg) between the bistatic slant plane and the earth tangent plane
+
+        ``ARP_LO_ANG`` : ndarray
+            Layover angle (deg) from north at ``pt`` to the layover direction
+    """
     xmt_geom = compute_apc_to_pt_geometry_parameters(xmt, vxmt, pt, ueast, unor, uup)
     rcv_geom = compute_apc_to_pt_geometry_parameters(rcv, vrcv, pt, ueast, unor, uup)
-    bp = (xmt_geom["uAPC"] + rcv_geom["uAPC"]) / 2
-    bpdot = (xmt_geom["uAPCDot"] + rcv_geom["uAPCDot"]) / 2
+    bp = np.asarray((xmt_geom["uAPC"] + rcv_geom["uAPC"]) / 2)
+    bpdot = np.asarray((xmt_geom["uAPCDot"] + rcv_geom["uAPCDot"]) / 2)
     bp_mag = np.linalg.norm(bp, axis=-1)
     bistat_ang = 2 * np.arccos(bp_mag)
     bistat_ang_rate = np.asarray((-4 / np.sin(bistat_ang)) * np.inner(bp, bpdot))
@@ -149,7 +298,7 @@ def compute_arp_to_rpt_geometry(xmt, vxmt, rcv, vrcv, pt, ueast, unor, uup):
     ]
     r_arp_rpt = np.asarray((xmt_geom["R_APC_PT"] + rcv_geom["R_APC_PT"]) / 2)
     rdot_arp_rpt = np.asarray((xmt_geom["Rdot_APC_PT"] + rcv_geom["Rdot_APC_PT"]) / 2)
-    arp = pt + r_arp_rpt[..., np.newaxis] * uarp
+    arp = np.asarray(pt) + r_arp_rpt[..., np.newaxis] * uarp
     varp = rdot_arp_rpt[..., np.newaxis] * uarp + r_arp_rpt * uarpdot
     r_arp_rpt[bp_mag == 0] = 0
     rdot_arp_rpt[bp_mag == 0] = 0
@@ -161,7 +310,7 @@ def compute_arp_to_rpt_geometry(xmt, vxmt, rcv, vrcv, pt, ueast, unor, uup):
     arp_geom = compute_apc_to_pt_geometry_parameters(arp, varp, pt, ueast, unor, uup)
 
     # (11)
-    ugpz = uup
+    ugpz = np.asarray(uup)
     bp_gpz = np.inner(bp, ugpz)
     bp_etp = bp - bp_gpz[..., np.newaxis] * ugpz
     bp_gpx = np.linalg.norm(bp_etp, axis=-1)
@@ -208,8 +357,27 @@ def compute_arp_to_rpt_geometry(xmt, vxmt, rcv, vrcv, pt, ueast, unor, uup):
     }
 
 
-def compute_h_v_los_unit_vectors(apc: npt.ArrayLike, gpt: npt.ArrayLike):
-    """Compute H, V, LOS unit vectors as in CRSD D&I 9.4.3"""
+def compute_h_v_los_unit_vectors(
+    apc: npt.ArrayLike, gpt: npt.ArrayLike
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Compute H, V, LOS unit vectors as in CRSD D&I 9.4.3
+
+    Parameters
+    ----------
+    apc : (..., 3) array_like
+        Antenna phase center position with ECEF X, Y, Z components (m) in last dimension.
+    gpt : (..., 3) array_like
+        Scene point position with ECEF X, Y, Z components (m) in last dimension.
+
+    Returns
+    -------
+    uhor : (..., 3) ndarray
+        Unit vector that points in the +H (horizontal) direction with ECEF X, Y, Z components (m) in last dimension.
+    uvert : (..., 3) ndarray
+        Unit vector that points in the +V (vertical) direction with ECEF X, Y, Z components (m) in last dimension.
+    ulos : (..., 3) ndarray
+        Unit vector that points from ``apc`` to ``gpt`` with ECEF X, Y, Z components (m) in last dimension.
+    """
     apc = np.asarray(apc)
     gpt = np.asarray(gpt)
 
@@ -230,8 +398,43 @@ def compute_h_v_los_unit_vectors(apc: npt.ArrayLike, gpt: npt.ArrayLike):
     return uhor, uvert, ulos
 
 
-def compute_h_v_pol_parameters(apc, uacx, uacy, gpt, xr, ampx, ampy, phasex, phasey):
-    """Compute H, V polarization parameters as in CRSD D&I 9.4.4"""
+def compute_h_v_pol_parameters(
+    apc: npt.ArrayLike,
+    uacx: npt.ArrayLike,
+    uacy: npt.ArrayLike,
+    gpt: npt.ArrayLike,
+    xr: int,
+    ampx: float,
+    ampy: float,
+    phasex: float,
+    phasey: float,
+) -> tuple[float, float, float, float]:
+    """Compute H, V polarization parameters as in CRSD D&I 9.4.4
+
+    Parameters
+    ----------
+    apc : (3,) array_like
+        Antenna phase center position with ECEF X, Y, Z components (m) in last dimension.
+    uacx, uacy : (3,) array_like
+        Antenna coordinate frame unit vectors in the +ACX and +ACY directions respectively
+        with ECEF X, Y, Z components (m) in last dimension.
+    gpt : (3,) array_like
+        Scene point position with ECEF X, Y, Z components (m) in last dimension.
+    xr : {-1, 1}
+        Indicates if the polarization orientation parameters are for a transmit signal (``1``)
+        or for a receive signal (``-1``)
+    ampx, ampy : float
+        E-field relative amplitude components in the ACX and ACY directions respectively
+    phasex, phasey : float
+        E-field phase components in the ACX and ACY directions respectively
+
+    Returns
+    -------
+    amph, ampv : float
+        E-field relative amplitude components in the H and V directions respectively
+    phaseh, phasev : float
+        E-field phase components in the H and V directions respectively
+    """
     # (1)
     uhor, uvert, ulos = compute_h_v_los_unit_vectors(apc, gpt)
 
@@ -305,8 +508,15 @@ def interpolate_support_array(
         Data valid array, where `True` indicates that ``values`` contains a valid value
     """
     sa = np.asarray(sa)
-    x = np.atleast_1d(x)
-    y = np.atleast_1d(y)
+    x = np.asarray(x)
+    y = np.asarray(y)
+    if sa.dtype.names is not None:
+        sa_out = np.empty(shape=x.shape, dtype=sa.dtype)
+        for name in sa.dtype.names:
+            sa_out[name], dv = interpolate_support_array(
+                x, y, x_0, y_0, x_ss, y_ss, sa[name], dv_sa
+            )
+        return sa_out, dv
     num_rows, num_cols = sa.shape
     dv = np.ones_like(x, dtype=bool)
 
@@ -633,3 +843,216 @@ def compute_reference_geometry(
         }
 
     return refgeom.elem
+
+
+def compute_eb(
+    eb0: npt.ArrayLike,
+    f: npt.ArrayLike,
+    fa_0: npt.ArrayLike,
+    ebfs_dcxsf: npt.ArrayLike,
+    ebfs_dcysf: npt.ArrayLike,
+) -> np.ndarray:
+    """Compute the electrical boresight (EB) pointing vector at frequency ``f``.
+
+    Parameters
+    ----------
+    eb0 : (..., 2) array_like
+        Electrical boresight steering vector at antenna reference frequency with DCX, DCY in last dimension.
+    f : array_like
+        Frequencies in Hz at which to compute the electrical boresight.
+    fa_0 : array_like
+        Antenna pattern reference frequency in Hz.
+    ebfs_dcxsf, ebfs_dcysf : array_like
+        EB frequency shift scale factors for DCX and DCY, respectively (dimensionless).
+
+    Returns
+    -------
+    (..., 2) ndarray
+        EB steering vector at frequency ``f``.
+    """
+    fa_0 = np.asarray(fa_0)
+    eb0 = np.asarray(eb0)
+
+    # 9.2.4
+    # (1)
+    delta_f_frac = (np.asarray(f) - fa_0) / fa_0
+
+    # (2)
+    eb_dcx = eb0[..., 0] / (1 + np.asarray(ebfs_dcxsf) * delta_f_frac)
+    eb_dcy = eb0[..., 1] / (1 + np.asarray(ebfs_dcysf) * delta_f_frac)
+
+    return np.stack((eb_dcx, eb_dcy), axis=-1)
+
+
+@dataclasses.dataclass(kw_only=True)
+class ApatParams:
+    """Set of Antenna Pattern parameters"""
+
+    fa_0: float
+    cG_BS: np.ndarray  # noqa N815
+    EBFS_DCXSF: float
+    EBFS_DCYSF: float
+    MLFD_DCXSF: float
+    MLFD_DCYSF: float
+
+    @classmethod
+    def from_xml(cls, crsd_xmltree: lxml.etree.ElementTree, apat_id: str) -> Self:
+        """Extract relevant antenna pattern parameters from CRSD XML.
+
+        Parameters
+        ----------
+        crsd_xmltree : lxml.etree.ElementTree
+            CRSD XML metadata
+        apat_id : str
+            String that uniquely identifies the antenna pattern
+
+        Returns
+        -------
+        ApatParams
+            The antenna pattern parameter object initialized with values from the XML.
+        """
+        crsd_ew = skcrsd_xml.ElementWrapper(crsd_xmltree.getroot())
+        apat_ew = crsd_ew["Antenna"].find("AntPattern", Identifier=apat_id)
+        return cls(
+            fa_0=apat_ew["FreqZero"],
+            cG_BS=apat_ew["GainBSPoly"],
+            EBFS_DCXSF=apat_ew["EBFreqShift"]["DCXSF"],
+            EBFS_DCYSF=apat_ew["EBFreqShift"]["DCYSF"],
+            MLFD_DCXSF=apat_ew["MLFreqDilation"]["DCXSF"],
+            MLFD_DCYSF=apat_ew["MLFreqDilation"]["DCYSF"],
+        )
+
+
+@dataclasses.dataclass(kw_only=True)
+class ArrayElemSaMetadata:
+    """Gain/Phase array metadata"""
+
+    NumRows: int
+    NumCols: int
+    dcx_0: float
+    dcy_0: float
+    dcx_ss: float
+    dcy_ss: float
+
+    @classmethod
+    def from_xml(cls, crsd_xmltree: lxml.etree.ElementTree, sa_id: str) -> Self:
+        """Extract relevant support array metadata parameters from CRSD XML.
+
+        Parameters
+        ----------
+        crsd_xmltree : lxml.etree.ElementTree
+            CRSD XML metadata
+        sa_id : str
+            Unique support array identifier
+
+        Returns
+        -------
+        ArrayElemSaMetadata
+            The support array metadata parameter object initialized with values from the XML.
+        """
+        crsd_ew = skcrsd_xml.ElementWrapper(crsd_xmltree.getroot())
+        sa_data_ew = crsd_ew["Data"]["Support"].find("SupportArray", SAId=sa_id)
+        sa_ew = crsd_ew["SupportArray"].find("GainPhaseArray", Identifier=sa_id)
+        return cls(
+            NumRows=sa_data_ew["NumRows"],
+            NumCols=sa_data_ew["NumCols"],
+            dcx_0=sa_ew["X0"],
+            dcy_0=sa_ew["Y0"],
+            dcx_ss=sa_ew["XSS"],
+            dcy_ss=sa_ew["YSS"],
+        )
+
+
+def compute_apat(
+    eb0: npt.ArrayLike,
+    ap: npt.ArrayLike,
+    f: npt.ArrayLike,
+    *,
+    apat_params: ApatParams,
+    array_sa: npt.ArrayLike,
+    array_sa_metadata: ArrayElemSaMetadata,
+    elem_sa: npt.ArrayLike,
+    elem_sa_metadata: ArrayElemSaMetadata,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Compute the antenna beam shape pattern for selected antenna pointing vectors and frequencies.
+
+    Parameters
+    ----------
+    eb0 : (..., 2) array_like
+        Electrical boresight steering vector at antenna reference frequency with DCX, DCY in last dimension.
+    ap : (..., 2) array_like
+        Selected antenna pointing vectors with DCX, DCY in last dimension.
+    f : array_like
+        Frequencies in Hz at which to compute the electrical boresight.
+    apat_params : ApatParams
+        Input set of APAT parameters
+    array_sa : array_like
+        APAT array gain/phase support array
+    array_sa_metadata : ArrayElemSaMetadata
+        APAT array gain/phase support array metadata
+    elem_sa : array_like
+        APAT element gain/phase support array
+    elem_sa_metadata : ArrayElemSaMetadata
+        APAT element gain/phase support array metadata
+
+    Returns
+    -------
+    gp_bs : (...) ndarray
+        Beam shape gain phase for selected pointing vectors and frequencies.
+    dv : (...) ndarray
+        Data valid flag for each element in ``gp_bs``
+    """
+    ap = np.asarray(ap)
+
+    # 9.3.4
+    # (1)
+    eb = compute_eb(
+        eb0, f, apat_params.fa_0, apat_params.EBFS_DCXSF, apat_params.EBFS_DCYSF
+    )
+
+    # (2)
+    delta_f_frac = (np.asarray(f) - apat_params.fa_0) / apat_params.fa_0
+    delta_g_bs = npp.polyval(delta_f_frac, apat_params.cG_BS)
+
+    # (3)
+    arr_sf_dcx = 1 + apat_params.MLFD_DCXSF * delta_f_frac
+    arr_sf_dcy = 1 + apat_params.MLFD_DCYSF * delta_f_frac
+
+    # (4)
+    delta_ap_dcx = (ap[..., 0] - eb[..., 0]) * arr_sf_dcx
+    delta_ap_dcy = (ap[..., 1] - eb[..., 1]) * arr_sf_dcy
+
+    # (5)
+    gp_arr, dv_arr = interpolate_support_array(
+        delta_ap_dcx,
+        delta_ap_dcy,
+        array_sa_metadata.dcx_0,
+        array_sa_metadata.dcy_0,
+        array_sa_metadata.dcx_ss,
+        array_sa_metadata.dcy_ss,
+        array_sa,
+        ~array_sa.mask["Gain"] if np.ma.isMaskedArray(array_sa) else None,  # type: ignore
+    )
+
+    # (6)
+    gp_elem, dv_elem = interpolate_support_array(
+        ap[..., 0],
+        ap[..., 1],
+        elem_sa_metadata.dcx_0,
+        elem_sa_metadata.dcy_0,
+        elem_sa_metadata.dcx_ss,
+        elem_sa_metadata.dcy_ss,
+        elem_sa,
+        ~elem_sa.mask["Gain"] if np.ma.isMaskedArray(elem_sa) else None,  # type: ignore
+    )
+
+    # (7)
+    # bs = beam shape, not boresight
+    gp_bs = np.empty(
+        np.broadcast_shapes(gp_arr.shape, gp_elem.shape), dtype=gp_arr.dtype
+    )
+    gp_bs["Gain"] = delta_g_bs + gp_arr["Gain"] + gp_elem["Gain"]
+    gp_bs["Phase"] = gp_arr["Phase"] + gp_elem["Phase"]
+    dv = dv_arr & dv_elem
+
+    return gp_bs, dv

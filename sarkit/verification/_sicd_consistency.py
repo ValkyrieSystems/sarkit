@@ -5,13 +5,14 @@ Functionality for verifying SICD files for internal consistency.
 import copy
 import datetime
 import functools
-import logging
+import itertools
 import os
 from typing import Any, Optional
 
 import numpy as np
 import numpy.linalg as npl
 import numpy.polynomial.polynomial as npp
+import shapely.geometry as shg
 from jbpy import Jbp
 from lxml import etree
 
@@ -20,14 +21,6 @@ import sarkit.sicd.projection as sicdproj
 import sarkit.verification._consistency as con
 import sarkit.wgs84
 from sarkit import _constants
-
-logger = logging.getLogger(__name__)
-
-try:
-    import shapely.geometry as shg
-except ImportError as ie:
-    logger.warning("'shapely' package not found. Some features may not work correctly.")
-    shg = con._ExceptionOnUse(ie)
 
 KAPFAC: float = 0.8859
 
@@ -112,22 +105,6 @@ def _sample_valid_pixels(xmlhelp, shape=(5, 7)):
     return np.array([point.coords[0] for point in intersecting_points.geoms])
 
 
-def _grid_index_to_coord(xmlhelp, grid_index):
-    spacing = np.array(
-        [
-            xmlhelp.load("./{*}Grid/{*}Row/{*}SS"),
-            xmlhelp.load("./{*}Grid/{*}Col/{*}SS"),
-        ]
-    )
-    origin = np.array(
-        [
-            xmlhelp.load("./{*}ImageData/{*}SCPPixel/{*}Row"),
-            xmlhelp.load("./{*}ImageData/{*}SCPPixel/{*}Col"),
-        ]
-    )
-    return (grid_index - origin) * spacing
-
-
 def _create_rectangle(x0, y0, num_x, num_y):
     return shg.box(x0, y0, x0 + num_x - 1, y0 + num_y - 1, ccw=False)
 
@@ -159,9 +136,17 @@ def _compute_pfa_min_max_fx(xmlhelp):
 def _get_desdata_location(ntf):
     """Return the first SICD DES"""
     for deseg in ntf["DataExtensionSegments"]:
-        if deseg["subheader"]["DESSHF"]["DESSHTN"].value.startswith("urn:SICD"):
+        if deseg["subheader"]["DESSHTN"].encoded_value.startswith(b"urn:SICD"):
             return deseg["DESDATA"].get_offset(), deseg["DESDATA"].get_size()
     raise ValueError("Unable to find SICD DES")
+
+
+def _get_root_path(node):
+    path = []
+    while node is not None:
+        path.append(etree.QName(node).localname)
+        node = node.getparent()
+    return "/".join(reversed(path[:-1]))
 
 
 def per_grid_dim(method):
@@ -409,15 +394,15 @@ class SicdConsistency(con.ConsistencyChecker):
                 with self.need("Valid image subheaders"):
                     assert idatim <= collect_start + datetime.timedelta(seconds=1)
                     assert idatim >= collect_start - datetime.timedelta(seconds=1)
-                    assert imhdr["PVTYPE"].value.rstrip() == pixel_info["pvtype"]
-                    assert imhdr["IREP"].value.rstrip() == "NODISPLY"
-                    assert imhdr["ICAT"].value.rstrip() == "SAR"
+                    assert imhdr["PVTYPE"].value == pixel_info["pvtype"]
+                    assert imhdr["IREP"].value == "NODISPLY"
+                    assert imhdr["ICAT"].value == "SAR"
                     assert imhdr["ABPP"].value == expected_nbpp
                     assert imhdr["PJUST"].value == "R"
                     assert imhdr["ICORDS"].value == "G"
                     assert imhdr["IC"].value in ["NC", "NM", "C7", "M7"]
                     assert imhdr["ISYNC"].value == 0
-                    assert imhdr["IMODE"].value.rstrip() == "P"
+                    assert imhdr["IMODE"].value == "P"
                     assert imhdr["NBPR"].value == 1
                     assert imhdr["NBPC"].value == 1
 
@@ -587,30 +572,52 @@ class SicdConsistency(con.ConsistencyChecker):
                 )
 
             with self.need("DESID == XML_DATA_CONTENT"):
-                assert des_header["DESID"].value.rstrip() == "XML_DATA_CONTENT"
+                assert des_header["DESID"].value == "XML_DATA_CONTENT"
 
             with self.need("DESSHFT == XML"):
-                assert des_header["DESSHF"]["DESSHFT"].value.rstrip() == "XML"
+                assert des_header["DESSHFT"].value == "XML"
 
             with self.need(
                 "DESSHSI == SICD Volume 1 Design & Implementation Description Document"
             ):
                 assert (
-                    des_header["DESSHF"]["DESSHSI"].value.rstrip()
+                    des_header["DESSHSI"].value
                     == "SICD Volume 1 Design & Implementation Description Document"
                 )
 
             instance_namespace = etree.QName(self.sicdroot).namespace
             with self.need("Consistent namespace"):
-                assert (
-                    des_header["DESSHF"]["DESSHTN"].value.rstrip() == instance_namespace
-                )
+                assert des_header["DESSHTN"].value == instance_namespace
 
             icp_nodes = self.xmlhelp.load("./{*}GeoData/{*}ImageCorners")
             icp_strs = [f"{lat:+012.8f}{lon:+013.8f}" for (lat, lon) in icp_nodes]
             icp_strs.append(icp_strs[0])
             with self.need("DESSHLPG consistent with image corners"):
-                assert des_header["DESSHF"]["DESSHLPG"].value == "".join(icp_strs)
+                assert des_header["DESSHLPG"].value == "".join(icp_strs)
+
+    def check_bistatic_fields(self) -> None:
+        """Optional fields are consistent with CollectType = BISTATIC for SICD v1.4.0+"""
+        with self.precondition():
+            assert (
+                self.sicdroot.findtext("{*}CollectionInfo/{*}CollectType") == "BISTATIC"
+            )
+            this_ns = etree.QName(self.sicdroot).namespace
+            sicd_versions = list(sksicd.VERSION_INFO)
+            assert sicd_versions.index(this_ns) >= sicd_versions.index("urn:SICD:1.4.0")
+            required_fields = (
+                "{*}CollectionInfo/{*}IlluminatorName",
+                "{*}Position/{*}GRPPoly",
+                "{*}Position/{*}TxAPCPoly",
+                "{*}Position/{*}RcvAPC",
+            )
+            for field in required_fields:
+                with self.need(
+                    f"{field.replace('{*}', '')} required for CollectType=BISTATIC"
+                ):
+                    assert self.sicdroot.find(field) is not None
+
+            with self.need("Antenna/TwoWay not allowed when CollectType=BISTATIC"):
+                assert self.sicdroot.find("{*}Antenna/{*}TwoWay") is None
 
     def check_grid_sign(self) -> None:
         """Grid signs match."""
@@ -689,7 +696,7 @@ class SicdConsistency(con.ConsistencyChecker):
             f"./{{*}}Grid/{{*}}{direction}/{{*}}DeltaKCOAPoly"
         )
         if dkcoapoly is not None:
-            points = _grid_index_to_coord(self.xmlhelp, vertices)
+            points = sksicd.rowcol_to_xrowycol(self.sicdroot.getroottree(), vertices)
 
             deltaks = npp.polyval2d(points[:, 0], points[:, 1], dkcoapoly)
             min_dk = deltaks.min()
@@ -729,6 +736,7 @@ class SicdConsistency(con.ConsistencyChecker):
         are consistent with their parent's ``'size'``.
         """
         parent = self.sicdroot.find(path_to_parent)
+
         indices = [int(node.get("index")) for node in parent.findall(rel_path_to_child)]
         with self.need(f"All {rel_path_to_child} elements are present"):
             assert not set(indices).symmetric_difference(range(1, len(indices) + 1))
@@ -736,8 +744,6 @@ class SicdConsistency(con.ConsistencyChecker):
             f"{path_to_parent} size attribute matches number of {rel_path_to_child}"
         ):
             assert int(parent.attrib["size"]) == len(indices)
-
-        return indices
 
     @per_grid_dim
     def check_wgtfunct_indices(self, grid_dim) -> None:
@@ -823,7 +829,7 @@ class SicdConsistency(con.ConsistencyChecker):
             assert delta_krow_poly is not None
             assert delta_kcol_poly is not None
             grid = _sample_valid_pixels(self.xmlhelp)
-            image_coords = _grid_index_to_coord(self.xmlhelp, grid)
+            image_coords = sksicd.rowcol_to_xrowycol(self.sicdroot.getroottree(), grid)
             row_bw = self.xmlhelp.load("./{*}Grid/{*}Row/{*}ImpRespBW")
             col_bw = self.xmlhelp.load("./{*}Grid/{*}Col/{*}ImpRespBW")
             sgn = self.xmlhelp.load("./{*}Grid/{*}Row/{*}Sgn")
@@ -889,9 +895,9 @@ class SicdConsistency(con.ConsistencyChecker):
 
     def check_image_corners(self) -> None:
         """Checks that the image corner points (ICPs) are nominally correct."""
-        icp_nodes = self.xmlhelp.load("./{*}GeoData/{*}ImageCorners")
+        icp_ll = self.xmlhelp.load("./{*}GeoData/{*}ImageCorners")
         with self.need("Number of ICP is four"):
-            assert len(icp_nodes) == 4
+            assert len(icp_ll) == 4
 
         scp_ecf = self.xmlhelp.load("./{*}GeoData/{*}SCP/{*}ECF")
         scp_height = self.xmlhelp.load("./{*}GeoData/{*}SCP/{*}LLH/{*}HAE")
@@ -904,26 +910,27 @@ class SicdConsistency(con.ConsistencyChecker):
         col = self.xmlhelp.load("./{*}ImageData/{*}FirstCol") + np.asarray(
             [0, ncols - 1, ncols - 1, 0]
         )
-        icp_coords = _grid_index_to_coord(self.xmlhelp, np.stack([row, col], axis=-1))
+        icp_coords = sksicd.rowcol_to_xrowycol(
+            self.sicdroot.getroottree(), np.stack([row, col], axis=-1)
+        )
+        icp_converted_ecef = sarkit.wgs84.geodetic_to_cartesian(
+            np.concatenate((icp_ll, np.full((len(icp_ll), 1), scp_height)), axis=1)
+        )
         urow_gnd, ucol_gnd = _uvecs_in_ground(self.xmlhelp)
-
-        for (lat, lon), icp_coord in zip(icp_nodes, icp_coords):
-            icp_converted_ecf = sarkit.wgs84.geodetic_to_cartesian(
-                [
-                    lat,
-                    lon,
-                    scp_height,
-                ],
-            )
-            icp_computed_ecf = (
-                scp_ecf + urow_gnd * icp_coord[0] + ucol_gnd * icp_coord[1]
-            )
-
-            scp_dist = npl.norm(icp_converted_ecf - scp_ecf)
-            with self.need(f"Image corner {icp_coord} must align with ImageData"):
-                assert 0.1 * scp_dist > con.Approx(
-                    npl.norm(icp_converted_ecf - icp_computed_ecf)
-                )
+        icp_computed_ecef = (
+            scp_ecf + urow_gnd * icp_coords[..., :1] + ucol_gnd * icp_coords[..., 1:2]
+        )
+        chords = itertools.combinations(icp_converted_ecef, 2)
+        max_chord_length = max(np.linalg.norm(chord[1] - chord[0]) for chord in chords)
+        for index, (icp_reported, icp_predicted) in enumerate(
+            zip(icp_converted_ecef, icp_computed_ecef)
+        ):
+            icp_dist = np.linalg.norm(icp_predicted - icp_reported)
+            with self.want(
+                f"ICP{index + 1} must be consistent with with GeoData/SCP"
+                " and Grid unit vectors"
+            ):
+                assert icp_dist < 0.05 * max_chord_length
 
     def check_amptable(self) -> None:
         """AmpTable of correct size with accurate Amplitude indices."""
@@ -1147,7 +1154,7 @@ class SicdConsistency(con.ConsistencyChecker):
             los_arp_to_scp = scp_pos - arp_pos
             along_track_error = np.abs(np.dot(los_arp_to_scp, _unit(arp_vel)))
             grid = _sample_valid_pixels(self.xmlhelp)
-            coords = _grid_index_to_coord(self.xmlhelp, grid)
+            coords = sksicd.rowcol_to_xrowycol(self.sicdroot.getroottree(), grid)
             time_ca = npp.polyval(coords[..., 1], time_ca_poly)
             ca_vel = 1.0 / np.abs(
                 npp.polyval(coords[..., 1], npp.polyder(time_ca_poly))
@@ -1255,6 +1262,46 @@ class SicdConsistency(con.ConsistencyChecker):
             with self.need("SegmentList segments have unique identifiers"):
                 assert len(set(segment_ids)) == len(segment_ids)
 
+    def _need_valid_polygon(self, polygon_node):
+        """Returns the polygon from the specified node, with basic polygon verification."""
+        vertex_nodes = sorted(list(polygon_node), key=lambda x: int(x.attrib["index"]))
+        polygon = np.asarray(
+            [self.xmlhelp.load_elem(vertex) for vertex in vertex_nodes]
+        )
+        root_path = _get_root_path(polygon_node)
+        with self.need(f"{root_path} indices are all present"):
+            assert [int(x.attrib["index"]) for x in vertex_nodes] == list(
+                range(1, len(vertex_nodes) + 1)
+            )
+        size = int(polygon_node.attrib["size"])
+        with self.need(f"{root_path} size attribute matches the number of vertices"):
+            assert size == len(vertex_nodes)
+        shg_polygon = shg.Polygon(polygon)
+        with self.need(f"{root_path} is simple"):
+            assert shg_polygon.is_simple
+        with self.need(f"{root_path} is clockwise"):
+            assert not shg_polygon.exterior.is_ccw
+        return polygon
+
+    def check_segment_polygons(self) -> None:
+        """SegmentPolygons are simple, valid and clockwise."""
+        segment_polygons = self.sicdroot.findall(
+            "{*}RadarCollection/{*}Area/{*}Plane/{*}SegmentList/{*}Segment/{*}SegmentPolygon"
+        )
+        with self.precondition():
+            assert segment_polygons
+            for segment_polygon in segment_polygons:
+                self._need_valid_polygon(segment_polygon)
+
+    def check_area_plane_polygon(self) -> None:
+        """RadarCollection/Area/Plane/Polygon is simple, valid and clockwise."""
+        area_plane_poly_elem = self.sicdroot.find(
+            "{*}RadarCollection/{*}Area/{*}Plane/{*}Polygon"
+        )
+        with self.precondition():
+            assert area_plane_poly_elem is not None
+            self._need_valid_polygon(area_plane_poly_elem)
+
     def _compute_area_plane_corners_ecef(self):
         plane = self.sicdroot.find("./{*}RadarCollection/{*}Area/{*}Plane")
         ref_ecf = self.xmlhelp.load_elem(plane.find("./{*}RefPt/{*}ECF"))
@@ -1359,7 +1406,9 @@ class SicdConsistency(con.ConsistencyChecker):
 
             # fetch the valid area and convert into grid (xrow, ycol) coordinates
             grid = _get_valid_data_vertices(self.xmlhelp)
-            valid_area_spxy = _grid_index_to_coord(self.xmlhelp, grid)
+            valid_area_spxy = sksicd.rowcol_to_xrowycol(
+                self.sicdroot.getroottree(), grid
+            )
             with self.need("Area plane surface intersects with grid plane area"):
                 assert shg.Polygon(vertices_spxy).intersects(
                     shg.Polygon(valid_area_spxy)
@@ -1432,17 +1481,26 @@ class SicdConsistency(con.ConsistencyChecker):
 
     def check_valid_data_indices(self) -> None:
         """Checks consistency of the values in the ImageData child elements."""
-        image_indices = self._compare_size_and_index(
-            "./{*}ImageData/{*}ValidData", "./{*}Vertex"
-        )
-        geo_indices = self._compare_size_and_index(
-            "./{*}GeoData/{*}ValidData", "./{*}Vertex"
-        )
         with self.precondition():
-            assert image_indices is not None
-            assert geo_indices is not None
-            with self.need("GeoData indices equal to ImageData indices"):
-                assert np.array_equal(sorted(geo_indices), sorted(image_indices))
+            assert self.sicdroot.find("./{*}ImageData/{*}ValidData") is not None
+            self._compare_size_and_index("./{*}ImageData/{*}ValidData", "./{*}Vertex")
+
+        with self.precondition():
+            assert self.sicdroot.find("./{*}GeoData/{*}ValidData") is not None
+            self._compare_size_and_index("./{*}GeoData/{*}ValidData", "./{*}Vertex")
+
+        with self.precondition():
+            assert self.sicdroot.find("./{*}ImageData/{*}ValidData") is not None
+            assert self.sicdroot.find("./{*}GeoData/{*}ValidData") is not None
+
+            with self.need("GeoData size equal to ImageData size"):
+                image_validdata_size = self.sicdroot.find(
+                    "./{*}ImageData/{*}ValidData"
+                ).get("size")
+                geo_validdata_size = self.sicdroot.find(
+                    "./{*}GeoData/{*}ValidData"
+                ).get("size")
+                assert image_validdata_size == geo_validdata_size
 
     def check_icp_indices(self) -> None:
         """Checks consistency of the indices in the GeoData ICP elements."""
@@ -1829,6 +1887,34 @@ class SicdConsistency(con.ConsistencyChecker):
                 range_bias = float(components.findtext("./{*}RadarSensor/{*}RangeBias"))
                 assert range_bias >= con.Approx(0.0)
 
+    def check_errorstatistics_conditionals(self) -> None:
+        """Presence of ErrorStatistics child elements is consistent with CollectType."""
+        with self.precondition():
+            this_ns = etree.QName(self.sicdroot).namespace
+            sicd_versions = list(sksicd.VERSION_INFO)
+            assert sicd_versions.index(this_ns) >= sicd_versions.index("urn:SICD:1.4.0")
+            is_bistatic = (
+                self.sicdroot.findtext("{*}CollectionInfo/{*}CollectType") == "BISTATIC"
+            )
+            coltype = "BISTATIC" if is_bistatic else "MONOSTATIC"
+            if is_bistatic:
+                forbidden_fields = (
+                    "{*}ErrorStatistics/{*}CompositeSCP",
+                    "{*}ErrorStatistics/{*}Components",
+                    "{*}ErrorStatistics/{*}AdjustableParameterOffsets",
+                )
+            else:
+                forbidden_fields = (
+                    "{*}ErrorStatistics/{*}BistaticCompositeSCP",
+                    "{*}ErrorStatistics/{*}BistaticComponents",
+                    "{*}ErrorStatistics/{*}BistaticAdjustableParameterOffsets",
+                )
+            for field in forbidden_fields:
+                with self.need(
+                    f"{field.replace('{*}', '')} not allowed when CollectType={coltype}"
+                ):
+                    assert self.sicdroot.find(field) is None
+
     def check_txsequence_indices(self) -> None:
         """Checks consistency of the TxSequence/TxStep indexing."""
         with self.precondition():
@@ -2070,3 +2156,7 @@ class SicdConsistency(con.ConsistencyChecker):
             with self.precondition():
                 assert poly_node is not None
                 self._assert_poly_2d(poly_node, poly)
+
+
+# Improve rendered docstring
+con.modify_conchecker_docs(SicdConsistency)

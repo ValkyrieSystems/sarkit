@@ -91,7 +91,7 @@ def _replace_scpcoa(sicd_xmltree):
     return scpcoa
 
 
-@pytest.mark.parametrize("xml_file", DATAPATH.glob("example-sicd*.xml"))
+@pytest.mark.parametrize("xml_file", list(DATAPATH.glob("example-sicd*.xml")))
 def test_compute_scp_coa(xml_file):
     _replace_scpcoa(lxml.etree.parse(xml_file))
 

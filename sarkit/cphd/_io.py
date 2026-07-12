@@ -14,6 +14,7 @@ import numpy.typing as npt
 from sarkit import _iohelp
 
 from . import _constants as cphdconst
+from . import _pvps as cphdpvps
 
 
 def _to_binary_format_string_recursive(dtype):
@@ -176,13 +177,25 @@ def mask_support_array(
     -------
     masked_array : :py:class:`~numpy.ma.MaskedArray`
         ``array`` with NODATA elements masked
+
+    Notes
+    -----
+    If array is a MaskedArray, the mask will be updated and array returned.
+    If array is an ndarray, a MaskedArray wrapping array is returned.
     """
     if nodata_hex is None:
         return np.ma.array(array)
     nodata_v = np.void(bytes.fromhex(nodata_hex))
+
+    mask = np.asarray(array, copy=False).view(nodata_v.dtype) == nodata_v
+    if np.ma.isMaskedArray(array):
+        assert isinstance(array.mask, np.ndarray)  # single bool not supported
+        array.mask[...] = mask[...]
+        return array
+
     return np.ma.array(
         array,
-        mask=array.view(nodata_v.dtype) == nodata_v,
+        mask=mask,
         fill_value=nodata_v.view(array.dtype),
     )
 
@@ -269,49 +282,6 @@ def read_file_header(file):
     return file_type_header, kvp_list
 
 
-def get_pvp_dtype(cphd_xmltree):
-    """Get PVP dtype.
-
-    Parameters
-    ----------
-    cphd_xmltree : lxml.etree.ElementTree
-        CPHD XML ElementTree
-
-    Returns
-    -------
-    numpy.dtype
-    """
-
-    pvp_node = cphd_xmltree.find("./{*}PVP")
-
-    bytes_per_word = 8
-    names = []
-    formats = []
-    offsets = []
-
-    def handle_field(field_node):
-        node_name = lxml.etree.QName(field_node).localname
-        if node_name == "AddedPVP":
-            names.append(field_node.find("./{*}Name").text)
-        else:
-            names.append(node_name)
-
-        formats.append(
-            binary_format_string_to_dtype(field_node.find("./{*}Format").text)
-        )
-        offsets.append(int(field_node.find("./{*}Offset").text) * bytes_per_word)
-
-    for pnode in pvp_node:
-        if lxml.etree.QName(pnode).localname in ("TxAntenna", "RcvAntenna"):
-            for subnode in pnode:
-                handle_field(subnode)
-        else:
-            handle_field(pnode)
-
-    dtype = np.dtype(({"names": names, "formats": formats, "offsets": offsets}))
-    return dtype
-
-
 class Reader:
     """Read a CPHD file
 
@@ -339,7 +309,7 @@ class Reader:
 
         import sarkit.cphd as skcphd
         import lxml.etree
-        meta = skcphd.Metadata(xmltree=lxml.etree.parse("data/example-cphd-1.0.1.xml"))
+        meta = skcphd.Metadata(xmltree=lxml.etree.parse("data/example-cphd-1.1.0.xml"))
 
         file = pathlib.Path(tmpdir.name) / "foo"
         with file.open("wb") as f, skcphd.Writer(f, meta) as w:
@@ -427,6 +397,7 @@ class Reader:
         *,
         start_vector: int | None = None,
         stop_vector: int | None = None,
+        out: npt.NDArray | None = None,
     ) -> npt.NDArray:
         """Read signal data from a CPHD file
 
@@ -438,6 +409,8 @@ class Reader:
             Lowest vector index to retrieve (inclusive). If None, defaults to first vector.
         stop_vector : int or None, optional
             Highest vector index to retrieve (exclusive). If None, defaults to one after last vector.
+        out : ndarray or None, optional
+            Array to store signal data.  If None, a new array will be created.
 
         Returns
         -------
@@ -480,9 +453,13 @@ class Reader:
         self._file_object.seek(
             slice_offset + signal_offset + self._signal_block_byte_offset
         )
-        out = _iohelp.fromfile(
-            self._file_object, dtype, count=np.prod(out_shape)
-        ).reshape(out_shape)
+        out = _iohelp.ensure_array(out, out_shape, dtype)
+        _iohelp.fromfile(
+            self._file_object,
+            dtype,
+            count=np.prod(out_shape),
+            out=out.reshape(-1),
+        )
         return out
 
     def read_pvps(
@@ -491,6 +468,7 @@ class Reader:
         *,
         start_vector: int | None = None,
         stop_vector: int | None = None,
+        out: npt.NDArray | None = None,
     ) -> npt.NDArray:
         """Read pvp data from a CPHD file
 
@@ -502,6 +480,8 @@ class Reader:
             Lowest vector index to retrieve (inclusive). If None, defaults to first vector.
         stop_vector : int or None, optional
             Highest vector index to retrieve (exclusive). If None, defaults to one after last vector.
+        out : ndarray or None, optional
+            Array to store read data.  If None, a new array will be created.
 
         Returns
         -------
@@ -520,11 +500,17 @@ class Reader:
         )
         count = max(stop_vector - start_vector, 0)
 
-        pvp_dtype = get_pvp_dtype(self.metadata.xmltree).newbyteorder("B")
+        pvp_dtype = cphdpvps.get_pvp_dtype(self.metadata.xmltree).newbyteorder("B")
         slice_offset = pvp_dtype.itemsize * start_vector
         pvp_offset = int(channel_info.find("./{*}PVPArrayByteOffset").text)
         self._file_object.seek(slice_offset + pvp_offset + self._pvp_block_byte_offset)
-        out = _iohelp.fromfile(self._file_object, dtype=pvp_dtype, count=count)
+        out = _iohelp.ensure_array(out, (count,), pvp_dtype)
+        _iohelp.fromfile(
+            self._file_object,
+            dtype=pvp_dtype,
+            count=count,
+            out=out,
+        )
         return out
 
     def read_channel(
@@ -533,6 +519,8 @@ class Reader:
         *,
         start_vector: int | None = None,
         stop_vector: int | None = None,
+        out_signal: npt.NDArray | None = None,
+        out_pvp: npt.NDArray | None = None,
     ) -> tuple[npt.NDArray, npt.NDArray]:
         """Read signal and pvp data from a CPHD file channel
 
@@ -544,6 +532,10 @@ class Reader:
             Lowest vector index to retrieve (inclusive). If None, defaults to first vector.
         stop_vector : int or None, optional
             Highest vector index to retrieve (exclusive). If None, defaults to one after last vector.
+        out_signal : ndarray or None, optional
+            Array to store signal data.  If None, a new array will be created.
+        out_pvp : ndarray or None, optional
+            Array to store PVP data.  If None, a new array will be created.
 
         Returns
         -------
@@ -554,15 +546,21 @@ class Reader:
 
         """
         signal = self.read_signal(
-            channel_identifier, start_vector=start_vector, stop_vector=stop_vector
+            channel_identifier,
+            start_vector=start_vector,
+            stop_vector=stop_vector,
+            out=out_signal,
         )
         pvp = self.read_pvps(
-            channel_identifier, start_vector=start_vector, stop_vector=stop_vector
+            channel_identifier,
+            start_vector=start_vector,
+            stop_vector=stop_vector,
+            out=out_pvp,
         )
 
         return signal, pvp
 
-    def _read_support_array(self, sa_identifier):
+    def _read_support_array(self, sa_identifier, out):
         elem_format = self.metadata.xmltree.find(
             f"{{*}}SupportArray/*[{{*}}Identifier='{sa_identifier}']/{{*}}ElementFormat"
         )
@@ -578,11 +576,18 @@ class Reader:
         sa_offset = int(sa_info.find("./{*}ArrayByteOffset").text)
         self._file_object.seek(sa_offset + self._support_block_byte_offset)
         assert dtype.itemsize == int(sa_info.find("./{*}BytesPerElement").text)
-        return _iohelp.fromfile(self._file_object, dtype, np.prod(shape)).reshape(shape)
+        out = _iohelp.ensure_array(out, shape, dtype)
+        _iohelp.fromfile(
+            self._file_object,
+            dtype,
+            np.prod(shape),
+            out=np.asarray(out, copy=False).reshape(-1),
+        )
+        return out
 
-    def read_support_array(self, sa_identifier, masked=True):
+    def read_support_array(self, sa_identifier, masked=True, *, out=None):
         """Read SupportArray"""
-        array = self._read_support_array(sa_identifier)
+        array = self._read_support_array(sa_identifier, out)
         if not masked:
             return array
         nodata = self.metadata.xmltree.findtext(
@@ -625,7 +630,7 @@ class Writer:
 
         >>> import lxml.etree
 
-        >>> xmltree = lxml.etree.parse("data/example-cphd-1.0.1.xml")
+        >>> xmltree = lxml.etree.parse("data/example-cphd-1.1.0.xml")
         >>> first_channel = xmltree.find("{*}Data/{*}Channel")
         >>> ch_id = first_channel.findtext("{*}Identifier")
         >>> num_v = int(first_channel.findtext("{*}NumVectors"))
@@ -827,7 +832,7 @@ class Writer:
         self._file_object.seek(
             self._channel_size_offsets[channel_identifier]["pvp_offset"], os.SEEK_CUR
         )
-        output_dtype = pvp_array.dtype.newbyteorder(">")
+        output_dtype = cphdpvps.get_pvp_dtype(self._metadata.xmltree).newbyteorder(">")
         pvp_array.astype(output_dtype, copy=False).tofile(self._file_object)
 
     def write_support_array(

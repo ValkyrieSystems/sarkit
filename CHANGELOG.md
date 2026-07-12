@@ -7,6 +7,122 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Warnings logged when not all CRSD support arrays written
+
+
+## [1.10.0] - 2026-06-25
+
+### Added
+- PVP convenience functions `dtype_to_pvp_element` and `get_defined_pvp_dtype` in `sarkit.cphd`
+- PVP convenience functions `dtype_to_pvp_element` and `get_defined_pvp_dtype` in `sarkit.crsd`
+- PPP convenience functions `dtype_to_ppp_element` and `get_defined_ppp_dtype` in `sarkit.crsd`
+
+### Fixed
+- Dimensionality mismatch in `sarkit.sicd.projection.apply_apos` for non-scalar projection sets
+- Object construction via `sarkit.sicd.projection.AdjustableParameterOffsets.from_xml` when XML contains zeroes
+- Use most recent CRSD v1.0 XML schema (dated 2026-05-15)
+
+
+## [1.9.0] - 2026-06-10
+
+### Added
+- Antenna parameters computations `compute_eb` and `compute_apat` in `sarkit.crsd`
+
+### Changed
+- Minimum supported version of Python raised to 3.12
+
+### Fixed
+- Erroneous output dimensionality for scalar inputs to `sarkit.crsd.interpolate_support_array`
+
+
+## [1.8.1] - 2026-06-03
+
+### Fixed
+- Failure when writing very small SICDs
+- `ElementWrapper.setdefault` now properly inserts subelements
+- References to TxId and ChId in _cphd_consistency
+
+
+## [1.8.0] - 2026-05-06
+
+### Added
+- Additional SICD consistency checks for v1.4.0+ conditional fields and v1.5-introduced polygons
+- Conversions between {row, col}, {irow, icol}, and {xrow, ycol} SICD coordinate systems
+
+
+## [1.7.1] - 2026-04-27
+
+### Fixed
+- Calculation of SCPCOA/Bistatic/RcvPlatform/DopplerConeAng in `sarkit.sicd.compute_scp_coa`
+
+
+## [1.7.0] - 2026-04-20
+
+### Added
+- Support for SICD v1.5 including bistatic DEM projection and expanded projection sensitivity and error propagation
+  functionality in `sarkit.sicd.projection`
+- Additional CPHD consistency checks for optional antenna & polarization fields introduced in v1.1.0
+- `--txsequences` argument to `crsdinfo` for listing transmit pulse sequences
+- Methods for converting to & from image area coordinates in `sarkit.crsd`
+
+### Fixed
+- Frame enumerations in `sarkit.sicd.projection.compute_ecef_pv_transformation`
+
+
+## [1.6.0] - 2026-03-30
+
+### Added
+- `ElementWrapper.findall` and `ElementWrapper.find` methods
+- Additional CPHD consistency checks for Support Arrays and associated unit tests
+- Methods for converting to & from image area coordinates in `sarkit.cphd`
+- Methods for computing "reference times" in `sarkit.cphd`
+
+
+## [1.5.0] - 2026-03-04
+
+### Added
+- Additional CRSD checks and associated unit tests
+- Read methods now support an optional "out" argument
+
+
+## [1.4.1] - 2026-02-06
+
+### Added
+- Extended `jbpy` version compatibility
+
+
+## [1.4.0] - 2026-01-26
+
+### Added
+- Option to use SIDD v1.0/2.0 image angle convention in `sarkit.sidd.compute_angles`
+- Support for Python 3.14
+- `sarkit.wgs84.GM` constant
+- Additional error checking in Transcoders and ElementWrappers
+
+### Changed
+- `jbpy` dependency updated
+
+### Fixed
+- SIDD v2.0 ANG_MAG types properly transcode to `AngleMagnitudeType`
+- SICDConsistency.check_image_corners and SIDDConsistency.check_geodata_image_corners made more robust
+
+
+## [1.3.0] - 2025-11-11
+
+### Added
+- Ability to read and write SIDD legend segments
+- Additional CPHD consistency checks and associated unit tests
+- SIDD Coordinate Transforms for GGD, CGD, and PFGD coordinate systems
+
+### Changed
+- `jbpy` dependency updated
+- `verification` packaging extra functionality and dependencies moved to the base package
+
+### Fixed
+- SICD consistency failure when optional ValidData polygon was omitted
+- Handling of CPHD and CRSD with padded PVP/PPP sets
+
 
 ## [1.2.0] - 2025-10-13
 
@@ -179,7 +295,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Limited SICD Reading and Writing
 - Limited SIDD NITF Reading and Writing
 
-[unreleased]: https://github.com/ValkyrieSystems/sarkit/compare/v1.2.0...HEAD
+[unreleased]: https://github.com/ValkyrieSystems/sarkit/compare/v1.10.0...HEAD
+[1.10.0]: https://github.com/ValkyrieSystems/sarkit/compare/v1.9.0...v1.10.0
+[1.9.0]: https://github.com/ValkyrieSystems/sarkit/compare/v1.8.1...v1.9.0
+[1.8.1]: https://github.com/ValkyrieSystems/sarkit/compare/v1.8.0...v1.8.1
+[1.8.0]: https://github.com/ValkyrieSystems/sarkit/compare/v1.7.1...v1.8.0
+[1.7.1]: https://github.com/ValkyrieSystems/sarkit/compare/v1.7.0...v1.7.1
+[1.7.0]: https://github.com/ValkyrieSystems/sarkit/compare/v1.6.0...v1.7.0
+[1.6.0]: https://github.com/ValkyrieSystems/sarkit/compare/v1.5.0...v1.6.0
+[1.5.0]: https://github.com/ValkyrieSystems/sarkit/compare/v1.4.1...v1.5.0
+[1.4.1]: https://github.com/ValkyrieSystems/sarkit/compare/v1.4.0...v1.4.1
+[1.4.0]: https://github.com/ValkyrieSystems/sarkit/compare/v1.3.0...v1.4.0
+[1.3.0]: https://github.com/ValkyrieSystems/sarkit/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/ValkyrieSystems/sarkit/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/ValkyrieSystems/sarkit/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/ValkyrieSystems/sarkit/compare/v1.0.0...v1.0.1

@@ -5,6 +5,7 @@ import json
 import re
 
 import lxml.etree
+import numpy.testing as npt
 
 
 @dataclasses.dataclass
@@ -97,7 +98,7 @@ class XsdHelper(abc.ABC):
     def _read_xsdtypes_json(self, root_ns: str) -> str:
         """Return the text contents of the appropriate xsdtypes JSON"""
 
-    def get_typeinfo(self, elempath: str, roottag: str):
+    def get_typeinfo(self, elempath: str, roottag: str) -> tuple[str, XsdTypeDef]:
         """Return the typename and typedef for a elementpath"""
         current_typename = self.xsdtypes["/"][roottag]
         current_typedef = self.xsdtypes[current_typename]
@@ -230,6 +231,33 @@ class ElementWrapper(collections.abc.MutableMapping):
             return tuple(self._handle_subelem(x, localname) for x in elem)
         return self._handle_subelem(elem, localname)
 
+    def findall(self, localname: str, **kwargs) -> list:
+        """Returns a list of all children with given localname with children described by kwargs."""
+        childdef = self._getchilddef(localname)
+        if not childdef.repeat:
+            children = [self[localname]]
+        else:
+            children = self[localname]
+        found = []
+        for child in children:
+            for key, val in kwargs.items():
+                if key not in child:
+                    break
+                try:
+                    npt.assert_equal(val, child[key])
+                except AssertionError:
+                    break
+            else:
+                found.append(child)
+        return found
+
+    def find(self, localname: str, **kwargs):
+        """Returns first child with given localname with children described by kwargs or None if none exist."""
+        found = self.findall(localname, **kwargs)
+        if found:
+            return found[0]
+        return None
+
     def get(self, localname: str, default=_UNSET):
         """Return value from an ElementWrapper.
 
@@ -242,6 +270,15 @@ class ElementWrapper(collections.abc.MutableMapping):
         if default is _UNSET or localname in self:
             return self[localname]
 
+        return default
+
+    def setdefault(self, localname: str, default=None):
+        """Return value from an ElementWrapper if present. If not, insert ``localname`` with a value of ``default``
+        and return ``default``. If the localname is not schema-valid a KeyError is raised.
+        """
+        if localname in self:
+            return self[localname]
+        self[localname] = default
         return default
 
     def _handle_subelem(
@@ -301,7 +338,9 @@ class ElementWrapper(collections.abc.MutableMapping):
             if isinstance(val, ElementWrapper):
                 return val.elem
             if transcoder is None:
-                return lxml.etree.Element(childdef.tag)
+                raise ValueError(
+                    f"can't initialize {childdef.tag} with value of '{val}'"
+                )
             return transcoder.make_elem(childdef.tag, val)
 
         for subelem in self.elem.findall("{*}" + localname):

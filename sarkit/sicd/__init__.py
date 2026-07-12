@@ -21,6 +21,7 @@ Supported Versions
 * `SICD 1.2.1`_
 * `SICD 1.3.0`_
 * `SICD 1.4.0`_
+* `SICD 1.5`_
 
 Data Structure & File Format
 ============================
@@ -56,6 +57,7 @@ XML Metadata
    XdtType
    RowColType
    CmplxType
+   LineSampType
    XyzType
    LatLonHaeType
    LatLonType
@@ -66,6 +68,19 @@ XML Metadata
    ParameterType
    ImageCornersType
    compute_scp_coa
+
+Image Indices & Image Coordinates
+=================================
+
+.. autosummary::
+   :toctree: generated/
+
+   rowcol_to_irowicol
+   rowcol_to_xrowycol
+   irowicol_to_rowcol
+   irowicol_to_xrowycol
+   xrowycol_to_rowcol
+   xrowycol_to_irowicol
 
 Projections
 ===========
@@ -214,8 +229,38 @@ SICD 1.4.0
 .. [SICD_schema_V1.4.0.xsd] National Center for Geospatial Intelligence Standards,
    "Sensor Independent Complex Data (SICD) XML Schema, Version 1.4.0", 2024.
    https://nsgreg.nga.mil/doc/view?i=5538
+
+SICD 1.5
+--------
+.. [NGA.STND.0024-1_1.5] National Center for Geospatial Intelligence Standards,
+   "Sensor Independent Complex Data (SICD), Vol. 1, Design & Implementation Description Document,
+   Version 1.5", 2025.
+   https://nsgreg.nga.mil/doc/view?i=5696
+
+.. [NGA.STND.0024-2_1.5] National Center for Geospatial Intelligence Standards,
+   "Sensor Independent Complex Data (SICD), Vol. 2, File Format Description Document,
+   Version 1.5", 2025.
+   https://nsgreg.nga.mil/doc/view?i=5697
+
+.. [NGA.STND.0024-3_1.5] National Center for Geospatial Intelligence Standards,
+   "Sensor Independent Complex Data (SICD), Vol. 3, Image Projections Description Document,
+   Version 1.5", 2025.
+   https://nsgreg.nga.mil/doc/view?i=5698
+
+.. [NGA.STND.0024-4_1.5] National Center for Geospatial Intelligence Standards,
+   "Sensor Independent Complex Data (SICD) XML Schema, Version 1.5", 2025.
+   https://nsgreg.nga.mil/doc/view?i=5699
+
 """
 
+from ._calculations import (
+    irowicol_to_rowcol,
+    irowicol_to_xrowycol,
+    rowcol_to_irowicol,
+    rowcol_to_xrowycol,
+    xrowycol_to_irowicol,
+    xrowycol_to_rowcol,
+)
 from ._constants import (
     ILOC_MAX,
     IS_SIZE_MAX,
@@ -244,6 +289,7 @@ from ._xml import (
     IntType,
     LatLonHaeType,
     LatLonType,
+    LineSampType,
     MtxType,
     ParameterType,
     Poly2dType,
@@ -278,6 +324,7 @@ __all__ = [
     "IntType",
     "LatLonHaeType",
     "LatLonType",
+    "LineSampType",
     "MtxType",
     "NitfDeSubheaderPart",
     "NitfFileHeaderPart",
@@ -302,6 +349,12 @@ __all__ = [
     "image_to_constant_hae_surface",
     "image_to_dem_surface",
     "image_to_ground_plane",
+    "irowicol_to_rowcol",
+    "irowicol_to_xrowycol",
     "jbp_from_nitf_metadata",
+    "rowcol_to_irowicol",
+    "rowcol_to_xrowycol",
     "scene_to_image",
+    "xrowycol_to_irowicol",
+    "xrowycol_to_rowcol",
 ]
