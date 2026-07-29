@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Warnings logged when not all CRSD support arrays written
+- Allow NaN in TxACX, TxACY, TxEB PVPs to indicate no transmit pulse for the vector
 
 
 ## [1.10.0] - 2026-06-25

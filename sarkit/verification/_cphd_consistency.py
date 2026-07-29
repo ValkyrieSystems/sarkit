@@ -925,13 +925,17 @@ class CphdConsistency(con.ConsistencyChecker):
             pvp = self._get_channel_pvps(channel_id)
             assert {"TxACX", "TxACY"}.issubset(pvp.dtype.names)
             with self.need("TxACX is unit length"):
-                assert np.linalg.norm(pvp["TxACX"], axis=-1) == con.Approx(1.0)
+                assert np.nan_to_num(
+                    np.linalg.norm(pvp["TxACX"], axis=-1), nan=1.0
+                ) == con.Approx(1.0)
             with self.need("TxACY is unit length"):
-                assert np.linalg.norm(pvp["TxACY"], axis=-1) == con.Approx(1.0)
+                assert np.nan_to_num(
+                    np.linalg.norm(pvp["TxACY"], axis=-1), nan=1.0
+                ) == con.Approx(1.0)
             with self.need("TxACX and TxACY are orthogonal"):
-                assert np.vecdot(pvp["TxACX"], pvp["TxACY"]) == con.Approx(
-                    0.0, atol=1e-6
-                )
+                assert np.nan_to_num(
+                    np.vecdot(pvp["TxACX"], pvp["TxACY"]), nan=0.0
+                ) == con.Approx(0.0, atol=1e-6)
 
     @per_channel
     def check_txeb(self, channel_id, channel_node):
@@ -940,7 +944,9 @@ class CphdConsistency(con.ConsistencyChecker):
             pvp = self._get_channel_pvps(channel_id)
             assert "TxEB" in pvp.dtype.names
             with self.need("TxEB is less than unit length"):
-                assert np.linalg.norm(pvp["TxEB"], axis=-1) <= con.Approx(1.0)
+                assert np.nan_to_num(
+                    np.linalg.norm(pvp["TxEB"], axis=-1), nan=0.0
+                ) <= con.Approx(1.0)
 
     @per_channel
     def check_rcv_acxy(self, channel_id, channel_node):
