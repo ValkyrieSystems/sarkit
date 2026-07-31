@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+## [1.10.1] - 2026-07-31
+
 ### Fixed
 - Warnings logged when not all CRSD support arrays written
 - Allow NaN in TxACX, TxACY, TxEB PVPs to indicate no transmit pulse for the vector
@@ -296,7 +299,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Limited SICD Reading and Writing
 - Limited SIDD NITF Reading and Writing
 
-[unreleased]: https://github.com/ValkyrieSystems/sarkit/compare/v1.10.0...HEAD
+[unreleased]: https://github.com/ValkyrieSystems/sarkit/compare/v1.10.1...HEAD
+[1.10.1]: https://github.com/ValkyrieSystems/sarkit/compare/v1.10.0...v1.10.1
 [1.10.0]: https://github.com/ValkyrieSystems/sarkit/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/ValkyrieSystems/sarkit/compare/v1.8.1...v1.9.0
 [1.8.1]: https://github.com/ValkyrieSystems/sarkit/compare/v1.8.0...v1.8.1
