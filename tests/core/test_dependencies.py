@@ -4,7 +4,7 @@ import unittest
 
 import sarkit
 
-NEEDS_EXTRAS = ["sarkit._processing"]
+NEEDS_EXTRAS = []
 
 
 class TestImports(unittest.TestCase):
