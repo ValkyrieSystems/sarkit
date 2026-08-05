@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `compute_dwelltimes_using_poly` to `sarkit.cphd`
 
+### Removed
+- Unused `_processing` module
+
 
 ## [1.10.1] - 2026-07-31
 
