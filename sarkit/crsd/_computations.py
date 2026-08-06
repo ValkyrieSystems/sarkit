@@ -588,7 +588,7 @@ def compute_dwelltimes_using_poly(
     t_cod : ndarray
         Center of dwell times (sec) for the scene points relative to the Collection Reference Time
     t_dwell : ndarray
-       Dwell times (sec) for which the channel signal array contains the echo signals from the scene points
+        Dwell times (sec) for which the channel signal array contains the echo signals from the scene points
     """
     iax, iay = np.broadcast_arrays(iax, iay)
 
@@ -638,7 +638,7 @@ def compute_dwelltimes_using_dta(
     t_cod : ndarray
         Center of dwell times (sec) for the scene points relative to the Collection Reference Time
     t_dwell : ndarray
-       Dwell times (sec) for which the channel signal array contains the echo signals from the scene points
+        Dwell times (sec) for which the channel signal array contains the echo signals from the scene points
     """
     iax, iay = np.broadcast_arrays(iax, iay)
 

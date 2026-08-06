@@ -121,6 +121,14 @@ Reference Geometry Parameters
 
    compute_reference_geometry
 
+Channel & Dwell Parameters
+==========================
+
+.. autosummary::
+   :toctree: generated/
+
+   compute_dwelltimes_using_poly
+
 Constants
 =========
 
@@ -172,6 +180,7 @@ from ._constants import (
     SECTION_TERMINATOR,
     VERSION_INFO,
 )
+from ._dwell import compute_dwelltimes_using_poly
 from ._io import (
     FileHeaderPart,
     Metadata,
@@ -262,6 +271,7 @@ __all__ = [
     "XyzPolyType",
     "XyzType",
     "binary_format_string_to_dtype",
+    "compute_dwelltimes_using_poly",
     "compute_reference_geometry",
     "compute_t_ref",
     "compute_t_ref_from_pvps",
