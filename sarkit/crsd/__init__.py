@@ -101,6 +101,15 @@ Convenience functions that operate on parsed XML trees:
    llh_to_iac
    iac_to_llh
 
+Image Area
+
+.. autosummary::
+   :toctree: generated/
+
+   get_channel_image_area
+   get_extended_image_area
+   get_scene_image_area
+
 Receive Channel Parameters
 ==========================
 
@@ -210,6 +219,9 @@ from ._pxps import (
 )
 from ._scenecoords import (
     ecf_to_iac,
+    get_channel_image_area,
+    get_extended_image_area,
+    get_scene_image_area,
     iac_to_ecf,
     iac_to_llh,
     llh_to_iac,
@@ -292,10 +304,13 @@ __all__ = [
     "dtype_to_ppp_element",
     "dtype_to_pvp_element",
     "ecf_to_iac",
+    "get_channel_image_area",
     "get_defined_ppp_dtype",
     "get_defined_pvp_dtype",
+    "get_extended_image_area",
     "get_ppp_dtype",
     "get_pvp_dtype",
+    "get_scene_image_area",
     "iac_to_ecf",
     "iac_to_llh",
     "interpolate_support_array",

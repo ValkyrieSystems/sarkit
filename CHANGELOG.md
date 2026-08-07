@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- `get_channel_image_area`, `get_extended_image_area`, and `get_scene_image_area` to `sarkit.cphd`
+- `get_channel_image_area`, `get_extended_image_area`, and `get_scene_image_area` to `sarkit.cphd` and `sarkit.crsd`
 
 ### Removed
 - Unused `_processing` module
