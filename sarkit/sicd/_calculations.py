@@ -147,7 +147,7 @@ def xrowycol_to_rowcol(
     xmltree : lxml.etree.ElementTree
         SICD metadata
     xrowycol : (..., 2) array_like
-        N-D array of indices with (xrow, yol) in the last dimension
+        N-D array of indices with (xrow, ycol) in the last dimension
 
     Returns
     -------
