@@ -295,3 +295,127 @@ def iac_to_llh_from_ew(
             sc_ew["ReferenceSurface"]["HAE"]["uIAYLL"],
         )
     raise ValueError("Could not determine ReferenceSurface")
+
+
+def get_image_area_vertices_from_ew(
+    imgarea_ew: sarkit.xmlhelp.ElementWrapper, *, use_polygon: bool = True
+) -> np.ndarray:
+    """Return the vertices of an ElementWrapped ImageArea.
+
+    Not intended for public API.
+
+    Parameters
+    ----------
+    imgarea_ew : sarkit.xmlhelp.ElementWrapper
+        Element-wrapped ImageArea with children "X1Y1", "X2Y2", and (optionally) "Polygon"
+    use_polygon : bool, optional
+        If ``True``, the polygon, if present, is considered.
+        If ``False``, the polygon is ignored.
+
+    Returns
+    -------
+    ndarray
+        If ``use_polygon == True`` and a polygon is present, its vertices are returned.
+        Otherwise, the four corners of the rectangle described by X1Y1 and X2Y2 are returned.
+    """
+    if use_polygon and (poly := imgarea_ew.get("Polygon", None)) is not None:
+        return poly
+    x1, y1 = imgarea_ew["X1Y1"]
+    x2, y2 = imgarea_ew["X2Y2"]
+    return np.array(
+        [
+            [x1, y1],
+            [x1, y2],
+            [x2, y2],
+            [x2, y1],
+        ]
+    )
+
+
+def get_channel_image_area(
+    cphd_xmltree: lxml.etree.ElementTree, ch_id: str, *, use_polygon: bool = True
+) -> np.ndarray:
+    """Return the vertices of the channel image area identified by ``ch_id``.
+
+    Parameters
+    ----------
+    cphd_xmltree : lxml.etree.ElementTree
+        CPHD XML
+    ch_id : str
+        Channel unique identifier
+    use_polygon : bool, optional
+        If ``True``, the polygon, if present, is considered.
+        If ``False``, the polygon is ignored.
+
+    Returns
+    -------
+    ndarray
+        Vertices of the channel image area in IAC coordinates with IAX, IAY components in meters in the last dimension.
+        If ``use_polygon == True`` and a polygon is present, its vertices are returned.
+        Otherwise, the four corners of the rectangle described by X1Y1 and X2Y2 are returned.
+    """
+    ew = cphd_xml.ElementWrapper(cphd_xmltree.getroot())
+    chan_param_ew = ew["Channel"].find("Parameters", Identifier=ch_id)
+    imgarea_ew = (
+        chan_param_ew["ImageArea"]
+        if "ImageArea" in chan_param_ew
+        else ew["SceneCoordinates"]["ImageArea"]
+    )
+    return get_image_area_vertices_from_ew(imgarea_ew, use_polygon=use_polygon)
+
+
+def get_scene_image_area(
+    cphd_xmltree: lxml.etree.ElementTree, *, use_polygon: bool = True
+) -> np.ndarray:
+    """Return the vertices of the scene image area.
+
+    Parameters
+    ----------
+    cphd_xmltree : lxml.etree.ElementTree
+        CPHD XML
+    use_polygon : bool, optional
+        If ``True``, the polygon, if present, is considered.
+        If ``False``, the polygon is ignored.
+
+    Returns
+    -------
+    ndarray
+        Vertices of the scene image area in IAC coordinates with IAX, IAY components in meters in the last dimension.
+        If ``use_polygon == True`` and a polygon is present, its vertices are returned.
+        Otherwise, the four corners of the rectangle described by X1Y1 and X2Y2 are returned.
+    """
+    ew = cphd_xml.ElementWrapper(cphd_xmltree.getroot())
+    return get_image_area_vertices_from_ew(
+        ew["SceneCoordinates"]["ImageArea"], use_polygon=use_polygon
+    )
+
+
+def get_extended_image_area(
+    cphd_xmltree: lxml.etree.ElementTree, *, use_polygon: bool = True
+) -> np.ndarray | None:
+    """Return the vertices of the extended image area or ``None`` if one is not defined.
+
+    Parameters
+    ----------
+    cphd_xmltree : lxml.etree.ElementTree
+        CPHD XML
+    use_polygon : bool, optional
+        If ``True``, the polygon, if present, is considered.
+        If ``False``, the polygon is ignored.
+
+    Returns
+    -------
+    ndarray or None
+        If an extended image area is defined, the Vertices of the extended image area in IAC coordinates with IAX, IAY
+        components in meters in the last dimension.
+        If ``use_polygon == True`` and a polygon is present, its vertices are returned.
+        Otherwise, the four corners of the rectangle described by X1Y1 and X2Y2 are returned.
+        If an extended image area is not defined, ``None`` is returned.
+    """
+    ew = cphd_xml.ElementWrapper(cphd_xmltree.getroot())
+    imgarea_ew = ew["SceneCoordinates"].get("ExtendedArea", None)
+    return (
+        None
+        if imgarea_ew is None
+        else get_image_area_vertices_from_ew(imgarea_ew, use_polygon=use_polygon)
+    )

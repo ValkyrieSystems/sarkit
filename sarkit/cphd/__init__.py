@@ -114,6 +114,15 @@ Convenience functions that operate on parsed XML trees:
    llh_to_iac
    iac_to_llh
 
+Image Area
+
+.. autosummary::
+   :toctree: generated/
+
+   get_channel_image_area
+   get_extended_image_area
+   get_scene_image_area
+
 Reference Geometry Parameters
 
 .. autosummary::
@@ -201,6 +210,9 @@ from ._refgeom import (
 )
 from ._scenecoords import (
     ecf_to_iac,
+    get_channel_image_area,
+    get_extended_image_area,
+    get_scene_image_area,
     hae_iac_to_llh,
     hae_llh_to_iac,
     iac_to_ecf,
@@ -278,8 +290,11 @@ __all__ = [
     "dtype_to_binary_format_string",
     "dtype_to_pvp_element",
     "ecf_to_iac",
+    "get_channel_image_area",
     "get_defined_pvp_dtype",
+    "get_extended_image_area",
     "get_pvp_dtype",
+    "get_scene_image_area",
     "hae_iac_to_llh",
     "hae_llh_to_iac",
     "iac_to_ecf",

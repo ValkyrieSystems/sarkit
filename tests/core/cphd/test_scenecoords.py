@@ -1,8 +1,10 @@
+import copy
 import pathlib
 
 import lxml.etree
 import numpy as np
 import pytest
+import shapely
 
 import sarkit.cphd as skcphd
 import sarkit.wgs84
@@ -115,3 +117,71 @@ def test_derived_tofrom_iac(surf_type, cphd_xmltree_func):
         skcphd.iac_to_llh(cphd_xmltree, pt_iacs[..., :2]),
         skcphd.iac_to_llh(cphd_xmltree, pt_iacs * [1, 1, 0]),
     )
+
+
+@pytest.mark.parametrize("has_polygon", (True, False))
+@pytest.mark.parametrize("use_polygon", (True, False))
+def test_image_area_funcs(has_polygon, use_polygon):
+    xmltree = lxml.etree.parse(DATAPATH / "example-cphd-1.1.0.xml")
+
+    extended_poly = shapely.Polygon([[-10, -10], [0, 20], [10, -10]])
+    scene_poly = shapely.buffer(extended_poly, -1)
+    ch0_poly = shapely.buffer(scene_poly, -1)
+    ch1_poly = shapely.buffer(ch0_poly, -1)
+
+    def set_ia(ia_ew: skcphd.ElementWrapper, polygon: shapely.Polygon):
+        ia_ew["X1Y1"] = [polygon.bounds[0], polygon.bounds[1]]
+        ia_ew["X2Y2"] = [polygon.bounds[2], polygon.bounds[3]]
+        del ia_ew["Polygon"]
+        if has_polygon:
+            ia_ew["Polygon"] = shapely.get_coordinates(polygon)[:-1, :]
+
+    ew = skcphd.ElementWrapper(xmltree.getroot())
+    set_ia(ew["SceneCoordinates"]["ExtendedArea"], extended_poly)
+    set_ia(ew["SceneCoordinates"]["ImageArea"], scene_poly)
+    chpar0 = ew["Channel"]["Parameters"][0]
+    set_ia(chpar0["ImageArea"], ch0_poly)
+    chpar1 = copy.deepcopy(chpar0)
+    chpar1["Identifier"] = "chpar1_id"  # assume this is unique
+    set_ia(chpar1["ImageArea"], ch1_poly)
+    ew["Channel"].add("Parameters", chpar1)
+    chpar2 = copy.deepcopy(chpar0)
+    chpar2["Identifier"] = "chpar2_id"  # assume this is unique
+    del chpar2["ImageArea"]
+    ew["Channel"].add("Parameters", chpar2)
+
+    def check_imgarea(actual, expected):
+        if has_polygon and use_polygon:
+            assert shapely.equals(shapely.Polygon(actual), expected)
+        else:
+            assert shapely.equals(shapely.Polygon(actual), expected.envelope)
+
+    check_imgarea(
+        skcphd.get_channel_image_area(
+            xmltree, chpar0["Identifier"], use_polygon=use_polygon
+        ),
+        ch0_poly,
+    )
+    check_imgarea(
+        skcphd.get_channel_image_area(
+            xmltree, chpar1["Identifier"], use_polygon=use_polygon
+        ),
+        ch1_poly,
+    )
+    check_imgarea(
+        skcphd.get_channel_image_area(
+            xmltree, chpar2["Identifier"], use_polygon=use_polygon
+        ),
+        scene_poly,
+    )
+
+    check_imgarea(
+        skcphd.get_scene_image_area(xmltree, use_polygon=use_polygon), scene_poly
+    )
+
+    check_imgarea(
+        skcphd.get_extended_image_area(xmltree, use_polygon=use_polygon), extended_poly
+    )
+
+    del ew["SceneCoordinates"]["ExtendedArea"]
+    assert skcphd.get_extended_image_area(xmltree, use_polygon=use_polygon) is None

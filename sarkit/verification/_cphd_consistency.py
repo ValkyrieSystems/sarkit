@@ -16,7 +16,7 @@ from typing import Any, Optional
 import numpy as np
 import numpy.lib.recfunctions as rfn
 import numpy.polynomial.polynomial as npp
-import shapely.geometry as shg
+import shapely
 from lxml import etree
 
 import sarkit.cphd as skcphd
@@ -326,7 +326,7 @@ class CphdConsistency(con.ConsistencyChecker):
                 f"{_get_root_path(polygon_node)} size attribute matches the number of vertices"
             ):
                 assert size == len(vertex_nodes)
-            shg_polygon = shg.Polygon(polygon)
+            shg_polygon = shapely.Polygon(polygon)
             with self.need(f"{_get_root_path(polygon_node)} is simple"):
                 assert shg_polygon.is_simple
             with self.need(f"{_get_root_path(polygon_node)} is clockwise"):
@@ -510,19 +510,10 @@ class CphdConsistency(con.ConsistencyChecker):
         codtime_poly = self.xmlhelp.load_elem(cod_node.find("./{*}CODTimePoly"))
         dwelltime_poly = self.xmlhelp.load_elem(dwell_node.find("./{*}DwellTimePoly"))
 
-        def _get_image_area_polygon(image_area_elem):
-            if image_area_elem.find("./{*}Polygon") is not None:
-                return shg.Polygon(
-                    self.xmlhelp.load_elem(image_area_elem.find("./{*}Polygon"))
-                )
-            x1, y1 = self.xmlhelp.load_elem(image_area_elem.find("./{*}X1Y1"))
-            x2, y2 = self.xmlhelp.load_elem(image_area_elem.find("./{*}X2Y2"))
-            return shg.box(x1, y1, x2, y2)
-
-        image_area_elem = channel_node.find("./{*}ImageArea")
-        if image_area_elem is None:
-            image_area_elem = self.cphdroot.find("./{*}SceneCoordinates/{*}ImageArea")
-        image_area_polygon = _get_image_area_polygon(image_area_elem)
+        ia_vertices = skcphd.get_channel_image_area(
+            self.cphdroot.getroottree(), channel_id
+        )
+        image_area_polygon = shapely.Polygon(ia_vertices)
 
         def _get_points_in_polygon(polygon, grid_size=25):
             bounds = np.asarray(polygon.bounds).reshape(
@@ -535,7 +526,7 @@ class CphdConsistency(con.ConsistencyChecker):
                 ),
                 axis=-1,
             )
-            coords = shg.MultiPoint(
+            coords = shapely.MultiPoint(
                 np.concatenate(
                     [mesh.reshape(-1, 2), np.asarray(polygon.exterior.coords)[:-1, :]],
                     axis=0,
@@ -554,17 +545,7 @@ class CphdConsistency(con.ConsistencyChecker):
         with self.precondition():
             pvp = self._get_channel_pvps(channel_id)
             mask = np.isfinite(pvp["TxTime"])
-
-            def calc_tref(v):
-                r_xmt = np.linalg.norm(v["TxPos"] - v["SRPPos"])
-                r_rcv = np.linalg.norm(v["RcvPos"] - v["SRPPos"])
-                return v["TxTime"] + r_xmt / (r_xmt + r_rcv) * (
-                    v["RcvTime"] - v["TxTime"]
-                )
-
-            pvps_tref1 = calc_tref(pvp[mask][0])
-            pvps_tref2 = calc_tref(pvp[mask][-1])
-
+            pvps_tref1, pvps_tref2 = skcphd.compute_t_ref_from_pvps(pvp[mask][[0, -1]])
             with self.need(
                 "/Dwell/CODTime/CODTimePoly and /Dwell/DwellTime/DwellTimePoly supported by PVPs"
             ):
@@ -1539,7 +1520,7 @@ class CphdConsistency(con.ConsistencyChecker):
             assert [int(x.attrib["index"]) for x in vertex_nodes] == list(
                 range(1, len(vertex_nodes) + 1)
             )
-            shg_polygon = shg.Polygon(polygon)
+            shg_polygon = shapely.Polygon(polygon)
             with self.need("Polygon is simple"):
                 assert shg_polygon.is_simple
             with self.need("Polygon is clockwise"):
@@ -1576,10 +1557,10 @@ class CphdConsistency(con.ConsistencyChecker):
                 with self.precondition():
                     assert polygon_node is not None
                     polygon = self.get_polygon(polygon_node)
-                    shg_extended = shg.Polygon(extended_area_polygon)
-                    shg_polygon = shg.Polygon(polygon)
+                    shg_extended = shapely.Polygon(extended_area_polygon)
+                    shg_polygon = shapely.Polygon(polygon)
                     with self.need("Extended area polygon covers image area polygon"):
-                        assert shg.Polygon(shg_extended).covers(shg_polygon)
+                        assert shg_extended.covers(shg_polygon)
 
     @per_channel
     def check_channel_imagearea_x1y1(self, channel_id, channel_node):
