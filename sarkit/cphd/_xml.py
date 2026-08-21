@@ -229,7 +229,7 @@ class DefinedPvpType(PvpType):
         """
         local_val = copy.deepcopy(val)
         dtype = local_val.setdefault("dtype", self.dtype)
-        if dtype != self.dtype:
+        if dtype.newbyteorder("=") != self.dtype:
             raise ValueError(f"Invalid {dtype=}; expected {self.dtype}")
         size = local_val.setdefault("Size", self.dtype.itemsize // 8)
         if size != self.dtype.itemsize // 8:
