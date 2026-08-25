@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Unused `_processing` module
 
+### Fixed
+- Erroneous transpose in sensitivity matrix outputs of `sarkit.sicd.projection.compute_gp_xy_parameters`
+
 
 ## [1.10.1] - 2026-07-31
 
