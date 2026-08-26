@@ -67,3 +67,14 @@ def test_pvp_dtype_element_roundtrip(basis_xml):
     ew["PVP"] = skcphd.dtype_to_pvp_element(basis_version, new_dtype)
     assert ew["PVP"].find("AddedPVP", Name="NewField") is not None
     schema.assertValid(basis_etree)
+
+
+def test_dtype_to_pvp_element(example_cphd):
+    with example_cphd.open("rb") as f, skcphd.Reader(f) as r:
+        pvps = r.read_pvps(r.metadata.xmltree.findtext(".//{*}RefChId"))
+    ew = skcphd.ElementWrapper(r.metadata.xmltree.getroot())
+    ew["PVP"] = skcphd.dtype_to_pvp_element(
+        lxml.etree.QName(r.metadata.xmltree.getroot()).namespace, pvps.dtype
+    )
+    new_dtype = skcphd.get_pvp_dtype(ew.elem.getroottree())
+    assert pvps.dtype.newbyteorder("=") == new_dtype.newbyteorder("=")
