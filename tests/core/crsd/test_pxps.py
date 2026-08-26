@@ -92,3 +92,25 @@ def test_pvp_dtype_element_roundtrip():
     ew["PVP"] = skcrsd.dtype_to_pvp_element(basis_version, new_dtype)
     assert ew["PVP"].find("AddedPVP", Name="NewField") is not None
     schema.assertValid(basis_etree)
+
+
+def test_dtype_to_pvp_element(example_crsdsar):
+    with example_crsdsar.open("rb") as f, skcrsd.Reader(f) as r:
+        pvps = r.read_pvps(r.metadata.xmltree.findtext(".//{*}RefChId"))
+    ew = skcrsd.ElementWrapper(r.metadata.xmltree.getroot())
+    ew["PVP"] = skcrsd.dtype_to_pvp_element(
+        lxml.etree.QName(r.metadata.xmltree.getroot()).namespace, pvps.dtype
+    )
+    new_dtype = skcrsd.get_pvp_dtype(ew.elem.getroottree())
+    assert pvps.dtype.newbyteorder("=") == new_dtype.newbyteorder("=")
+
+
+def test_dtype_to_ppp_element(example_crsdsar):
+    with example_crsdsar.open("rb") as f, skcrsd.Reader(f) as r:
+        ppps = r.read_ppps(r.metadata.xmltree.findtext(".//{*}RefTxId"))
+    ew = skcrsd.ElementWrapper(r.metadata.xmltree.getroot())
+    ew["PPP"] = skcrsd.dtype_to_ppp_element(
+        lxml.etree.QName(r.metadata.xmltree.getroot()).namespace, ppps.dtype
+    )
+    new_dtype = skcrsd.get_ppp_dtype(ew.elem.getroottree())
+    assert ppps.dtype.newbyteorder("=") == new_dtype.newbyteorder("=")

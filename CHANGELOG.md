@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unused `_processing` module
 
 ### Fixed
+- `dtype_to_pvp_element`/`dtype_to_ppp_element`failures due to dtype endianness in `sarkit.cphd` and `sarkit.crsd`
 - Erroneous transpose in sensitivity matrix outputs of `sarkit.sicd.projection.compute_gp_xy_parameters`
 
 
