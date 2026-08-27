@@ -222,6 +222,40 @@ def test_compute_pt_r_rdot_parameters_mono(example_proj_metadata):
     assert pt_r_rdot_params.Rdot_Avg_PT == pytest.approx(rdot_scp)
 
 
+def test_compute_gp_xy_parameters():
+    rng = np.random.default_rng(123456)
+    points = rng.random((6, 3))
+
+    def random_unit(shp):
+        out = rng.random(shp)
+        out /= np.linalg.norm(out, axis=-1, keepdims=True)
+        return out
+
+    ugpn = random_unit((4, 1, 6, 3))
+
+    # these aren't actually unit vectors but good enough for this purpose...
+    bp = random_unit((5, 1, 3))
+    bpdot = random_unit((3,)).tolist()
+
+    gpxy_params = sicdproj.compute_gp_xy_parameters(points, ugpn, bp, bpdot)
+
+    # uGX, uGY, uGPN are orthonormal
+    assert np.linalg.norm(gpxy_params.uGX, axis=-1) == pytest.approx(1.0)
+    assert np.linalg.norm(gpxy_params.uGY, axis=-1) == pytest.approx(1.0)
+    assert np.vecdot(gpxy_params.uGX, gpxy_params.uGY) == pytest.approx(0.0)
+    assert np.vecdot(gpxy_params.uGX, ugpn) == pytest.approx(0.0)
+
+    # shapes broadcast correctly
+    assert gpxy_params.uGX.shape == (4, 5, 6, 3)
+    assert gpxy_params.uGY.shape == (4, 5, 6, 3)
+    assert gpxy_params.M_RRdot_GPXY.shape == (4, 5, 6, 2, 2)
+    assert gpxy_params.M_GPXY_RRdot.shape == (4, 5, 6, 2, 2)
+
+    # matrices are constructed properly
+    assert (gpxy_params.M_RRdot_GPXY[..., 0, 1] == 0).all()
+    assert np.allclose(gpxy_params.M_RRdot_GPXY @ gpxy_params.M_GPXY_RRdot, np.eye(2))
+
+
 def test_r_rdot_to_ground_plane(example_proj_metadata):
     im_coords = np.random.default_rng(12345).uniform(
         low=-24.0, high=24.0, size=(3, 4, 5, 2)
