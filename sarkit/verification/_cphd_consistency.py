@@ -1133,15 +1133,19 @@ class CphdConsistency(con.ConsistencyChecker):
     @per_channel
     def check_channel_signalnormal(self, channel_id, channel_node):
         """PVP agrees with SignalNormal."""
+        has_signal_pvp = self.cphdroot.find("{*}PVP/{*}SIGNAL") is not None
+        has_channel_signalnormal = channel_node.find("{*}SignalNormal") is not None
+        with self.need(
+            f"Channel/Parameters[Identifier='{channel_id}']/SignalNormal included if and only if SIGNAL PVP is present"
+        ):
+            assert has_signal_pvp == has_channel_signalnormal
         with self.precondition():
+            assert has_signal_pvp
             pvp = self._get_channel_pvps(channel_id)
-            assert channel_node.find("./{*}SignalNormal") is not None
-            with self.need("SIGNAL PVP present"):
-                assert "SIGNAL" in pvp.dtype.names
-                with self.need("SignalNormal matches SIGNAL PVPs"):
-                    assert np.all(pvp["SIGNAL"] == 1) == self.xmlhelp.load_elem(
-                        channel_node.find("./{*}SignalNormal")
-                    )
+            with self.need("SignalNormal matches SIGNAL PVPs"):
+                assert np.all(pvp["SIGNAL"] == 1) == self.xmlhelp.load_elem(
+                    channel_node.find("./{*}SignalNormal")
+                )
 
     @per_channel
     def check_channel_fx2_gt_fx1(self, channel_id, channel_node):
