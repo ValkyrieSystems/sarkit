@@ -204,7 +204,7 @@ class PolyNdType(Type):
             tuple(
                 int(coef.get(f"exponent{x}")) for x in range(1, self.nvar + 1)
             ): float(coef.text)
-            for coef in elem
+            for coef in elem.iterchildren(tag=lxml.etree.Element)
         }
         coefs = np.zeros(np.max(list(coef_by_exponents), axis=0) + 1, np.float64)
         for exponents, coef in coef_by_exponents.items():
@@ -564,7 +564,9 @@ class SizedType(abc.ABC, Type):
 
     def iter_parse(self, elem: lxml.etree.Element) -> Iterator:
         """Yield sub-elements encoded in ``elem`` in indexed order."""
-        for x in sorted(elem, key=lambda x: int(x.get("index"))):
+        for x in sorted(
+            elem.iterchildren(tag=lxml.etree.Element), key=lambda x: int(x.get("index"))
+        ):
             yield self.sub_type.parse_elem(x)
 
     def set_elem(self, elem: lxml.etree.Element, val: Sequence[Any]) -> None:
@@ -650,7 +652,7 @@ class MtxType(Type):
         if self.shape != shape:
             raise ValueError(f"elem {shape=} does not match expected {self.shape}")
         val = np.zeros(shape)
-        for entry in elem:
+        for entry in elem.iterchildren(tag=lxml.etree.Element):
             val[*[int(entry.get(f"index{x}")) - 1 for x in (1, 2)]] = float(entry.text)
         return val
 

@@ -132,7 +132,10 @@ class ImageCornersType(skxt.NdArrayType):
         return np.asarray(
             [
                 self.sub_type.parse_elem(x)
-                for x in sorted(elem, key=lambda x: x.get("index"))
+                for x in sorted(
+                    elem.iterchildren(tag=lxml.etree.Element),
+                    key=lambda x: x.get("index"),
+                )
             ]
         )
 
