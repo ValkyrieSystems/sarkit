@@ -86,8 +86,13 @@ def test_transcoders():
     list((DATAPATH / "syntax_only/cphd").glob("*.xml"))
     + list(DATAPATH.glob("example-cphd*.xml")),
 )
-def test_elementwrapper_tofromdict(xmlpath):
+@pytest.mark.parametrize("add_comments", (True, False))
+def test_elementwrapper_tofromdict(xmlpath, add_comments):
     xmlroot = lxml.etree.parse(xmlpath).getroot()
+    if add_comments:
+        testing.add_xml_comments(xmlroot)
+        assert len(list(xmlroot.iter(tag=lxml.etree.Comment))) > 0
+
     root_ns = lxml.etree.QName(xmlroot).namespace
     xsdhelp = skcphd.XsdHelper(root_ns)
     wrapped_cphdroot = skcphd.ElementWrapper(xmlroot)

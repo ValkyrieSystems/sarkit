@@ -410,7 +410,7 @@ class ElementWrapper(collections.abc.MutableMapping):
                     keys.append("@" + localname)
 
             keys.sort()
-            for subelem in self.elem:
+            for subelem in self.elem.iterchildren(tag=lxml.etree.Element):
                 localname = lxml.etree.QName(subelem).localname
                 if localname not in keys and (
                     self.typedef.get_childdef_from_localname(localname) is not None
