@@ -1867,3 +1867,15 @@ def test_check_channel_txrcvpolref(cphd_con_from_file, txrcv):
     assert cphd_con.passes() and not cphd_con.skips()
     testing.assert_failures(cphd_con, f"{txrcv} AmpH/AmpV")
     testing.assert_failures(cphd_con, f"{txrcv} PhaseV")
+
+
+def test_geoinfo_polygon_clockwise(cphd_con):
+    ew = skcphd.ElementWrapper(cphd_con.cphdroot)
+    vertices = [[1.0, 180.0], [-1.0, -179.0], [-1.0, 179.0]]
+    geo = ew.add("GeoInfo", {"@name": "unittest"})
+    geo.add("Polygon", vertices)
+    cphd_con.check("check_geoinfo_polygons")
+    assert cphd_con.passes()
+    geo.add("Polygon", vertices[::-1])
+    cphd_con.check("check_geoinfo_polygons")
+    testing.assert_failures(cphd_con, "GeoInfo polygon is clockwise")

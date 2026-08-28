@@ -1433,7 +1433,7 @@ class CrsdConsistency(con.ConsistencyChecker):
                 with self.need("GeoInfo polygon is simple"):
                     assert shg_polygon.is_simple
                 with self.need("GeoInfo polygon is clockwise"):
-                    assert not shg_polygon.exterior.is_ccw
+                    assert con.is_geo_polygon_cw(vertices)
 
     def check_scene_iarp(self):
         """IARP is consistent and near Earth's surface"""

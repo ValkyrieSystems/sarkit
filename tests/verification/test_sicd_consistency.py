@@ -2098,3 +2098,16 @@ def test_check_errorstatistics_conditionals_mono():
 
     sicd_con.check("check_errorstatistics_conditionals")
     testing.assert_failures(sicd_con, "BistaticCompositeSCP not allowed")
+
+
+def test_geoinfo_polygon_clockwise(sicd_con):
+    ew = sksicd.ElementWrapper(sicd_con.sicdroot)
+    vertices = [[1.0, 180.0], [-1.0, -179.0], [-1.0, 179.0]]
+    geo = ew["GeoData"].add("GeoInfo", {"@name": "goodpoly"})
+    geo.add("Polygon", vertices)
+    sicd_con.check("check_geoinfo_polygon")
+    assert sicd_con.passes()
+    geo = ew["GeoData"].add("GeoInfo", {"@name": "badpoly"})
+    geo.add("Polygon", vertices[::-1])
+    sicd_con.check("check_geoinfo_polygon")
+    testing.assert_failures(sicd_con, "GeoInfo polygon is clockwise")

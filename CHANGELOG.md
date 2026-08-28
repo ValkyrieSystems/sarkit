@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `compute_dwelltimes_using_poly` to `sarkit.cphd`
 - `get_channel_image_area`, `get_extended_image_area`, and `get_scene_image_area` to `sarkit.cphd` and `sarkit.crsd`
+- GeoInfo/Polygon winding check for SICD
 
 ### Removed
 - Unused `_processing` module
@@ -18,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `dtype_to_pvp_element`/`dtype_to_ppp_element`failures due to dtype endianness in `sarkit.cphd` and `sarkit.crsd`
 - Erroneous transpose in sensitivity matrix outputs of `sarkit.sicd.projection.compute_gp_xy_parameters`
 - Ignore non-elements in XmlHelper, ElementWrapper, and transcoders
+- GeoInfo/Polygon winding checks for CRSD and CPHD
 
 
 ## [1.10.1] - 2026-07-31
