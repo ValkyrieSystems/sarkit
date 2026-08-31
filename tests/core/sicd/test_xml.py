@@ -64,8 +64,13 @@ def test_transcoders():
     list((DATAPATH / "syntax_only/sicd").glob("*.xml"))
     + list(DATAPATH.glob("example-sicd*.xml")),
 )
-def test_elementwrapper_tofromdict(xmlpath):
+@pytest.mark.parametrize("add_comments", (True, False))
+def test_elementwrapper_tofromdict(xmlpath, add_comments):
     xmlroot = lxml.etree.parse(xmlpath).getroot()
+    if add_comments:
+        testing.add_xml_comments(xmlroot)
+        assert len(list(xmlroot.iter(tag=lxml.etree.Comment))) > 0
+
     root_ns = lxml.etree.QName(xmlroot).namespace
     xsdhelp = sksicd.XsdHelper(root_ns)
     wrapped_sicdroot = sksicd.ElementWrapper(xmlroot)
@@ -105,7 +110,7 @@ def test_compute_scp_coa_bistatic():
 
     # Bistatic
     etree_bistatic = copy.deepcopy(etree)
-    for elem in etree_bistatic.iter():
+    for elem in etree_bistatic.iter(tag=lxml.etree.Element):
         elem.tag = f"{{urn:SICD:1.4.0}}{lxml.etree.QName(elem).localname}"
     xmlhelp_bistatic = sksicd.XmlHelper(etree_bistatic)
     xmlhelp_bistatic.set("./{*}CollectionInfo/{*}CollectType", "BISTATIC")

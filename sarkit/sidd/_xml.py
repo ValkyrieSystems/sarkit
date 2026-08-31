@@ -183,7 +183,7 @@ class FilterCoefficientType(skxt.Type):
             (int(coef.get(self.coef_x_name)), int(coef.get(self.coef_y_name))): float(
                 coef.text
             )
-            for coef in elem
+            for coef in elem.iterchildren(tag=lxml.etree.Element)
         }
         for indices, coef in coef_by_indices.items():
             coefs[*indices] = coef
@@ -299,7 +299,10 @@ class ImageCornersType(skxt.NdArrayType):
         return np.asarray(
             [
                 self.sub_type.parse_elem(x)
-                for x in sorted(elem, key=lambda x: x.get("index"))
+                for x in sorted(
+                    elem.iterchildren(tag=lxml.etree.Element),
+                    key=lambda x: x.get("index"),
+                )
             ]
         )
 
@@ -376,12 +379,13 @@ class SfaPointType(skxt.ArrayType):
 
     def parse_elem(self, elem: lxml.etree.Element) -> npt.NDArray:
         """Returns an array containing the sub-elements encoded in ``elem``."""
-        if len(elem) not in (2, 3):
+        num_child_elems = elem.xpath("count(*)")
+        if num_child_elems not in (2, 3):
             raise ValueError("Unexpected number of subelements (requires 2 or 3)")
         self.subelements = {
             k: v
             for idx, (k, v) in enumerate(self._subelem_superset.items())
-            if idx < len(elem)
+            if idx < num_child_elems
         }
         return super().parse_elem(elem)
 
@@ -408,7 +412,10 @@ class LUTInfoType(skxt.Type):
         return np.array(
             [
                 IntListType().parse_elem(x)
-                for x in sorted(elem, key=lambda x: int(x.get("lut")))
+                for x in sorted(
+                    elem.iterchildren(tag=lxml.etree.Element),
+                    key=lambda x: int(x.get("lut")),
+                )
             ]
         )
 

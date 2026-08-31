@@ -1009,17 +1009,17 @@ def compute_gp_xy_parameters(
     ugy = gy / np.linalg.norm(gy, axis=-1, keepdims=True)
 
     m_rrdot_gpxy = np.negative(
-        np.stack(
-            (
-                np.stack(
-                    ((bp_pt * ugx).sum(axis=-1), np.zeros_like(ugx[..., 0])), axis=-1
-                ),
-                np.stack(
-                    ((bpdot_pt * ugx).sum(axis=-1), (bpdot_pt * ugy).sum(axis=-1)),
-                    axis=-1,
-                ),
-            ),
-            axis=-1,
+        np.block(
+            [
+                [
+                    np.vecdot(bp_pt, ugx)[..., np.newaxis, np.newaxis],
+                    np.zeros_like(ugx[..., 0])[..., np.newaxis, np.newaxis],
+                ],
+                [
+                    np.vecdot(bpdot_pt, ugx)[..., np.newaxis, np.newaxis],
+                    np.vecdot(bpdot_pt, ugy)[..., np.newaxis, np.newaxis],
+                ],
+            ]
         )
     )
 
