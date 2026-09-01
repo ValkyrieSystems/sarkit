@@ -299,3 +299,21 @@ def test_proj_with_apos_bi(projfunc):
     biapos["TxPlatform"]["APCPosSCPCOA"] = [1, 0, 0]
     pts_nonzero_apo = projfunc(sicdxml)
     assert bool(np.all(np.any(pts_no_apo != pts_nonzero_apo, axis=-1)))
+
+
+@pytest.mark.parametrize(
+    "xmlpath", [DATAPATH / "example-sicd-1.3.0.xml", DATAPATH / "example-sicd-1.5.xml"]
+)
+def test_scene_to_image(xmlpath):
+    sicdxml = lxml.etree.parse(xmlpath)
+    ew = sksicd.ElementWrapper(lxml.etree.parse(xmlpath).getroot())
+    scene_coords = (
+        np.random.default_rng(789).uniform(low=-240.0, high=240.0, size=(7, 3))
+        + ew["GeoData"]["SCP"]["ECF"]
+    )
+    il_all, _, success = sksicd.scene_to_image(sicdxml, scene_coords)
+    assert success
+    for sc, il in zip(scene_coords, il_all):
+        il_single, _, success = sksicd.scene_to_image(sicdxml, sc)
+        assert success
+        assert np.array_equal(il_single, il)
