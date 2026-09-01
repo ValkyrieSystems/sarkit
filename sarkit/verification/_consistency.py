@@ -16,6 +16,9 @@ from collections.abc import Iterable
 from typing import Optional
 
 import numpy as np
+import shapely
+
+import sarkit.wgs84
 
 
 def skipif(condition_func, details=None):
@@ -695,3 +698,38 @@ def modify_conchecker_docs(obj):
 
     """
     obj.__doc__ += textwrap.dedent(con_doc_footer)
+
+
+def is_geo_polygon_cw(geo_vertices: np.ndarray) -> bool:
+    """Determine if a polygon with WGS 84 geodetic vertices is wound clockwise.
+
+    Assumes the polygon doesn't encompass a hemisphere or more.
+
+    Parameters
+    ----------
+    geo_vertices : ndarray
+        2D array of vertices with lat, lon and (optionally) hae in last dimension.
+        HAE is assumed 0 when omitted.
+
+    Returns
+    -------
+    bool
+        Is polygon clockwise?
+    """
+    if geo_vertices.shape[1] == 2:
+        geo_vertices = np.concatenate(
+            [geo_vertices, np.zeros_like(geo_vertices[:, :1])], axis=1
+        )
+    ecef_vertices = sarkit.wgs84.geodetic_to_cartesian(geo_vertices)
+
+    origin = np.mean(ecef_vertices, axis=0)
+    ux = sarkit.wgs84.east(sarkit.wgs84.cartesian_to_geodetic(origin))
+    uy = sarkit.wgs84.north(sarkit.wgs84.cartesian_to_geodetic(origin))
+
+    plane_vertices = np.vecdot(
+        ecef_vertices[:, np.newaxis, :] - origin, np.stack([ux, uy], axis=0)
+    )
+    plane_polygon = shapely.Polygon(plane_vertices)
+    if not plane_polygon.exterior.is_valid:
+        raise ValueError("Vertices in plane do not form a valid polygon")
+    return not plane_polygon.exterior.is_ccw

@@ -194,9 +194,9 @@ def crsd_con_with_geoinfo(crsd_con):
     ew.add("GeoInfo").add(
         "Polygon",
         [
-            [-0.0026191804573599776, 0.001821692610367564],
-            [0.0018339698998625154, 0.0026016466694818927],
             [0.0026191804573599776, -0.001821692610367564],
+            [0.0018339698998625154, 0.0026016466694818927],
+            [-0.0026191804573599776, 0.001821692610367564],
             [-0.0018339698998625154, -0.0026016466694818927],
         ],
     )
@@ -1341,7 +1341,7 @@ def test_geoinfo_polygon_clockwise(crsd_con_with_geoinfo):
     crsd_con_with_geoinfo.xmlhelp.set(
         "./{*}GeoInfo/{*}Polygon", geoinfo_polygon[[2, 1, 0, 3]]
     )
-    crsd_con_with_geoinfo.check("check_geoinfo_polygons", allow_prefix=True)
+    crsd_con_with_geoinfo.check("check_geoinfo_polygons")
     assert_failures(crsd_con_with_geoinfo, "GeoInfo polygon is clockwise")
 
 

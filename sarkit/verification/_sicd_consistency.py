@@ -983,6 +983,10 @@ class SicdConsistency(con.ConsistencyChecker):
                 with self.need("Number of vertices >= 3"):
                     assert num_vertices >= 3
 
+                vertices = self.xmlhelp.load_elem(elem)
+                with self.need("GeoInfo polygon is clockwise"):
+                    assert con.is_geo_polygon_cw(vertices)
+
     def check_validdata_presence(self) -> None:
         """ValidData should be in both GeoData and ImageData or neither."""
         in_geodata = self.sicdroot.find("./{*}GeoData/{*}ValidData") is not None

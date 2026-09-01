@@ -1499,7 +1499,12 @@ class CphdConsistency(con.ConsistencyChecker):
         with self.precondition():
             assert geo_polygons
             for geo_polygon in geo_polygons:
-                self.get_polygon(geo_polygon, check=True)
+                vertices = self.xmlhelp.load_elem(geo_polygon)
+                shg_polygon = shapely.Polygon(vertices)
+                with self.need("GeoInfo polygon is simple"):
+                    assert shg_polygon.is_simple
+                with self.need("GeoInfo polygon is clockwise"):
+                    assert con.is_geo_polygon_cw(vertices)
 
     def check_segment_polygons(self):
         """SegmentPolygons are simple, valid and clockwise."""
@@ -1516,7 +1521,7 @@ class CphdConsistency(con.ConsistencyChecker):
         iacp_node = self.cphdroot.find("./{*}SceneCoordinates/{*}ImageAreaCornerPoints")
         vertex_nodes = sorted(list(iacp_node), key=lambda x: int(x.attrib["index"]))
         polygon = np.asarray(
-            [self.xmlhelp.load_elem(vertex)[::-1] for vertex in vertex_nodes]
+            [self.xmlhelp.load_elem(vertex) for vertex in vertex_nodes]
         )
         with self.need("4 corner points"):
             assert len(polygon) == 4
@@ -1528,7 +1533,7 @@ class CphdConsistency(con.ConsistencyChecker):
             with self.need("Polygon is simple"):
                 assert shg_polygon.is_simple
             with self.need("Polygon is clockwise"):
-                assert not shg_polygon.exterior.is_ccw
+                assert con.is_geo_polygon_cw(polygon)
 
     def check_extended_imagearea_polygon(self):
         """Scene extended area polygon is simple and consistent with X1Y1 and X2Y2."""
