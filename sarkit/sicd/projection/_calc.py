@@ -167,7 +167,7 @@ def compute_coa_pos_vel(
     # Compute transmit time
     assert proj_metadata.Xmt_Poly is not None
     x0 = _xyzpolyval(t_coa, proj_metadata.Xmt_Poly)
-    r_x0 = np.linalg.norm(x0 - grp_coa)
+    r_x0 = np.linalg.norm(x0 - grp_coa, axis=-1)
     tx_coa = t_coa - r_x0 / _constants.speed_of_light
 
     # Compute transmit APC position and velocity
@@ -176,7 +176,7 @@ def compute_coa_pos_vel(
 
     # Compute receive time
     r0 = _xyzpolyval(t_coa, proj_metadata.Rcv_Poly)
-    r_r0 = np.linalg.norm(r0 - grp_coa)
+    r_r0 = np.linalg.norm(r0 - grp_coa, axis=-1)
     tr_coa = t_coa + r_r0 / _constants.speed_of_light
 
     # Compute receive APC position and velocity
