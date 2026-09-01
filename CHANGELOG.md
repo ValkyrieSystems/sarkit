@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+## [1.11.0] - 2026-09-01
+
 ### Added
 - `compute_dwelltimes_using_poly` to `sarkit.cphd`
 - `get_channel_image_area`, `get_extended_image_area`, and `get_scene_image_area` to `sarkit.cphd` and `sarkit.crsd`
@@ -315,7 +318,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Limited SICD Reading and Writing
 - Limited SIDD NITF Reading and Writing
 
-[unreleased]: https://github.com/ValkyrieSystems/sarkit/compare/v1.10.1...HEAD
+[unreleased]: https://github.com/ValkyrieSystems/sarkit/compare/v1.11.0...HEAD
+[1.11.0]: https://github.com/ValkyrieSystems/sarkit/compare/v1.10.1...v1.11.0
 [1.10.1]: https://github.com/ValkyrieSystems/sarkit/compare/v1.10.0...v1.10.1
 [1.10.0]: https://github.com/ValkyrieSystems/sarkit/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/ValkyrieSystems/sarkit/compare/v1.8.1...v1.9.0
