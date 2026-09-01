@@ -160,6 +160,22 @@ def test_compute_coa_pos_vel_bi(example_proj_metadata_bi):
     )
 
 
+@pytest.mark.parametrize(
+    "mdata_name", ("example_proj_metadata", "example_proj_metadata_bi")
+)
+def test_compute_coa_pos_vel(mdata_name, request):
+    proj_metadata = request.getfixturevalue(mdata_name)
+    rng = np.random.default_rng(123456)
+    times = proj_metadata.t_SCP_COA + 0.02 * (rng.random((3, 4)) - 0.5)
+    pv_all = sicdproj.compute_coa_pos_vel(proj_metadata, times)
+    for index, t in np.ndenumerate(times):
+        pv_single = sicdproj.compute_coa_pos_vel(proj_metadata, t)
+        for f_all, f_single in zip(
+            dataclasses.astuple(pv_all), dataclasses.astuple(pv_single)
+        ):
+            assert np.array_equal(f_all[index], f_single)
+
+
 def test_scp_projection_set_mono(example_proj_metadata):
     assert example_proj_metadata.is_monostatic()
     r_scp_coa, rdot_scp_coa = sicdproj.compute_scp_coa_r_rdot(example_proj_metadata)
