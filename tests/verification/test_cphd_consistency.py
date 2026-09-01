@@ -1,4 +1,5 @@
 import copy
+import itertools
 import pathlib
 import unittest.mock
 
@@ -1331,6 +1332,28 @@ def test_channel_signalnormal(cphd_con_from_file, em):
 
     new_con.check("check_channel_signalnormal", allow_prefix=True)
     assert new_con.failures()
+
+
+@pytest.mark.parametrize(
+    "remove_signalnormal,remove_signal_pvp",
+    list(itertools.product((True, False), repeat=2)),
+)
+def test_channel_signalnormal_xmlonly(
+    good_xml_root, remove_signalnormal, remove_signal_pvp
+):
+    if remove_signalnormal:
+        remove_nodes(good_xml_root.find("{*}Channel/{*}Parameters/{*}SignalNormal"))
+    if remove_signal_pvp:
+        remove_nodes(good_xml_root.find("{*}PVP/{*}SIGNAL"))
+
+    con = CphdConsistency.from_parts(good_xml_root)
+    con.check("check_channel_signalnormal", allow_prefix=True)
+    if remove_signalnormal != remove_signal_pvp:
+        testing.assert_failures(
+            con, "SignalNormal included if and only if SIGNAL PVP is present"
+        )
+    else:
+        assert con.passes()
 
 
 def test_bad_fxc(cphd_con_from_file):
