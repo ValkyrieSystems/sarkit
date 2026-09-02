@@ -1,7 +1,7 @@
-import copy
 import pathlib
 
 import numpy as np
+import numpy.polynomial.polynomial as npp
 import pytest
 from lxml import etree
 
@@ -11,12 +11,18 @@ import sarkit.sicd as sksicd
 import sarkit.sidd as sksidd
 from sarkit import _constants
 
+from . import utils
+
 DATAPATH = pathlib.Path(__file__).parents[1] / "data"
 
-good_cphd_xml_path = DATAPATH / "example-cphd-1.0.1.xml"
+good_cphd_xml_path = DATAPATH / "example-cphd-1.1.0.xml"
 good_crsd_xml_path = DATAPATH / "example-crsd-1.0.xml"
 good_sicd_xml_path = DATAPATH / "example-sicd-1.2.1.xml"
 good_sidd_xml_path = DATAPATH / "example-sidd-3.0.0.xml"
+multi_crsd_xml_path = (
+    DATAPATH
+    / "S1A_IW_RAW__0SDV_20260206T132752_20260206T132824_063099_07EB64_97CB.crsd.xml"
+)
 
 
 @pytest.fixture(scope="session")
@@ -78,6 +84,24 @@ def example_cphd(tmp_path_factory):
 
     srp = xmlhelp.load(".//{*}SRP/{*}ECF")
     pvps["SRPPos"] = srp
+
+    pvps["SIGNAL"] = 1
+
+    def unit(x):
+        return x / np.linalg.norm(x, axis=-1, keepdims=True)
+
+    tx_acz = unit(srp - pvps["TxPos"])
+    tx_acx = unit(np.cross(pvps["TxVel"], tx_acz))
+    tx_acy = unit(np.cross(tx_acz, tx_acx))
+    rcv_acz = unit(srp - pvps["RcvPos"])
+    rcv_acx = unit(np.cross(pvps["RcvVel"], rcv_acz))
+    rcv_acy = unit(np.cross(rcv_acz, rcv_acx))
+    pvps["TxACX"] = tx_acx
+    pvps["TxACY"] = tx_acy
+    pvps["TxEB"] = 0
+    pvps["RcvACX"] = rcv_acx
+    pvps["RcvACY"] = rcv_acy
+    pvps["RcvEB"] = 0
 
     tmp_cphd = (
         tmp_path_factory.mktemp("data") / good_cphd_xml_path.with_suffix(".cphd").name
@@ -185,6 +209,33 @@ def example_crsdsar(tmp_path_factory):
     pvps["DFIC0"][1] = -10
     pvps["FICRate"][1] = 10
 
+    # Gain/Phase arrays
+    gp_arrays = {}
+    crsd_ew = skcrsd.ElementWrapper(crsd_etree.getroot())
+    for gp_ew in crsd_ew["SupportArray"]["GainPhaseArray"]:
+        sa_id = gp_ew["Identifier"]
+        sadata_ew = crsd_ew["Data"]["Support"].find("SupportArray", SAId=sa_id)
+        x = (
+            gp_ew["X0"]
+            + np.arange(sadata_ew["NumRows"])[..., np.newaxis] * gp_ew["XSS"]
+        )
+        y = gp_ew["Y0"] + np.arange(sadata_ew["NumCols"]) * gp_ew["YSS"]
+        arr = np.zeros(
+            (sadata_ew["NumRows"], sadata_ew["NumCols"]),
+            dtype=skcrsd.binary_format_string_to_dtype(gp_ew["ElementFormat"]),
+        )
+        x_coef = -12.0 / max(abs(x)) ** 2
+        y_coef = -12.0 / max(abs(y)) ** 2
+        arr["Gain"] = x_coef * x**2 + y_coef * y**2
+        arr["Phase"] = x + y
+        nodata = (x**2 + y**2) > 1
+        arr[nodata] = np.nan
+        if nodata.any():
+            gp_ew["NODATA"] = np.full(
+                (), np.nan, dtype=arr.dtype.newbyteorder(">")
+            ).tobytes()
+        gp_arrays[sa_id] = arr
+
     tmp_crsd = (
         tmp_path_factory.mktemp("data") / good_crsd_xml_path.with_suffix(".crsd").name
     )
@@ -197,49 +248,183 @@ def example_crsdsar(tmp_path_factory):
         cw.write_ppp(sequence_id, ppps)
         cw.write_pvp(channel_id, pvps)
         cw.write_signal(channel_id, signal)
+        for sa_id, arr in gp_arrays.items():
+            cw.write_support_array(sa_id, arr)
     yield tmp_crsd
 
 
-def _remove(root, pattern):
-    if (elem := root.find(pattern)) is not None:
-        elem.getparent().remove(elem)
-    else:
-        print(f"Cannot find {pattern=}")
+def unit(vec, axis=-1):
+    return vec / np.linalg.norm(vec, axis=axis, keepdims=True)
 
 
-def _replace_error(crsd_etree, sensor_type):
-    sar_error = crsd_etree.find("{*}ErrorParameters/{*}SARImage")
-    elem_ns = etree.QName(sar_error).namespace
-    retval = copy.deepcopy(sar_error.find("{*}Monostatic"))
-    retval.tag = f"{{{elem_ns}}}{sensor_type}Sensor"
-    sar_error.addnext(retval)
-    helper = skcrsd.XmlHelper(crsd_etree)
-    ndx = {"Tx": 0, "Rcv": 1}[sensor_type]
-    helper.set_elem(
-        retval.find(".//{*}TimeFreqCov"),
-        skcrsd.MtxType((3, 3)).parse_elem(retval.find(".//{*}TimeFreqCov"))[
-            [ndx, 2], :
-        ][:, [ndx, 2]],
+@pytest.fixture(scope="session")
+def multi_crsdsar(tmp_path_factory):
+    crsd_etree = etree.parse(multi_crsd_xml_path)
+    root = crsd_etree.getroot()
+    crsd_ew = skcrsd.ElementWrapper(root)
+
+    pvp_dtype = skcrsd.get_pvp_dtype(crsd_etree)
+    assert crsd_ew["Data"]["Receive"]["SignalArrayFormat"] == "CI2"
+    signal_dtype = skcrsd.binary_format_string_to_dtype(
+        crsd_ew["Data"]["Receive"]["SignalArrayFormat"]
     )
-    time_decorr = copy.deepcopy(retval.find(f".//{{*}}{{{sensor_type}}}TimeDecorr"))
-    if time_decorr is not None:
-        time_decorr.tag = f"{{{elem_ns}}}TimeDecorr"
-        _remove(retval, "{*}TxTimeDecorr")
-        _remove(retval, "{*}RcvTimeDecorr")
-        retval.find(".//{*}ClockFreqDecorr").addprevious(time_decorr)
-    sar_error.getparent().remove(sar_error)
+    rng = np.random.default_rng(123456)
 
+    ref_ch_id = crsd_ew["Channel"]["RefChId"]
+    channel_ids = [x.text for x in root.findall(".//{*}ChId")]
+    tx_ref_time = crsd_ew["ReferenceGeometry"]["TxParameters"]["Time"]
+    txpos = crsd_ew["ReferenceGeometry"]["TxParameters"]["APCPos"]
+    txvel = crsd_ew["ReferenceGeometry"]["TxParameters"]["APCVel"]
+    tx_pos_poly = np.stack([(txpos - tx_ref_time * txvel), txvel])
+    rcv_ref_time = crsd_ew["ReferenceGeometry"]["RcvParameters"]["Time"]
+    rcvpos = crsd_ew["ReferenceGeometry"]["RcvParameters"]["APCPos"]
+    rcvvel = crsd_ew["ReferenceGeometry"]["RcvParameters"]["APCVel"]
+    rcv_pos_poly = np.stack([(rcvpos - rcv_ref_time * rcvvel), rcvvel])
+    ant = crsd_ew["Antenna"]
 
-def _repack_support_arrays(crsd_etree):
-    offset = 0
-    for array in crsd_etree.findall("{*}Data/{*}Support/{*}SupportArray"):
-        array.find("{*}ArrayByteOffset").text = str(offset)
-        offset += (
-            int(array.findtext("{*}NumRows"))
-            * int(array.findtext("{*}NumCols"))
-            * int(array.findtext("{*}BytesPerElement"))
+    def compute_vh_pol(pos, acx, acy, ref_pt, ant_pol_ref, txrcv_pol_ref):
+        xr = 1 if txrcv_pol_ref.elem.tag.endswith("TxPolarization") else -1
+        amph, ampv, phaseh, phasev = skcrsd.compute_h_v_pol_parameters(
+            pos,
+            acx,
+            acy,
+            ref_pt,
+            xr,
+            ant_pol_ref["AmpX"],
+            ant_pol_ref["AmpY"],
+            ant_pol_ref["PhaseX"],
+            ant_pol_ref["PhaseY"],
         )
-    return offset
+        txrcv_pol_ref["AmpH"] = amph
+        txrcv_pol_ref["AmpV"] = ampv
+        txrcv_pol_ref["PhaseH"] = phaseh
+        txrcv_pol_ref["PhaseV"] = phasev
+
+    # Loop over channels
+    tmp_crsd = (
+        tmp_path_factory.mktemp("data") / multi_crsd_xml_path.with_suffix(".crsd").name
+    )
+    new_meta = skcrsd.Metadata(xmltree=crsd_etree)
+    pxp_dict_list = []
+    for ch_id in channel_ids:
+        chan_param = crsd_ew["Channel"].find("Parameters", Identifier=ch_id)
+        tx_id = chan_param["SARImage"]["TxId"]
+        txseq_param = crsd_ew["TxSequence"].find("Parameters", Identifier=tx_id)
+        data_txseq = crsd_ew["Data"]["Transmit"].find("TxSequence", TxId=tx_id)
+        num_pulses = data_txseq["NumPulses"]
+        data_rcv = crsd_ew["Data"]["Receive"].find("Channel", ChId=ch_id)
+        num_vectors = data_rcv["NumVectors"]
+        num_samples = data_rcv["NumSamples"]
+
+        ppps = np.zeros(num_pulses, dtype=skcrsd.get_ppp_dtype(crsd_etree))
+        pulse_nums = [0, num_pulses - 1]
+        tx_times = [txseq_param["TxTime1"], txseq_param["TxTime2"]]
+        if ch_id == ref_ch_id:
+            pulse_nums.insert(1, chan_param["SARImage"]["RefVectorPulseIndex"])
+            tx_times.insert(1, tx_ref_time)
+        txtime = np.interp(np.arange(num_pulses), pulse_nums, tx_times)
+        ppps["TxTime"]["Int"] = np.floor(txtime)
+        ppps["TxTime"]["Frac"] = txtime % 1
+        ppps["FX1"][:] = txseq_param["FxC"] - txseq_param["FxBW"] / 2
+        ppps["FX2"][:] = txseq_param["FxC"] + txseq_param["FxBW"] / 2
+        ppps["TXmt"][:] = txseq_param["TXmtMin"]
+        ppps["TxRadInt"][:] = txseq_param["TxRefRadIntensity"]
+        ppps["FxRate"][:] = 1e12
+        ppps["FxFreq0"][:] = txseq_param["FxC"]
+        ppps["TxPos"] = npp.polyval(txtime, tx_pos_poly).T
+        if ch_id == ref_ch_id:
+            ppps["TxPos"][chan_param["SARImage"]["RefVectorPulseIndex"]] = txpos
+        ppps["TxVel"] = txvel
+        tx_ref_pt = txseq_param["TxRefPoint"]["ECF"]
+        los = tx_ref_pt - ppps["TxPos"]
+        cross_track = unit(np.cross(los, txvel))
+        ppps["TxACX"][...] = unit(cross_track)
+        ppps["TxACY"][...] = unit(txvel)
+        ref_pulse_index = txseq_param["RefPulseIndex"]
+        tx_apat_id = txseq_param["TxAPATId"]
+        tx_ant_pol_ref = ant.find("AntPattern", Identifier=tx_apat_id)["AntPolRef"]
+        compute_vh_pol(
+            ppps["TxPos"][ref_pulse_index],
+            ppps["TxACX"][ref_pulse_index],
+            ppps["TxACY"][ref_pulse_index],
+            tx_ref_pt,
+            tx_ant_pol_ref,
+            txseq_param["TxPolarization"],
+        )
+
+        pvps = np.zeros((num_vectors), dtype=pvp_dtype)
+        vector_nums = [0, num_vectors - 1]
+        rcv_times = [chan_param["RcvStartTime1"], chan_param["RcvStartTime2"]]
+        if ch_id == ref_ch_id:
+            vector_nums.insert(1, chan_param["RefVectorIndex"])
+            rcv_times.insert(1, rcv_ref_time)
+        rcvstart = np.interp(np.arange(num_vectors), vector_nums, rcv_times)
+        fs = chan_param["Fs"]
+        rcvstart = np.round((rcvstart - rcvstart[0]) * fs) / fs + rcvstart[0]
+        pvps["RcvStart"]["Int"] = np.floor(rcvstart)
+        pvps["RcvStart"]["Frac"] = rcvstart % 1
+        pvps["RcvPos"] = npp.polyval(rcvstart, rcv_pos_poly).T
+        if ch_id == ref_ch_id:
+            pvps["RcvPos"][chan_param["RefVectorIndex"]] = rcvpos
+        pvps["RcvVel"] = rcvvel
+        pvps["SIGNAL"] = 1
+        pvps["RefFreq"] = chan_param["F0Ref"]
+        pvps["TxPulseIndex"] = np.arange(pvps.size)
+        pvps["FRCV1"] = chan_param["FrcvMin"]
+        pvps["FRCV2"] = chan_param["FrcvMax"]
+        pvps["AmpSF"] = 1.0
+        pvps["DFIC0"][1] = -10
+        pvps["FICRate"][1] = 10
+        rcv_ref_pt = chan_param["RcvRefPoint"]["ECF"]
+        los = rcv_ref_pt - pvps["RcvPos"]
+        cross_track = np.cross(los, rcvvel)
+        pvps["RcvACX"][...] = unit(cross_track)
+        pvps["RcvACY"][...] = unit(rcvvel)
+        ref_vector_index = chan_param["RefVectorIndex"]
+        rcv_apat_id = chan_param["RcvAPATId"]
+        rcv_ant_pol_ref = ant.find("AntPattern", Identifier=rcv_apat_id)["AntPolRef"]
+        compute_vh_pol(
+            pvps["RcvPos"][ref_vector_index],
+            pvps["RcvACX"][ref_vector_index],
+            pvps["RcvACY"][ref_vector_index],
+            rcv_ref_pt,
+            rcv_ant_pol_ref,
+            chan_param["RcvPolarization"],
+        )
+        ref_vector_pulse_index = chan_param["SARImage"]["RefVectorPulseIndex"]
+        compute_vh_pol(
+            ppps["TxPos"][ref_vector_pulse_index],
+            ppps["TxACX"][ref_vector_pulse_index],
+            ppps["TxACY"][ref_vector_pulse_index],
+            rcv_ref_pt,
+            tx_ant_pol_ref,
+            chan_param["SARImage"]["TxPolarization"],
+        )
+
+        pxp_dict_list.append(
+            {
+                "txid": tx_id,
+                "chid": ch_id,
+                "nvec": num_vectors,
+                "nsamp": num_samples,
+                "ppps": ppps,
+                "pvps": pvps,
+            }
+        )
+
+    with open(tmp_crsd, "wb") as f, skcrsd.Writer(f, new_meta) as cw:
+        for pxp_dict in pxp_dict_list:
+            cw.write_ppp(pxp_dict["txid"], pxp_dict["ppps"])
+            cw.write_pvp(pxp_dict["chid"], pxp_dict["pvps"])
+            signal = (
+                rng.integers(
+                    -128, 127, (pxp_dict["nvec"], pxp_dict["nsamp"], 2), dtype=np.int8
+                )
+                .view(signal_dtype)
+                .squeeze()
+            )
+            cw.write_signal(pxp_dict["chid"], signal)
+    yield tmp_crsd
 
 
 @pytest.fixture(scope="session")
@@ -248,23 +433,7 @@ def example_crsdtx(tmp_path_factory, example_crsdsar):
         crsd_etree = cr.metadata.xmltree
         sequence_id = crsd_etree.findtext("{*}TxSequence/{*}Parameters/{*}Identifier")
         ppps = cr.read_ppps(sequence_id)
-    crsd_etree.find(".//{*}RefPulseIndex").text = crsd_etree.find(
-        ".//{*}RefVectorPulseIndex"
-    ).text
-    ns = etree.QName(crsd_etree.getroot()).namespace
-    crsd_etree.getroot().tag = f"{{{ns}}}CRSDtx"
-    _remove(crsd_etree, "{*}SARInfo")
-    _remove(crsd_etree, "{*}ReceiveInfo")
-    _remove(crsd_etree, "{*}Global/{*}Receive")
-    _remove(crsd_etree, "{*}SceneCoordinates/{*}ExtendedArea")
-    _remove(crsd_etree, "{*}SceneCoordinates/{*}ImageGrid")
-    _remove(crsd_etree, "{*}Data/{*}Receive")
-    _remove(crsd_etree, "{*}Channel")
-    _remove(crsd_etree, "{*}ReferenceGeometry/{*}SARImage")
-    _remove(crsd_etree, "{*}ReferenceGeometry/{*}RcvParameters")
-    _remove(crsd_etree, "{*}DwellPolynomials")
-    _remove(crsd_etree, "{*}PVP")
-    _replace_error(crsd_etree, "Tx")
+    utils.crsdsar_xml_to_crsdtx(crsd_etree)
     tmp_crsd = (
         tmp_path_factory.mktemp("data") / good_crsd_xml_path.with_suffix(".crsd").name
     )
@@ -284,46 +453,7 @@ def example_crsdrcv(tmp_path_factory, example_crsdsar):
         channel_id = crsd_etree.findtext("{*}Channel/{*}Parameters/{*}Identifier")
         pvps = cr.read_pvps(channel_id)
         signal = cr.read_signal(channel_id)
-    ns = etree.QName(crsd_etree.getroot()).namespace
-    crsd_etree.getroot().tag = f"{{{ns}}}CRSDrcv"
-    _remove(crsd_etree, "{*}SARInfo")
-    _remove(crsd_etree, "{*}TransmitInfo")
-    _remove(crsd_etree, "{*}Global/{*}Transmit")
-    _remove(crsd_etree, "{*}SceneCoordinates/{*}ExtendedArea")
-    _remove(crsd_etree, "{*}SceneCoordinates/{*}ImageGrid")
-    _remove(crsd_etree, "{*}Data/{*}Transmit")
-    _remove(crsd_etree, "{*}TxSequence")
-    _remove(crsd_etree, "{*}Channel/{*}Parameters/{*}SARImage")
-    _remove(crsd_etree, "{*}ReferenceGeometry/{*}SARImage")
-    _remove(crsd_etree, "{*}ReferenceGeometry/{*}TxParameters")
-    _remove(crsd_etree, "{*}DwellPolynomials")
-    fx_ids = [
-        x.text
-        for x in crsd_etree.findall("{*}SupportArray/{*}FxResponseArray/{*}Identifier")
-    ]
-    xm_ids = [
-        x.text for x in crsd_etree.findall("{*}SupportArray/{*}XMArray/{*}Identifier")
-    ]
-    _remove(crsd_etree, "{*}SupportArray/{*}FxResponseArray")
-    _remove(crsd_etree, "{*}SupportArray/{*}XMArray")
-    for x in fx_ids + xm_ids:
-        _remove(
-            crsd_etree,
-            f"{{*}}Data/{{*}}Support/{{*}}SupportArray[{{*}}SAId='{x}']",
-        )
-    nsa = crsd_etree.find("{*}Data/{*}Support/{*}NumSupportArrays")
-    nsa.text = str(int(nsa.text) - len(fx_ids + xm_ids))
-    _repack_support_arrays(crsd_etree)
-    _remove(crsd_etree, "{*}PPP")
-    tx_pulse_index_offset = int(crsd_etree.findtext("{*}PVP/{*}TxPulseIndex/{*}Offset"))
-    _remove(crsd_etree, "{*}PVP/{*}TxPulseIndex")
-    for pvp_offset in crsd_etree.findall("{*}PVP/*/{*}Offset"):
-        if int(pvp_offset.text) > tx_pulse_index_offset:
-            pvp_offset.text = str(int(pvp_offset.text) - 8)
-    crsd_etree.find("{*}Data/{*}Receive/{*}NumBytesPVP").text = str(
-        int(crsd_etree.findtext("{*}Data/{*}Receive/{*}NumBytesPVP")) - 8
-    )
-    _replace_error(crsd_etree, "Rcv")
+    utils.crsdsar_xml_to_crsdrcv(crsd_etree)
     new_pvp_dtype = skcrsd.get_pvp_dtype(crsd_etree)
     new_pvps = np.zeros(pvps.shape, new_pvp_dtype)
     for field in new_pvp_dtype.fields:

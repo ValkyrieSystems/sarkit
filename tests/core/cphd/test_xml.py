@@ -41,6 +41,26 @@ def test_addedpvp():
     assert skcphd.AddedPvpType().parse_elem(elem) == added_pvp_dict
 
 
+def test_definedpvp():
+    dpvp_type = skcphd.DefinedPvpType("F8")
+
+    # size/dtype optional on set/make
+    pvp_dict = {"Offset": 24, "Size": 1, "dtype": np.dtype("float64")}
+    elem1 = dpvp_type.make_elem("{faux-ns}DefinedPvpElem", {"Offset": 24})
+    elem2 = dpvp_type.make_elem("{faux-ns}DefinedPvpElem", pvp_dict)
+    assert dpvp_type.parse_elem(elem1) == dpvp_type.parse_elem(elem2)
+    assert dpvp_type.parse_elem(elem1) == pvp_dict
+
+    # conformance to type is enforced on set/make
+    with pytest.raises(ValueError, match="expected 1"):
+        dpvp_type.set_elem(elem1, {"Offset": 24, "Size": 8})
+    with pytest.raises(ValueError, match="expected float64"):
+        dpvp_type.set_elem(elem1, {"Offset": 24, "dtype": np.dtype("i8")})
+
+    # but not on read
+    assert skcphd.DefinedPvpType("I8").parse_elem(elem1) == pvp_dict
+
+
 def test_transcoders():
     no_transcode_leaf = set()
     for xml_file in (DATAPATH / "syntax_only/cphd").glob("*.xml"):
@@ -66,8 +86,13 @@ def test_transcoders():
     list((DATAPATH / "syntax_only/cphd").glob("*.xml"))
     + list(DATAPATH.glob("example-cphd*.xml")),
 )
-def test_elementwrapper_tofromdict(xmlpath):
+@pytest.mark.parametrize("add_comments", (True, False))
+def test_elementwrapper_tofromdict(xmlpath, add_comments):
     xmlroot = lxml.etree.parse(xmlpath).getroot()
+    if add_comments:
+        testing.add_xml_comments(xmlroot)
+        assert len(list(xmlroot.iter(tag=lxml.etree.Comment))) > 0
+
     root_ns = lxml.etree.QName(xmlroot).namespace
     xsdhelp = skcphd.XsdHelper(root_ns)
     wrapped_cphdroot = skcphd.ElementWrapper(xmlroot)

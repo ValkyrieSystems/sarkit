@@ -204,8 +204,8 @@
       </SupportArray>
       <SupportArray>
         <SAId>transmit_element</SAId>
-        <NumRows>2</NumRows>
-        <NumCols>2</NumCols>
+        <NumRows>23</NumRows>
+        <NumCols>25</NumCols>
         <BytesPerElement>8</BytesPerElement>
         <ArrayByteOffset>4328</ArrayByteOffset>
       </SupportArray>
@@ -214,21 +214,21 @@
         <NumRows>21</NumRows>
         <NumCols>21</NumCols>
         <BytesPerElement>8</BytesPerElement>
-        <ArrayByteOffset>4360</ArrayByteOffset>
+        <ArrayByteOffset>8928</ArrayByteOffset>
       </SupportArray>
       <SupportArray>
         <SAId>receive_element</SAId>
-        <NumRows>2</NumRows>
-        <NumCols>2</NumCols>
+        <NumRows>27</NumRows>
+        <NumCols>29</NumCols>
         <BytesPerElement>8</BytesPerElement>
-        <ArrayByteOffset>7888</ArrayByteOffset>
+        <ArrayByteOffset>12456</ArrayByteOffset>
       </SupportArray>
       <SupportArray>
         <SAId>the xm array</SAId>
         <NumRows>1</NumRows>
         <NumCols>2001</NumCols>
         <BytesPerElement>8</BytesPerElement>
-        <ArrayByteOffset>7920</ArrayByteOffset>
+        <ArrayByteOffset>18720</ArrayByteOffset>
       </SupportArray>
     </Support>
     <Transmit>
@@ -493,8 +493,8 @@
       <ElementFormat>Gain=F4;Phase=F4;</ElementFormat>
       <X0>-1.0</X0>
       <Y0>-1.0</Y0>
-      <XSS>2.0</XSS>
-      <YSS>2.0</YSS>
+      <XSS>0.09090909090909091</XSS>
+      <YSS>0.08333333333333333</YSS>
     </GainPhaseArray>
     <GainPhaseArray>
       <Identifier>receive_array</Identifier>
@@ -509,8 +509,8 @@
       <ElementFormat>Gain=F4;Phase=F4;</ElementFormat>
       <X0>-1.0</X0>
       <Y0>-1.0</Y0>
-      <XSS>2.0</XSS>
-      <YSS>2.0</YSS>
+      <XSS>0.07692307692307693</XSS>
+      <YSS>0.07142857142857142</YSS>
       <NODATA>ffc00000ffc00000</NODATA>
     </GainPhaseArray>
     <FxResponseArray>
@@ -620,7 +620,7 @@
       <Format>X=F8;Y=F8;Z=F8;</Format>
     </RcvVel>
     <FRCV1>
-      <Offset>8</Offset>
+      <Offset>27</Offset>
       <Size>1</Size>
       <Format>F8</Format>
     </FRCV1>
@@ -680,7 +680,7 @@
       <Format>F8</Format>
     </DGRGC>
     <TxPulseIndex>
-      <Offset>27</Offset>
+      <Offset>8</Offset>
       <Size>1</Size>
       <Format>I8</Format>
     </TxPulseIndex>

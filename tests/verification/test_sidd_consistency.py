@@ -3,6 +3,7 @@ import datetime
 import pathlib
 import unittest.mock
 
+import jbpy
 import lxml.builder
 import pytest
 from lxml import etree
@@ -375,3 +376,143 @@ def test_check_nitf_des_headers_outmoded_desid(sidd_con):
     new_des["subheader"]["DESID"].value = "SICD_XML"
     sidd_con.check("check_nitf_des_headers")
     testing.assert_failures(sidd_con, "Outmoded DESID=SICD_XML not present")
+
+
+def test_check_nitf_image_segment_order(sidd_con):
+    def _try_order(valid, order):
+        sidd_con.ntf["FileHeader"]["NUMI"].value = len(order)
+        for (iid1, icat), imseg in zip(order, sidd_con.ntf["ImageSegments"]):
+            imseg["subheader"]["IID1"].value = iid1
+            imseg["subheader"]["ICAT"].value = icat
+
+        sidd_con.check("check_nitf_image_segment_order")
+        if valid:
+            assert not sidd_con.failures()
+        else:
+            assert sidd_con.failures()
+
+    # First must be SIDD001001 SAR
+    _try_order(False, [("SIDD002001", "SAR")])
+    _try_order(False, [("SIDD001001", "LEG")])
+    _try_order(False, [("DED001", "DED")])
+    _try_order(False, [("OTHER", "")])
+
+    # First must be SIDD001001 SAR and any valid segment can follow
+    _try_order(True, [("SIDD001001", "SAR")])
+    _try_order(True, [("SIDD001001", "SAR"), ("SIDD001002", "SAR")])
+    _try_order(True, [("SIDD001001", "SAR"), ("SIDD001002", "LEG")])
+    _try_order(True, [("SIDD001001", "SAR"), ("SIDD002001", "SAR")])
+    _try_order(True, [("SIDD001001", "SAR"), ("DED001", "DED")])
+    _try_order(True, [("SIDD001001", "SAR"), ("OTHER", "")])
+
+    # IID1s out of order
+    _try_order(False, [("SIDD001001", "SAR"), ("SIDD001003", "SAR")])
+    _try_order(False, [("SIDD001001", "SAR"), ("SIDD001003", "LEG")])
+    _try_order(False, [("SIDD001001", "SAR"), ("SIDD003001", "SAR")])
+
+    # any valid segment can follow a SAR
+    _try_order(
+        True, [("SIDD001001", "SAR"), ("SIDD001002", "SAR"), ("SIDD001003", "SAR")]
+    )
+    _try_order(
+        True, [("SIDD001001", "SAR"), ("SIDD001002", "SAR"), ("SIDD001003", "LEG")]
+    )
+    _try_order(
+        True, [("SIDD001001", "SAR"), ("SIDD001002", "SAR"), ("SIDD002001", "SAR")]
+    )
+    _try_order(True, [("SIDD001001", "SAR"), ("SIDD001002", "SAR"), ("DED001", "DED")])
+    _try_order(True, [("SIDD001001", "SAR"), ("SIDD001002", "SAR"), ("OTHER", "")])
+
+    # LEGs must be at the end of a product image
+    _try_order(
+        True, [("SIDD001001", "SAR"), ("SIDD001002", "LEG"), ("SIDD001003", "LEG")]
+    )
+    _try_order(
+        True, [("SIDD001001", "SAR"), ("SIDD001002", "LEG"), ("SIDD002001", "SAR")]
+    )
+    _try_order(True, [("SIDD001001", "SAR"), ("SIDD001002", "LEG"), ("DED001", "DED")])
+    _try_order(True, [("SIDD001001", "SAR"), ("SIDD001002", "LEG"), ("OTHER", "")])
+    _try_order(
+        False, [("SIDD001001", "SAR"), ("SIDD001002", "LEG"), ("SIDD001002", "SAR")]
+    )
+
+    # DED must be the last SIDD segment
+    _try_order(True, [("SIDD001001", "SAR"), ("DED001", "DED"), ("OTHER", "")])
+    _try_order(False, [("SIDD001001", "SAR"), ("DED001", "DED"), ("SIDD001002", "LEG")])
+    _try_order(False, [("SIDD001001", "SAR"), ("DED001", "DED"), ("SIDD001002", "SAR")])
+    _try_order(False, [("SIDD001001", "SAR"), ("DED001", "DED"), ("SIDD002001", "SAR")])
+
+    # no SIDD segments after an "OTHER"
+    _try_order(True, [("SIDD001001", "SAR"), ("OTHER", ""), ("OTHER", "")])
+    _try_order(False, [("SIDD001001", "SAR"), ("OTHER", ""), ("SIDD001002", "SAR")])
+    _try_order(False, [("SIDD001001", "SAR"), ("OTHER", ""), ("SIDD001002", "LEG")])
+    _try_order(False, [("SIDD001001", "SAR"), ("OTHER", ""), ("SIDD002001", "SAR")])
+    _try_order(False, [("SIDD001001", "SAR"), ("OTHER", ""), ("DED001", "DED")])
+
+
+def test_check_nitf_display_levels(sidd_con):
+    def _try_levels(valid, levels):
+        sidd_con.ntf["FileHeader"]["NUMI"].value = len(levels)
+        for (idlvl, ialvl), imseg in zip(levels, sidd_con.ntf["ImageSegments"]):
+            imseg["subheader"]["IDLVL"].value = idlvl
+            imseg["subheader"]["IALVL"].value = ialvl
+
+        sidd_con.check("check_nitf_display_levels")
+        if valid:
+            assert not sidd_con.failures()
+        else:
+            assert sidd_con.failures()
+
+    _try_levels(True, [(1, 0)])
+    _try_levels(True, [(1, 0), (2, 1)])
+    _try_levels(True, [(1, 0), (2, 0)])
+    _try_levels(True, [(2, 0), (1, 0)])  # segment order does not matter
+
+    _try_levels(False, [(0, 0)])  # display levels start at 1
+    _try_levels(False, [(2, 0)])  # display levels start at 1
+    _try_levels(False, [(1, 0), (3, 0)])  # missing idlvl == 2
+    _try_levels(False, [(1, 0), (2, 2)])  # attached to itself
+    _try_levels(False, [(1, 0), (2, 3)])  # attached to non-existant idlvl
+    _try_levels(False, [(1, 0), (2, 3), (3, 2)])  # attached to higher idlvl
+
+
+@pytest.fixture
+def example_segmented_sidd(tmp_path_factory, monkeypatch):
+    """Force a SIDD to be segmented.  NOTE: segments are smaller than prescribed by the SIDD document"""
+    sidd_etree = etree.parse(GOOD_SIDD_XML_PATH)
+    tmp_sidd = (
+        tmp_path_factory.mktemp("data") / GOOD_SIDD_XML_PATH.with_suffix(".sidd").name
+    )
+    nbytes = int(
+        sidd_etree.find("./{*}Measurement/{*}PixelFootprint/{*}Col").text
+    ) * int(sidd_etree.find("./{*}Measurement/{*}PixelFootprint/{*}Col").text)
+
+    monkeypatch.setattr(
+        sarkit.sidd._constants, "LI_MAX", nbytes // 5
+    )  # reduce the segment size limit to force segmentation
+    sec = {"security": {"clas": "U"}}
+    sidd_meta = sarkit.sidd.NitfMetadata(
+        file_header_part={"ostaid": "nowhere"} | sec,
+        images=[
+            sarkit.sidd.NitfProductImageMetadata(
+                xmltree=sidd_etree,
+                im_subheader_part=sec,
+                de_subheader_part=sec,
+            )
+        ],
+    )
+    with tmp_sidd.open("wb") as f, sarkit.sidd.NitfWriter(f, sidd_meta):
+        pass  # don't currently care about the pixels
+
+    with tmp_sidd.open("rb") as f:
+        jbp = jbpy.Jbp().load(f)
+        assert len(jbp["ImageSegments"]) > 1
+
+    yield tmp_sidd
+
+
+def test_check_nitf_image_segmentation(example_segmented_sidd):
+    with example_segmented_sidd.open("rb") as file:
+        sidd_con = SiddConsistency.from_file(file)
+    sidd_con.check("check_nitf_image_segmentation", allow_prefix=True)
+    assert not sidd_con.failures()

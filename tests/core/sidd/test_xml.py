@@ -120,11 +120,16 @@ def test_transcoders():
     list((DATAPATH / "syntax_only/sidd").rglob("*.xml"))
     + list(DATAPATH.glob("example-sidd*.xml")),
 )
-def test_elementwrapper_tofromdict(xmlpath):
-    siddroot = lxml.etree.parse(xmlpath).getroot()
-    root_ns = lxml.etree.QName(siddroot).namespace
+@pytest.mark.parametrize("add_comments", (True, False))
+def test_elementwrapper_tofromdict(xmlpath, add_comments):
+    xmlroot = lxml.etree.parse(xmlpath).getroot()
+    if add_comments:
+        testing.add_xml_comments(xmlroot)
+        assert len(list(xmlroot.iter(tag=lxml.etree.Comment))) > 0
+
+    root_ns = lxml.etree.QName(xmlroot).namespace
     xsdhelp = sksidd.XsdHelper(root_ns)
-    wrapped_siddroot = sksidd.ElementWrapper(siddroot)
+    wrapped_siddroot = sksidd.ElementWrapper(xmlroot)
 
     dict1 = wrapped_siddroot.to_dict()
     wrapped_root_fromdict = sksidd.ElementWrapper(
@@ -134,4 +139,4 @@ def test_elementwrapper_tofromdict(xmlpath):
     dict2 = wrapped_root_fromdict.to_dict()
 
     npt.assert_equal(dict1, dict2)
-    assert testing.elem_cmp(siddroot, wrapped_root_fromdict.elem, xsdhelp)
+    assert testing.elem_cmp(xmlroot, wrapped_root_fromdict.elem, xsdhelp)

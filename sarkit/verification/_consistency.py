@@ -6,6 +6,7 @@ import argparse
 import ast
 import contextlib
 import functools
+import inspect
 import linecache
 import os
 import re
@@ -15,17 +16,9 @@ from collections.abc import Iterable
 from typing import Optional
 
 import numpy as np
+import shapely
 
-
-class _ExceptionOnUse:
-    """Class to help handle optional dependencies"""
-
-    def __init__(self, exception):
-        self._error_class = type(exception)
-        self._error_message = exception.msg
-
-    def __getattr__(self, name):
-        raise self._error_class(self._error_message)
+import sarkit.wgs84
 
 
 def skipif(condition_func, details=None):
@@ -669,3 +662,74 @@ def start_color(color: str) -> str:
         invert=7,
     )
     return "\x1b[%sm" % color_table[color]
+
+
+def modify_conchecker_docs(obj):
+    """Try to make the rendered documentation looks more useful for ConsistencyChecker subclasses
+
+    There is an autodoc-skip-member event handler in the doc's conf.py that skips the check_ methods
+    but they still show up in the class method summary tables.
+    Explicitly adding a methods section seemingly avoids this.
+    """
+    allfuncs = inspect.getmembers(obj, lambda x: inspect.isfunction)
+    methods_to_doc = []
+    checks = []
+    for funcname, func in allfuncs:
+        if funcname.startswith("check_"):
+            checks.append((funcname, func))
+        elif not funcname.startswith("_"):
+            methods_to_doc.append(funcname)
+
+    method_list = "\n    ".join(methods_to_doc)
+    check_list = "\n    ".join(
+        (f"``{name}``\n        {obj.__doc__}") for name, obj in checks
+    )
+
+    con_doc_footer = f"""
+    Methods
+    -------
+    {method_list}
+
+    Notes
+    -----
+    The following checks are available:
+
+    {check_list}
+
+    """
+    obj.__doc__ += textwrap.dedent(con_doc_footer)
+
+
+def is_geo_polygon_cw(geo_vertices: np.ndarray) -> bool:
+    """Determine if a polygon with WGS 84 geodetic vertices is wound clockwise.
+
+    Assumes the polygon doesn't encompass a hemisphere or more.
+
+    Parameters
+    ----------
+    geo_vertices : ndarray
+        2D array of vertices with lat, lon and (optionally) hae in last dimension.
+        HAE is assumed 0 when omitted.
+
+    Returns
+    -------
+    bool
+        Is polygon clockwise?
+    """
+    if geo_vertices.shape[1] == 2:
+        geo_vertices = np.concatenate(
+            [geo_vertices, np.zeros_like(geo_vertices[:, :1])], axis=1
+        )
+    ecef_vertices = sarkit.wgs84.geodetic_to_cartesian(geo_vertices)
+
+    origin = np.mean(ecef_vertices, axis=0)
+    ux = sarkit.wgs84.east(sarkit.wgs84.cartesian_to_geodetic(origin))
+    uy = sarkit.wgs84.north(sarkit.wgs84.cartesian_to_geodetic(origin))
+
+    plane_vertices = np.vecdot(
+        ecef_vertices[:, np.newaxis, :] - origin, np.stack([ux, uy], axis=0)
+    )
+    plane_polygon = shapely.Polygon(plane_vertices)
+    if not plane_polygon.exterior.is_valid:
+        raise ValueError("Vertices in plane do not form a valid polygon")
+    return not plane_polygon.exterior.is_ccw

@@ -22,14 +22,26 @@ Data Structure & File Format
    Reader
    Writer
    read_file_header
-   get_pvp_dtype
-   get_ppp_dtype
    binary_format_string_to_dtype
    dtype_to_binary_format_string
    mask_support_array
 
+Per Vector/Pulse Parameters
+
+.. autosummary::
+   :toctree: generated/
+
+   dtype_to_ppp_element
+   dtype_to_pvp_element
+   get_ppp_dtype
+   get_pvp_dtype
+   get_defined_ppp_dtype
+   get_defined_pvp_dtype
+
 XML Metadata
 ============
+
+High-level classes and methods
 
 .. autosummary::
    :toctree: generated/
@@ -37,6 +49,12 @@ XML Metadata
    XmlHelper
    ElementWrapper
    XsdHelper
+
+Transcoders for defined XML parameter types
+
+.. autosummary::
+   :toctree: generated/
+
    TxtType
    EnuType
    BoolType
@@ -56,8 +74,41 @@ XML Metadata
    AddedPxpType
    MtxType
    EdfType
+
+Derived/convenience transcoders
+
+.. autosummary::
+   :toctree: generated/
+
+   DefinedPxpType
    ImageAreaCornerPointsType
    ParameterType
+
+Scene Coordinates
+=================
+
+.. admonition:: See also
+
+   CRSD explicitly references CPHD D & I SceneCoordinates branch. See :ref:`skcphd_scenecoords` in :mod:`sarkit.cphd`.
+
+Convenience functions that operate on parsed XML trees:
+
+.. autosummary::
+   :toctree: generated/
+
+   ecf_to_iac
+   iac_to_ecf
+   llh_to_iac
+   iac_to_llh
+
+Image Area
+
+.. autosummary::
+   :toctree: generated/
+
+   get_channel_image_area
+   get_extended_image_area
+   get_scene_image_area
 
 Receive Channel Parameters
 ==========================
@@ -86,6 +137,10 @@ Antenna Parameters
    :toctree: generated/
 
    interpolate_support_array
+   compute_eb
+   ApatParams
+   ArrayElemSaMetadata
+   compute_apat
    compute_h_v_los_unit_vectors
    compute_h_v_pol_parameters
 
@@ -119,16 +174,20 @@ CRSD 1.0
    Version 1.0", 2025.
    https://nsgreg.nga.mil/doc/view?i=5672
 
-.. [NGA.STND.0080-2_1.0_CRSD_schema_2025_02_25.xsd] National Center for Geospatial Intelligence Standards,
+.. [NGA.STND.0080-2_1.0_CRSD_schema] National Center for Geospatial Intelligence Standards,
    "Compensated Radar Signal Data (CRSD) XML Schema, Version 1.0", 2025.
    https://nsgreg.nga.mil/doc/view?i=5673
 """
 
 from ._computations import (
+    ApatParams,
+    ArrayElemSaMetadata,
+    compute_apat,
     compute_apc_to_pt_geometry_parameters,
     compute_arp_to_rpt_geometry,
     compute_dwelltimes_using_dta,
     compute_dwelltimes_using_poly,
+    compute_eb,
     compute_h_v_los_unit_vectors,
     compute_h_v_pol_parameters,
     compute_ref_point_parameters,
@@ -147,15 +206,31 @@ from ._io import (
     Writer,
     binary_format_string_to_dtype,
     dtype_to_binary_format_string,
-    get_ppp_dtype,
-    get_pvp_dtype,
     mask_support_array,
     read_file_header,
+)
+from ._pxps import (
+    dtype_to_ppp_element,
+    dtype_to_pvp_element,
+    get_defined_ppp_dtype,
+    get_defined_pvp_dtype,
+    get_ppp_dtype,
+    get_pvp_dtype,
+)
+from ._scenecoords import (
+    ecf_to_iac,
+    get_channel_image_area,
+    get_extended_image_area,
+    get_scene_image_area,
+    iac_to_ecf,
+    iac_to_llh,
+    llh_to_iac,
 )
 from ._xml import (
     AddedPxpType,
     BoolType,
     DblType,
+    DefinedPxpType,
     EdfType,
     ElementWrapper,
     EnuType,
@@ -184,8 +259,11 @@ __all__ = [
     "SECTION_TERMINATOR",
     "VERSION_INFO",
     "AddedPxpType",
+    "ApatParams",
+    "ArrayElemSaMetadata",
     "BoolType",
     "DblType",
+    "DefinedPxpType",
     "EdfType",
     "ElementWrapper",
     "EnuType",
@@ -212,18 +290,31 @@ __all__ = [
     "XyzPolyType",
     "XyzType",
     "binary_format_string_to_dtype",
+    "compute_apat",
     "compute_apc_to_pt_geometry_parameters",
     "compute_arp_to_rpt_geometry",
     "compute_dwelltimes_using_dta",
     "compute_dwelltimes_using_poly",
+    "compute_eb",
     "compute_h_v_los_unit_vectors",
     "compute_h_v_pol_parameters",
     "compute_ref_point_parameters",
     "compute_reference_geometry",
     "dtype_to_binary_format_string",
+    "dtype_to_ppp_element",
+    "dtype_to_pvp_element",
+    "ecf_to_iac",
+    "get_channel_image_area",
+    "get_defined_ppp_dtype",
+    "get_defined_pvp_dtype",
+    "get_extended_image_area",
     "get_ppp_dtype",
     "get_pvp_dtype",
+    "get_scene_image_area",
+    "iac_to_ecf",
+    "iac_to_llh",
     "interpolate_support_array",
+    "llh_to_iac",
     "mask_support_array",
     "read_file_header",
 ]

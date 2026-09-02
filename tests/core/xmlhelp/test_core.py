@@ -26,7 +26,7 @@ def test_elementwrapper():
         del wrapped_siddroot["foo"]
 
     with pytest.raises(KeyError, match="foo"):
-        "foo" in wrapped_siddroot
+        assert "foo" in wrapped_siddroot
 
     with pytest.raises(KeyError, match="foo"):
         wrapped_siddroot.get("foo")
@@ -42,7 +42,7 @@ def test_elementwrapper():
         del wrapped_siddroot["@fooattr"]
 
     with pytest.raises(KeyError, match="@fooattr"):
-        "@fooattr" in wrapped_siddroot
+        assert "@fooattr" in wrapped_siddroot
 
     # Add descendant of repeatable
     wrapped_siddroot["ProductProcessing"].add("ProcessingModule")["ModuleName"] = (
@@ -130,6 +130,50 @@ def test_elementwrapper():
         is None
     )
 
+    # repeatable fields must be initialized with a list
+    with pytest.raises(ValueError):
+        wrapped_siddroot["ExploitationFeatures"]["Product"] = {"North": 1}
+    wrapped_siddroot["ExploitationFeatures"]["Product"] = [{"North": 1}]
+
+    # primitive types can only be set with compatable types
+    assert isinstance(
+        wrapped_siddroot["ExploitationFeatures"]["Product"][0]["North"], float
+    )
+    with pytest.raises(ValueError):
+        wrapped_siddroot["ExploitationFeatures"]["Product"][0]["North"] = "string"
+
+    # Find works
+    wrapped_siddroot["ExploitationFeatures"]["Product"] = [
+        {
+            "North": 1,
+            "Ellipticity": 0.5,
+            "Polarization": [{"TxPolarizationProc": "V", "RcvPolarizationProc": "H"}],
+        },
+        {"North": 1, "Ellipticity": 0.25},
+        {"North": 2, "Ellipticity": 0.75},
+    ]
+    assert (
+        len(wrapped_siddroot["ExploitationFeatures"].findall("Product", North=1)) == 2
+    )
+    assert (
+        len(wrapped_siddroot["ExploitationFeatures"].findall("Product", North=2)) == 1
+    )
+    assert (
+        wrapped_siddroot["ExploitationFeatures"].find("Product", North=1)["Ellipticity"]
+        == 0.5
+    )
+    assert (
+        wrapped_siddroot["ExploitationFeatures"].find("Product", North=2)["Ellipticity"]
+        == 0.75
+    )
+    assert (
+        wrapped_siddroot["ExploitationFeatures"].find(
+            "Product",
+            Polarization=[{"TxPolarizationProc": "V", "RcvPolarizationProc": "H"}],
+        )
+        is not None
+    )
+
 
 def test_elementwrapper_tofromdict():
     root_ns = "urn:SIDD:3.0.0"
@@ -155,3 +199,19 @@ def test_elementwrapper_tofromdict():
     }
     # transcoders can add zeros to sparse polynomials/matrices, etc.
     assert orig_elempaths.issubset(fromdict_elempaths)
+
+
+def test_elementwrapper_setdefault():
+    root_ns = "urn:SIDD:3.0.0"
+    siddroot = lxml.etree.Element(f"{{{root_ns}}}SIDD")
+    xmlhelp = sksidd.XsdHelper(root_ns)
+    wrapped_siddroot = skxml.ElementWrapper(siddroot, xsdhelper=xmlhelp)
+
+    assert wrapped_siddroot["ProductCreation"].setdefault("ProductName", "foo") == "foo"
+    assert wrapped_siddroot["ProductCreation"]["ProductName"] == "foo"
+    assert wrapped_siddroot["ProductCreation"].setdefault("ProductName", "bar") == "foo"
+    with pytest.raises(ValueError):
+        wrapped_siddroot["Display"].setdefault("NumBands")
+    assert wrapped_siddroot["Display"].setdefault("NumBands", 24) == 24
+    with pytest.raises(KeyError):
+        wrapped_siddroot["ProductCreation"].setdefault("NotARealFieldName")

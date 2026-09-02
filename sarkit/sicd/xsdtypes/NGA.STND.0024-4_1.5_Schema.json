@@ -1,0 +1,3000 @@
+{
+  "/": {
+    "{urn:SICD:1.5}SICD": "<UNNAMED>-{urn:SICD:1.5}SICD"
+  },
+  "<UNNAMED>-{urn:SICD:1.5}AntParamType/{urn:SICD:1.5}EB": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}DCXPoly",
+        "typename": "{urn:SICD:1.5}Poly1DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}DCYPoly",
+        "typename": "{urn:SICD:1.5}Poly1DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}BistaticComponentsErrorType/{urn:SICD:1.5}AtmosphericError": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TxSCP",
+        "typename": "{urn:SICD:1.5}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RcvSCP",
+        "typename": "{urn:SICD:1.5}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TxRcvCC",
+        "typename": "{urn:SICD:1.5}NegOneToOneType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}BistaticComponentsErrorType/{urn:SICD:1.5}PosVelErr": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TxFrame",
+        "typename": "{urn:SICD:1.5}FrameType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TxPVCov",
+        "typename": "{urn:SICD:1.5}Matrix6x6Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RcvFrame",
+        "typename": "{urn:SICD:1.5}FrameType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RcvPVCov",
+        "typename": "{urn:SICD:1.5}Matrix6x6Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TxRcvPVXCov",
+        "typename": "{urn:SICD:1.5}Matrix6x6Type"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}BistaticComponentsErrorType/{urn:SICD:1.5}RadarSensor": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TxRcvTimeFreq",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}BistaticComponentsErrorType/{urn:SICD:1.5}RadarSensor/{urn:SICD:1.5}TxRcvTimeFreq"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TxRcvTimeFreqDecorr",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}BistaticComponentsErrorType/{urn:SICD:1.5}RadarSensor/{urn:SICD:1.5}TxRcvTimeFreqDecorr"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}BistaticComponentsErrorType/{urn:SICD:1.5}RadarSensor/{urn:SICD:1.5}TxRcvTimeFreq": {
+    "attributes": [
+      "size1",
+      "size2"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}Entry",
+        "typename": "{urn:SICD:1.5}MatrixEntry2DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}BistaticComponentsErrorType/{urn:SICD:1.5}RadarSensor/{urn:SICD:1.5}TxRcvTimeFreqDecorr": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TxTimeDecorr",
+        "typename": "{urn:SICD:1.5}ErrorDecorrFuncType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TxClockFreqDecorr",
+        "typename": "{urn:SICD:1.5}ErrorDecorrFuncType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RcvTimeDecorr",
+        "typename": "{urn:SICD:1.5}ErrorDecorrFuncType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RcvClockFreqDecorr",
+        "typename": "{urn:SICD:1.5}ErrorDecorrFuncType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}CollectionInfoType/{urn:SICD:1.5}CollectType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{urn:SICD:1.5}CollectionInfoType/{urn:SICD:1.5}RadarMode": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}ModeType",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}CollectionInfoType/{urn:SICD:1.5}RadarMode/{urn:SICD:1.5}ModeType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}ModeID",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}CollectionInfoType/{urn:SICD:1.5}RadarMode/{urn:SICD:1.5}ModeType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{urn:SICD:1.5}ComponentsErrorType/{urn:SICD:1.5}IonoError": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}IonoRangeVertical",
+        "typename": "{urn:SICD:1.5}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}IonoRangeRateVertical",
+        "typename": "{urn:SICD:1.5}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}IonoRgRgRateCC",
+        "typename": "{urn:SICD:1.5}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}IonoRangeVertDecorr",
+        "typename": "{urn:SICD:1.5}ErrorDecorrFuncType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}ComponentsErrorType/{urn:SICD:1.5}PosVelErr": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Frame",
+        "typename": "{urn:SICD:1.5}FrameType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}P1",
+        "typename": "{urn:SICD:1.5}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}P2",
+        "typename": "{urn:SICD:1.5}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}P3",
+        "typename": "{urn:SICD:1.5}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}V1",
+        "typename": "{urn:SICD:1.5}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}V2",
+        "typename": "{urn:SICD:1.5}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}V3",
+        "typename": "{urn:SICD:1.5}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}CorrCoefs",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}ComponentsErrorType/{urn:SICD:1.5}PosVelErr/{urn:SICD:1.5}CorrCoefs"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}PositionDecorr",
+        "typename": "{urn:SICD:1.5}ErrorDecorrFuncType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}ComponentsErrorType/{urn:SICD:1.5}PosVelErr/{urn:SICD:1.5}CorrCoefs": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}P1P2",
+        "typename": "{urn:SICD:1.5}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}P1P3",
+        "typename": "{urn:SICD:1.5}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}P1V1",
+        "typename": "{urn:SICD:1.5}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}P1V2",
+        "typename": "{urn:SICD:1.5}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}P1V3",
+        "typename": "{urn:SICD:1.5}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}P2P3",
+        "typename": "{urn:SICD:1.5}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}P2V1",
+        "typename": "{urn:SICD:1.5}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}P2V2",
+        "typename": "{urn:SICD:1.5}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}P2V3",
+        "typename": "{urn:SICD:1.5}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}P3V1",
+        "typename": "{urn:SICD:1.5}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}P3V2",
+        "typename": "{urn:SICD:1.5}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}P3V3",
+        "typename": "{urn:SICD:1.5}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}V1V2",
+        "typename": "{urn:SICD:1.5}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}V1V3",
+        "typename": "{urn:SICD:1.5}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}V2V3",
+        "typename": "{urn:SICD:1.5}NegOneToOneType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}ComponentsErrorType/{urn:SICD:1.5}RadarSensor": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RangeBias",
+        "typename": "{urn:SICD:1.5}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}ClockFreqSF",
+        "typename": "{urn:SICD:1.5}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TransmitFreqSF",
+        "typename": "{urn:SICD:1.5}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RangeBiasDecorr",
+        "typename": "{urn:SICD:1.5}ErrorDecorrFuncType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}ComponentsErrorType/{urn:SICD:1.5}TropoError": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TropoRangeVertical",
+        "typename": "{urn:SICD:1.5}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TropoRangeSlant",
+        "typename": "{urn:SICD:1.5}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TropoRangeDecorr",
+        "typename": "{urn:SICD:1.5}ErrorDecorrFuncType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}DirParamType/{urn:SICD:1.5}Sgn": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}int"
+  },
+  "<UNNAMED>-{urn:SICD:1.5}DirParamType/{urn:SICD:1.5}WgtFunct": {
+    "attributes": [
+      "size"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}Wgt",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}DirParamType/{urn:SICD:1.5}WgtFunct/{urn:SICD:1.5}Wgt"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}DirParamType/{urn:SICD:1.5}WgtFunct/{urn:SICD:1.5}Wgt": {
+    "attributes": [
+      "index"
+    ],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "<UNNAMED>-{urn:SICD:1.5}DirParamType/{urn:SICD:1.5}WgtType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}WindowName",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}Parameter",
+        "typename": "{urn:SICD:1.5}ParameterType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}ErrorStatisticsType/{urn:SICD:1.5}AdditionalParms": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}Parameter",
+        "typename": "{urn:SICD:1.5}ParameterType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}ErrorStatisticsType/{urn:SICD:1.5}AdjustableParameterOffsets": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}ARPPosSCPCOA",
+        "typename": "{urn:SICD:1.5}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}ARPVel",
+        "typename": "{urn:SICD:1.5}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TxTimeSCPCOA",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RcvTimeSCPCOA",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}APOError",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}ErrorStatisticsType/{urn:SICD:1.5}AdjustableParameterOffsets/{urn:SICD:1.5}APOError"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}CompositeSCP",
+        "typename": "{urn:SICD:1.5}CompositeErrorType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}ErrorStatisticsType/{urn:SICD:1.5}AdjustableParameterOffsets/{urn:SICD:1.5}APOError": {
+    "attributes": [
+      "size1",
+      "size2"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}Entry",
+        "typename": "{urn:SICD:1.5}MatrixEntry2DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}ErrorStatisticsType/{urn:SICD:1.5}BistaticAdjustableParameterOffsets": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TxPlatform",
+        "typename": "{urn:SICD:1.5}BistaticAdjustableParametersType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RcvPlatform",
+        "typename": "{urn:SICD:1.5}BistaticAdjustableParametersType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}APOError",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}ErrorStatisticsType/{urn:SICD:1.5}BistaticAdjustableParameterOffsets/{urn:SICD:1.5}APOError"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}BistaticCompositeSCP",
+        "typename": "{urn:SICD:1.5}BistaticCompositeErrorType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}ErrorStatisticsType/{urn:SICD:1.5}BistaticAdjustableParameterOffsets/{urn:SICD:1.5}APOError": {
+    "attributes": [
+      "size1",
+      "size2"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}Entry",
+        "typename": "{urn:SICD:1.5}MatrixEntry2DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}GeoDataType/{urn:SICD:1.5}EarthModel": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{urn:SICD:1.5}GeoDataType/{urn:SICD:1.5}ImageCorners": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}ICP",
+        "typename": "{urn:SICD:1.5}LatLonCornerStringType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}GeoDataType/{urn:SICD:1.5}SCP": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}ECF",
+        "typename": "{urn:SICD:1.5}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}LLH",
+        "typename": "{urn:SICD:1.5}LatLonHAERestrictionType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}GridType/{urn:SICD:1.5}ImagePlane": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{urn:SICD:1.5}GridType/{urn:SICD:1.5}Type": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{urn:SICD:1.5}ImageDataType/{urn:SICD:1.5}AmpTable": {
+    "attributes": [
+      "size"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}Amplitude",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}ImageDataType/{urn:SICD:1.5}AmpTable/{urn:SICD:1.5}Amplitude"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}ImageDataType/{urn:SICD:1.5}AmpTable/{urn:SICD:1.5}Amplitude": {
+    "attributes": [
+      "index"
+    ],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "<UNNAMED>-{urn:SICD:1.5}ImageDataType/{urn:SICD:1.5}FullImage": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}NumRows",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}NumCols",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}ImageDataType/{urn:SICD:1.5}PixelType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{urn:SICD:1.5}ImageDataType/{urn:SICD:1.5}ValidData": {
+    "attributes": [
+      "size"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}Vertex",
+        "typename": "{urn:SICD:1.5}RowColvertexType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}ImageFormationType/{urn:SICD:1.5}AzAutofocus": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{urn:SICD:1.5}ImageFormationType/{urn:SICD:1.5}ImageBeamComp": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{urn:SICD:1.5}ImageFormationType/{urn:SICD:1.5}ImageFormAlgo": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{urn:SICD:1.5}ImageFormationType/{urn:SICD:1.5}PolarizationCalibration": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}DistortCorrectionApplied",
+        "typename": "{http://www.w3.org/2001/XMLSchema}boolean"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Distortion",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}ImageFormationType/{urn:SICD:1.5}PolarizationCalibration/{urn:SICD:1.5}Distortion"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}ImageFormationType/{urn:SICD:1.5}PolarizationCalibration/{urn:SICD:1.5}Distortion": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}CalibrationDate",
+        "typename": "{http://www.w3.org/2001/XMLSchema}dateTime"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}A",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}F1",
+        "typename": "{urn:SICD:1.5}ComplexType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Q1",
+        "typename": "{urn:SICD:1.5}ComplexType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Q2",
+        "typename": "{urn:SICD:1.5}ComplexType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}F2",
+        "typename": "{urn:SICD:1.5}ComplexType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Q3",
+        "typename": "{urn:SICD:1.5}ComplexType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Q4",
+        "typename": "{urn:SICD:1.5}ComplexType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}GainErrorA",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}GainErrorF1",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}GainErrorF2",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}PhaseErrorF1",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}PhaseErrorF2",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}ImageFormationType/{urn:SICD:1.5}Processing": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Type",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Applied",
+        "typename": "{http://www.w3.org/2001/XMLSchema}boolean"
+      },
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}Parameter",
+        "typename": "{urn:SICD:1.5}ParameterType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}ImageFormationType/{urn:SICD:1.5}RcvChanProc": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}NumChanProc",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}PRFScaleFactor",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}ChanIndex",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}ImageFormationType/{urn:SICD:1.5}RgAutofocus": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{urn:SICD:1.5}ImageFormationType/{urn:SICD:1.5}STBeamComp": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{urn:SICD:1.5}ImageFormationType/{urn:SICD:1.5}TxFrequencyProc": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}MinProc",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}MaxProc",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}LineType/{urn:SICD:1.5}Endpoint": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Lat",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Lon",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}MatchInfoType/{urn:SICD:1.5}MatchType": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TypeID",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}CurrentIndex",
+        "typename": "{http://www.w3.org/2001/XMLSchema}int"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}NumMatchCollections",
+        "typename": "{http://www.w3.org/2001/XMLSchema}int"
+      },
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}MatchCollection",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}MatchInfoType/{urn:SICD:1.5}MatchType/{urn:SICD:1.5}MatchCollection"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}MatchInfoType/{urn:SICD:1.5}MatchType/{urn:SICD:1.5}MatchCollection": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}CoreName",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}MatchIndex",
+        "typename": "{http://www.w3.org/2001/XMLSchema}int"
+      },
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}Parameter",
+        "typename": "{urn:SICD:1.5}ParameterType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}PFAType/{urn:SICD:1.5}STDeskew": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Applied",
+        "typename": "{http://www.w3.org/2001/XMLSchema}boolean"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}STDSPhasePoly",
+        "typename": "{urn:SICD:1.5}Poly2DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}PolygonType/{urn:SICD:1.5}Vertex": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Lat",
+        "typename": "{urn:SICD:1.5}Neg90To90Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Lon",
+        "typename": "{urn:SICD:1.5}Neg180To180Type"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}PositionType/{urn:SICD:1.5}RcvAPC": {
+    "attributes": [
+      "size"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}RcvAPCPoly",
+        "typename": "{urn:SICD:1.5}XYZPolyAttributeType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}RMAType/{urn:SICD:1.5}INCA": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TimeCAPoly",
+        "typename": "{urn:SICD:1.5}Poly1DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}R_CA_SCP",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}FreqZero",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}DRateSFPoly",
+        "typename": "{urn:SICD:1.5}Poly2DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}DopCentroidPoly",
+        "typename": "{urn:SICD:1.5}Poly2DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}DopCentroidCOA",
+        "typename": "{http://www.w3.org/2001/XMLSchema}boolean"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}RMAType/{urn:SICD:1.5}ImageType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{urn:SICD:1.5}RMAType/{urn:SICD:1.5}RMAT": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}PosRef",
+        "typename": "{urn:SICD:1.5}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}VelRef",
+        "typename": "{urn:SICD:1.5}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}DopConeAngRef",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}RMAType/{urn:SICD:1.5}RMAlgoType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{urn:SICD:1.5}RMAType/{urn:SICD:1.5}RMCR": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}PosRef",
+        "typename": "{urn:SICD:1.5}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}VelRef",
+        "typename": "{urn:SICD:1.5}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}DopConeAngRef",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}Area": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Corner",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}Area/{urn:SICD:1.5}Corner"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Plane",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}Area/{urn:SICD:1.5}Plane"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}Area/{urn:SICD:1.5}Corner": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}ACP",
+        "typename": "{urn:SICD:1.5}LatLonHAECornerRestrictType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}Area/{urn:SICD:1.5}Plane": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RefPt",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}Area/{urn:SICD:1.5}Plane/{urn:SICD:1.5}RefPt"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}XDir",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}Area/{urn:SICD:1.5}Plane/{urn:SICD:1.5}XDir"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}YDir",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}Area/{urn:SICD:1.5}Plane/{urn:SICD:1.5}YDir"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}SegmentList",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}Area/{urn:SICD:1.5}Plane/{urn:SICD:1.5}SegmentList"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Orientation",
+        "typename": "{urn:SICD:1.5}OrientationType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Polygon",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}Area/{urn:SICD:1.5}Plane/{urn:SICD:1.5}Polygon"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}Area/{urn:SICD:1.5}Plane/{urn:SICD:1.5}Polygon": {
+    "attributes": [
+      "size"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}Vertex",
+        "typename": "{urn:SICD:1.5}LSVertexType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}Area/{urn:SICD:1.5}Plane/{urn:SICD:1.5}RefPt": {
+    "attributes": [
+      "name"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}ECF",
+        "typename": "{urn:SICD:1.5}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Line",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Sample",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}Area/{urn:SICD:1.5}Plane/{urn:SICD:1.5}SegmentList": {
+    "attributes": [
+      "size"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}Segment",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}Area/{urn:SICD:1.5}Plane/{urn:SICD:1.5}SegmentList/{urn:SICD:1.5}Segment"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}Area/{urn:SICD:1.5}Plane/{urn:SICD:1.5}SegmentList/{urn:SICD:1.5}Segment": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}StartLine",
+        "typename": "{http://www.w3.org/2001/XMLSchema}integer"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}StartSample",
+        "typename": "{http://www.w3.org/2001/XMLSchema}integer"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}EndLine",
+        "typename": "{http://www.w3.org/2001/XMLSchema}integer"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}EndSample",
+        "typename": "{http://www.w3.org/2001/XMLSchema}integer"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Identifier",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}SegmentPolygon",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}Area/{urn:SICD:1.5}Plane/{urn:SICD:1.5}SegmentList/{urn:SICD:1.5}Segment/{urn:SICD:1.5}SegmentPolygon"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}Area/{urn:SICD:1.5}Plane/{urn:SICD:1.5}SegmentList/{urn:SICD:1.5}Segment/{urn:SICD:1.5}SegmentPolygon": {
+    "attributes": [
+      "size"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}SV",
+        "typename": "{urn:SICD:1.5}LSVertexType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}Area/{urn:SICD:1.5}Plane/{urn:SICD:1.5}XDir": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}UVectECF",
+        "typename": "{urn:SICD:1.5}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}LineSpacing",
+        "typename": "{urn:SICD:1.5}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}NumLines",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}FirstLine",
+        "typename": "{http://www.w3.org/2001/XMLSchema}integer"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}Area/{urn:SICD:1.5}Plane/{urn:SICD:1.5}YDir": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}UVectECF",
+        "typename": "{urn:SICD:1.5}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}SampleSpacing",
+        "typename": "{urn:SICD:1.5}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}NumSamples",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}FirstSample",
+        "typename": "{http://www.w3.org/2001/XMLSchema}integer"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}RcvChannels": {
+    "attributes": [
+      "size"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}ChanParameters",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}RcvChannels/{urn:SICD:1.5}ChanParameters"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}RcvChannels/{urn:SICD:1.5}ChanParameters": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TxRcvPolarization",
+        "typename": "{urn:SICD:1.5}DualPolarizationType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RcvAPCIndex",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}TxFrequency": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Min",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Max",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}TxSequence": {
+    "attributes": [
+      "size"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}TxStep",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}TxSequence/{urn:SICD:1.5}TxStep"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}TxSequence/{urn:SICD:1.5}TxStep": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}WFIndex",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TxPolarization",
+        "typename": "{urn:SICD:1.5}Polarization2Type"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}Waveform": {
+    "attributes": [
+      "size"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}WFParameters",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}Waveform/{urn:SICD:1.5}WFParameters"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}Waveform/{urn:SICD:1.5}WFParameters": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TxPulseLength",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TxRFBandwidth",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TxFreqStart",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TxFMRate",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RcvDemodType",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}Waveform/{urn:SICD:1.5}WFParameters/{urn:SICD:1.5}RcvDemodType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RcvWindowLength",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}ADCSampleRate",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RcvIFBandwidth",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RcvFreqStart",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RcvFMRate",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}Waveform/{urn:SICD:1.5}WFParameters/{urn:SICD:1.5}RcvDemodType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{urn:SICD:1.5}RadiometricType/{urn:SICD:1.5}NoiseLevel": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}NoiseLevelType",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}RadiometricType/{urn:SICD:1.5}NoiseLevel/{urn:SICD:1.5}NoiseLevelType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}NoisePoly",
+        "typename": "{urn:SICD:1.5}Poly2DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}RadiometricType/{urn:SICD:1.5}NoiseLevel/{urn:SICD:1.5}NoiseLevelType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{urn:SICD:1.5}SCPCOACore/{urn:SICD:1.5}SideOfTrack": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "<UNNAMED>-{urn:SICD:1.5}SCPCOAType/{urn:SICD:1.5}Bistatic": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}BistaticAng",
+        "typename": "{urn:SICD:1.5}ZeroTo180Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}BistaticAngRate",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TxPlatform",
+        "typename": "{urn:SICD:1.5}SCPCOABistaticPlatformType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RcvPlatform",
+        "typename": "{urn:SICD:1.5}SCPCOABistaticPlatformType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}SICD": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}CollectionInfo",
+        "typename": "{urn:SICD:1.5}CollectionInfoType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}ImageCreation",
+        "typename": "{urn:SICD:1.5}ImageCreationType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}ImageData",
+        "typename": "{urn:SICD:1.5}ImageDataType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}GeoData",
+        "typename": "{urn:SICD:1.5}GeoDataType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Grid",
+        "typename": "{urn:SICD:1.5}GridType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Timeline",
+        "typename": "{urn:SICD:1.5}TimelineType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Position",
+        "typename": "{urn:SICD:1.5}PositionType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RadarCollection",
+        "typename": "{urn:SICD:1.5}RadarCollectionType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}ImageFormation",
+        "typename": "{urn:SICD:1.5}ImageFormationType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}SCPCOA",
+        "typename": "{urn:SICD:1.5}SCPCOAType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Radiometric",
+        "typename": "{urn:SICD:1.5}RadiometricType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Antenna",
+        "typename": "{urn:SICD:1.5}AntennaType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}ErrorStatistics",
+        "typename": "{urn:SICD:1.5}ErrorStatisticsType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}MatchInfo",
+        "typename": "{urn:SICD:1.5}MatchInfoType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RgAzComp",
+        "typename": "{urn:SICD:1.5}RgAzCompType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}PFA",
+        "typename": "{urn:SICD:1.5}PFAType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RMA",
+        "typename": "{urn:SICD:1.5}RMAType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}TimelineType/{urn:SICD:1.5}IPP": {
+    "attributes": [
+      "size"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}Set",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}TimelineType/{urn:SICD:1.5}IPP/{urn:SICD:1.5}Set"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}TimelineType/{urn:SICD:1.5}IPP/{urn:SICD:1.5}Set": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TStart",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TEnd",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}IPPStart",
+        "typename": "{http://www.w3.org/2001/XMLSchema}integer"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}IPPEnd",
+        "typename": "{http://www.w3.org/2001/XMLSchema}integer"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}IPPPoly",
+        "typename": "{urn:SICD:1.5}Poly1DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "<UNNAMED>-{urn:SICD:1.5}UnmodeledType/{urn:SICD:1.5}UnmodeledDecorr": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Xrow",
+        "typename": "{urn:SICD:1.5}ErrorDecorrFuncType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Ycol",
+        "typename": "{urn:SICD:1.5}ErrorDecorrFuncType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{http://www.w3.org/2001/XMLSchema}boolean": {
+    "attributes": [],
+    "children": [],
+    "text_typename": null
+  },
+  "{http://www.w3.org/2001/XMLSchema}dateTime": {
+    "attributes": [],
+    "children": [],
+    "text_typename": null
+  },
+  "{http://www.w3.org/2001/XMLSchema}decimal": {
+    "attributes": [],
+    "children": [],
+    "text_typename": null
+  },
+  "{http://www.w3.org/2001/XMLSchema}double": {
+    "attributes": [],
+    "children": [],
+    "text_typename": null
+  },
+  "{http://www.w3.org/2001/XMLSchema}int": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}long"
+  },
+  "{http://www.w3.org/2001/XMLSchema}integer": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}decimal"
+  },
+  "{http://www.w3.org/2001/XMLSchema}nonNegativeInteger": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}integer"
+  },
+  "{http://www.w3.org/2001/XMLSchema}positiveInteger": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}nonNegativeInteger"
+  },
+  "{http://www.w3.org/2001/XMLSchema}string": {
+    "attributes": [],
+    "children": [],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}AntParamType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}XAxisPoly",
+        "typename": "{urn:SICD:1.5}XYZPolyType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}YAxisPoly",
+        "typename": "{urn:SICD:1.5}XYZPolyType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}FreqZero",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}EB",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}AntParamType/{urn:SICD:1.5}EB"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Array",
+        "typename": "{urn:SICD:1.5}GainPhasePolyType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Elem",
+        "typename": "{urn:SICD:1.5}GainPhasePolyType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}GainBSPoly",
+        "typename": "{urn:SICD:1.5}Poly1DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}EBFreqShift",
+        "typename": "{http://www.w3.org/2001/XMLSchema}boolean"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}MLFreqDilation",
+        "typename": "{http://www.w3.org/2001/XMLSchema}boolean"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}AntennaType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Tx",
+        "typename": "{urn:SICD:1.5}AntParamType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Rcv",
+        "typename": "{urn:SICD:1.5}AntParamType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TwoWay",
+        "typename": "{urn:SICD:1.5}AntParamType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}BistaticAdjustableParametersType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}APCPosSCPCOA",
+        "typename": "{urn:SICD:1.5}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}APCVel",
+        "typename": "{urn:SICD:1.5}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TimeSCPCOA",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}ClockFreqSF",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}BistaticComponentsErrorType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}PosVelErr",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}BistaticComponentsErrorType/{urn:SICD:1.5}PosVelErr"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RadarSensor",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}BistaticComponentsErrorType/{urn:SICD:1.5}RadarSensor"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}AtmosphericError",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}BistaticComponentsErrorType/{urn:SICD:1.5}AtmosphericError"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}BistaticCompositeErrorType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RAvg",
+        "typename": "{urn:SICD:1.5}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RdotAvg",
+        "typename": "{urn:SICD:1.5}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RAvgRdotAvg",
+        "typename": "{urn:SICD:1.5}NegOneToOneType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}CollectionInfoType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}CollectorName",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}IlluminatorName",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}CoreName",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}CollectType",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}CollectionInfoType/{urn:SICD:1.5}CollectType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RadarMode",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}CollectionInfoType/{urn:SICD:1.5}RadarMode"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Classification",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}InformationSecurityMarking",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}CountryCode",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}Parameter",
+        "typename": "{urn:SICD:1.5}ParameterType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}ComplexType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Real",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Imag",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}ComponentsErrorType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}PosVelErr",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}ComponentsErrorType/{urn:SICD:1.5}PosVelErr"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RadarSensor",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}ComponentsErrorType/{urn:SICD:1.5}RadarSensor"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TropoError",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}ComponentsErrorType/{urn:SICD:1.5}TropoError"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}IonoError",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}ComponentsErrorType/{urn:SICD:1.5}IonoError"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}CompositeErrorType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Rg",
+        "typename": "{urn:SICD:1.5}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Az",
+        "typename": "{urn:SICD:1.5}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RgAz",
+        "typename": "{urn:SICD:1.5}NegOneToOneType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}DirParamType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}UVectECF",
+        "typename": "{urn:SICD:1.5}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}SS",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}ImpRespWid",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Sgn",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}DirParamType/{urn:SICD:1.5}Sgn"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}ImpRespBW",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}KCtr",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}DeltaK1",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}DeltaK2",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}DeltaKCOAPoly",
+        "typename": "{urn:SICD:1.5}Poly2DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}WgtType",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}DirParamType/{urn:SICD:1.5}WgtType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}WgtFunct",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}DirParamType/{urn:SICD:1.5}WgtFunct"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}DualPolarizationType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "{urn:SICD:1.5}ErrorDecorrFuncType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}CorrCoefZero",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}DecorrRate",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}ErrorStatisticsType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}CompositeSCP",
+        "typename": "{urn:SICD:1.5}CompositeErrorType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Components",
+        "typename": "{urn:SICD:1.5}ComponentsErrorType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Unmodeled",
+        "typename": "{urn:SICD:1.5}UnmodeledType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}BistaticCompositeSCP",
+        "typename": "{urn:SICD:1.5}BistaticCompositeErrorType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}BistaticComponents",
+        "typename": "{urn:SICD:1.5}BistaticComponentsErrorType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Unmodeled",
+        "typename": "{urn:SICD:1.5}UnmodeledType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}AdditionalParms",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}ErrorStatisticsType/{urn:SICD:1.5}AdditionalParms"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}AdjustableParameterOffsets",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}ErrorStatisticsType/{urn:SICD:1.5}AdjustableParameterOffsets"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}BistaticAdjustableParameterOffsets",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}ErrorStatisticsType/{urn:SICD:1.5}BistaticAdjustableParameterOffsets"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}FrameType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "{urn:SICD:1.5}GainPhasePolyType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}GainPoly",
+        "typename": "{urn:SICD:1.5}Poly2DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}PhasePoly",
+        "typename": "{urn:SICD:1.5}Poly2DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}GeoDataType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}EarthModel",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}GeoDataType/{urn:SICD:1.5}EarthModel"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}SCP",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}GeoDataType/{urn:SICD:1.5}SCP"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}ImageCorners",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}GeoDataType/{urn:SICD:1.5}ImageCorners"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}ValidData",
+        "typename": "{urn:SICD:1.5}PolygonType"
+      },
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}GeoInfo",
+        "typename": "{urn:SICD:1.5}GeoInfoType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}GeoInfoType": {
+    "attributes": [
+      "name"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}Desc",
+        "typename": "{urn:SICD:1.5}ParameterType"
+      },
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}Point",
+        "typename": "{urn:SICD:1.5}LatLonRestrictionType"
+      },
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}Line",
+        "typename": "{urn:SICD:1.5}LineType"
+      },
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}Polygon",
+        "typename": "{urn:SICD:1.5}PolygonType"
+      },
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}GeoInfo",
+        "typename": "{urn:SICD:1.5}GeoInfoType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}GridType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}ImagePlane",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}GridType/{urn:SICD:1.5}ImagePlane"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Type",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}GridType/{urn:SICD:1.5}Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TimeCOAPoly",
+        "typename": "{urn:SICD:1.5}Poly2DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Row",
+        "typename": "{urn:SICD:1.5}DirParamType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Col",
+        "typename": "{urn:SICD:1.5}DirParamType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}ImageCreationType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Application",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}DateTime",
+        "typename": "{http://www.w3.org/2001/XMLSchema}dateTime"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Site",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Profile",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}ImageDataType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}PixelType",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}ImageDataType/{urn:SICD:1.5}PixelType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}AmpTable",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}ImageDataType/{urn:SICD:1.5}AmpTable"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}NumRows",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}NumCols",
+        "typename": "{http://www.w3.org/2001/XMLSchema}positiveInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}FirstRow",
+        "typename": "{http://www.w3.org/2001/XMLSchema}nonNegativeInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}FirstCol",
+        "typename": "{http://www.w3.org/2001/XMLSchema}nonNegativeInteger"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}FullImage",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}ImageDataType/{urn:SICD:1.5}FullImage"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}SCPPixel",
+        "typename": "{urn:SICD:1.5}RowColType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}ValidData",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}ImageDataType/{urn:SICD:1.5}ValidData"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}ImageFormationType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RcvChanProc",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}ImageFormationType/{urn:SICD:1.5}RcvChanProc"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TxRcvPolarizationProc",
+        "typename": "{urn:SICD:1.5}DualPolarizationType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TStartProc",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TEndProc",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TxFrequencyProc",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}ImageFormationType/{urn:SICD:1.5}TxFrequencyProc"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}SegmentIdentifier",
+        "typename": "{http://www.w3.org/2001/XMLSchema}string"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}ImageFormAlgo",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}ImageFormationType/{urn:SICD:1.5}ImageFormAlgo"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}STBeamComp",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}ImageFormationType/{urn:SICD:1.5}STBeamComp"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}ImageBeamComp",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}ImageFormationType/{urn:SICD:1.5}ImageBeamComp"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}AzAutofocus",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}ImageFormationType/{urn:SICD:1.5}AzAutofocus"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RgAutofocus",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}ImageFormationType/{urn:SICD:1.5}RgAutofocus"
+      },
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}Processing",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}ImageFormationType/{urn:SICD:1.5}Processing"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}PolarizationCalibration",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}ImageFormationType/{urn:SICD:1.5}PolarizationCalibration"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}LSVertexType": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Line",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Sample",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}LatLonCornerStringType": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Lat",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Lon",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}LatLonHAECornerRestrictType": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Lat",
+        "typename": "{urn:SICD:1.5}Neg90To90Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Lon",
+        "typename": "{urn:SICD:1.5}Neg180To180Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}HAE",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}LatLonHAERestrictionType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Lat",
+        "typename": "{urn:SICD:1.5}Neg90To90Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Lon",
+        "typename": "{urn:SICD:1.5}Neg180To180Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}HAE",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}LatLonRestrictionType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Lat",
+        "typename": "{urn:SICD:1.5}Neg90To90Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Lon",
+        "typename": "{urn:SICD:1.5}Neg180To180Type"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}LineType": {
+    "attributes": [
+      "size"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}Endpoint",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}LineType/{urn:SICD:1.5}Endpoint"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}MatchInfoType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}NumMatchTypes",
+        "typename": "{http://www.w3.org/2001/XMLSchema}int"
+      },
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}MatchType",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}MatchInfoType/{urn:SICD:1.5}MatchType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}Matrix6x6Type": {
+    "attributes": [
+      "size1",
+      "size2"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}Entry",
+        "typename": "{urn:SICD:1.5}MatrixEntry2DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}MatrixEntry2DType": {
+    "attributes": [
+      "index1",
+      "index2"
+    ],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "{urn:SICD:1.5}Neg180To180Type": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "{urn:SICD:1.5}Neg90To90Type": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "{urn:SICD:1.5}NegOneToOneType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "{urn:SICD:1.5}NonNegativeDoubleType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "{urn:SICD:1.5}OrientationType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "{urn:SICD:1.5}PFAType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}FPN",
+        "typename": "{urn:SICD:1.5}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}IPN",
+        "typename": "{urn:SICD:1.5}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}PolarAngRefTime",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}PolarAngPoly",
+        "typename": "{urn:SICD:1.5}Poly1DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}SpatialFreqSFPoly",
+        "typename": "{urn:SICD:1.5}Poly1DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Krg1",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Krg2",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Kaz1",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Kaz2",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}STDeskew",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}PFAType/{urn:SICD:1.5}STDeskew"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}ParameterType": {
+    "attributes": [
+      "name"
+    ],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "{urn:SICD:1.5}Polarization1Type": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "{urn:SICD:1.5}Polarization2Type": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}string"
+  },
+  "{urn:SICD:1.5}Poly1DType": {
+    "attributes": [
+      "order1"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}Coef",
+        "typename": "{urn:SICD:1.5}PolyCoef1DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}Poly2DType": {
+    "attributes": [
+      "order1",
+      "order2"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}Coef",
+        "typename": "{urn:SICD:1.5}PolyCoef2DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}PolyCoef1DType": {
+    "attributes": [
+      "exponent1"
+    ],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "{urn:SICD:1.5}PolyCoef2DType": {
+    "attributes": [
+      "exponent1",
+      "exponent2"
+    ],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "{urn:SICD:1.5}PolygonType": {
+    "attributes": [
+      "size"
+    ],
+    "children": [
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}Vertex",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}PolygonType/{urn:SICD:1.5}Vertex"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}PositionType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}ARPPoly",
+        "typename": "{urn:SICD:1.5}XYZPolyType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}GRPPoly",
+        "typename": "{urn:SICD:1.5}XYZPolyType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TxAPCPoly",
+        "typename": "{urn:SICD:1.5}XYZPolyType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RcvAPC",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}PositionType/{urn:SICD:1.5}RcvAPC"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}PositiveDoubleType": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "{urn:SICD:1.5}RMAType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RMAlgoType",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}RMAType/{urn:SICD:1.5}RMAlgoType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}ImageType",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}RMAType/{urn:SICD:1.5}ImageType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RMAT",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}RMAType/{urn:SICD:1.5}RMAT"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RMCR",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}RMAType/{urn:SICD:1.5}RMCR"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}INCA",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}RMAType/{urn:SICD:1.5}INCA"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}RadarCollectionType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TxFrequency",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}TxFrequency"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RefFreqIndex",
+        "typename": "{http://www.w3.org/2001/XMLSchema}int"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Waveform",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}Waveform"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TxPolarization",
+        "typename": "{urn:SICD:1.5}Polarization1Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TxSequence",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}TxSequence"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RcvChannels",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}RcvChannels"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Area",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}RadarCollectionType/{urn:SICD:1.5}Area"
+      },
+      {
+        "repeat": true,
+        "tag": "{urn:SICD:1.5}Parameter",
+        "typename": "{urn:SICD:1.5}ParameterType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}RadiometricType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}NoiseLevel",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}RadiometricType/{urn:SICD:1.5}NoiseLevel"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}RCSSFPoly",
+        "typename": "{urn:SICD:1.5}Poly2DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}SigmaZeroSFPoly",
+        "typename": "{urn:SICD:1.5}Poly2DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}BetaZeroSFPoly",
+        "typename": "{urn:SICD:1.5}Poly2DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}GammaZeroSFPoly",
+        "typename": "{urn:SICD:1.5}Poly2DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}RgAzCompType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}AzSF",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}KazPoly",
+        "typename": "{urn:SICD:1.5}Poly1DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}RowColType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Row",
+        "typename": "{http://www.w3.org/2001/XMLSchema}integer"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Col",
+        "typename": "{http://www.w3.org/2001/XMLSchema}integer"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}RowColvertexType": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Row",
+        "typename": "{http://www.w3.org/2001/XMLSchema}integer"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Col",
+        "typename": "{http://www.w3.org/2001/XMLSchema}integer"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}SCPCOABistaticPlatformType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Time",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Pos",
+        "typename": "{urn:SICD:1.5}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Vel",
+        "typename": "{urn:SICD:1.5}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Acc",
+        "typename": "{urn:SICD:1.5}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}SideOfTrack",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}SCPCOACore/{urn:SICD:1.5}SideOfTrack"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}SlantRange",
+        "typename": "{urn:SICD:1.5}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}GroundRange",
+        "typename": "{urn:SICD:1.5}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}DopplerConeAng",
+        "typename": "{urn:SICD:1.5}ZeroTo180Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}GrazeAng",
+        "typename": "{urn:SICD:1.5}Neg90To90Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}IncidenceAng",
+        "typename": "{urn:SICD:1.5}ZeroTo180Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}AzimAng",
+        "typename": "{urn:SICD:1.5}ZeroTo360Type"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}SCPCOAType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}SCPTime",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}ARPPos",
+        "typename": "{urn:SICD:1.5}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}ARPVel",
+        "typename": "{urn:SICD:1.5}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}ARPAcc",
+        "typename": "{urn:SICD:1.5}XYZType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}SideOfTrack",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}SCPCOACore/{urn:SICD:1.5}SideOfTrack"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}SlantRange",
+        "typename": "{urn:SICD:1.5}PositiveDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}GroundRange",
+        "typename": "{urn:SICD:1.5}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}DopplerConeAng",
+        "typename": "{urn:SICD:1.5}ZeroTo180Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}GrazeAng",
+        "typename": "{urn:SICD:1.5}Neg90To90Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}IncidenceAng",
+        "typename": "{urn:SICD:1.5}ZeroTo180Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}TwistAng",
+        "typename": "{urn:SICD:1.5}Neg90To90Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}SlopeAng",
+        "typename": "{urn:SICD:1.5}ZeroTo90Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}AzimAng",
+        "typename": "{urn:SICD:1.5}ZeroTo360Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}LayoverAng",
+        "typename": "{urn:SICD:1.5}ZeroTo360Type"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Bistatic",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}SCPCOAType/{urn:SICD:1.5}Bistatic"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}TimelineType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}CollectStart",
+        "typename": "{http://www.w3.org/2001/XMLSchema}dateTime"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}CollectDuration",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}IPP",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}TimelineType/{urn:SICD:1.5}IPP"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}UnmodeledType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Xrow",
+        "typename": "{urn:SICD:1.5}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Ycol",
+        "typename": "{urn:SICD:1.5}NonNegativeDoubleType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}XrowYcol",
+        "typename": "{urn:SICD:1.5}NegOneToOneType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}UnmodeledDecorr",
+        "typename": "<UNNAMED>-{urn:SICD:1.5}UnmodeledType/{urn:SICD:1.5}UnmodeledDecorr"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}XYZPolyAttributeType": {
+    "attributes": [
+      "index"
+    ],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}X",
+        "typename": "{urn:SICD:1.5}Poly1DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Y",
+        "typename": "{urn:SICD:1.5}Poly1DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Z",
+        "typename": "{urn:SICD:1.5}Poly1DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}XYZPolyType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}X",
+        "typename": "{urn:SICD:1.5}Poly1DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Y",
+        "typename": "{urn:SICD:1.5}Poly1DType"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Z",
+        "typename": "{urn:SICD:1.5}Poly1DType"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}XYZType": {
+    "attributes": [],
+    "children": [
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}X",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Y",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      },
+      {
+        "repeat": false,
+        "tag": "{urn:SICD:1.5}Z",
+        "typename": "{http://www.w3.org/2001/XMLSchema}double"
+      }
+    ],
+    "text_typename": null
+  },
+  "{urn:SICD:1.5}ZeroTo180Type": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "{urn:SICD:1.5}ZeroTo360Type": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  },
+  "{urn:SICD:1.5}ZeroTo90Type": {
+    "attributes": [],
+    "children": [],
+    "text_typename": "{http://www.w3.org/2001/XMLSchema}double"
+  }
+}

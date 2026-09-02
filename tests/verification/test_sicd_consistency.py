@@ -60,6 +60,57 @@ def test_from_file_xml():
     assert len(sicdcon.failures()) == 0
 
 
+def test_no_optional():
+    """Make sure SicdConsistency does not rely on optional fields"""
+
+    xmltree = etree.parse(good_sicd_xml_path)
+    assert xmltree.findtext("./{*}CollectionInfo/{*}CollectType") != "BISTATIC"
+    optional = [
+        "./{*}CollectionInfo/{*}IlluminatorName",
+        "./{*}CollectionInfo/{*}CollectType",
+        "./{*}CollectionInfo/{*}RadarMode/{*}ModeID",
+        "./{*}CollectionInfo/{*}InformationSecurityMarking",
+        "./{*}CollectionInfo/{*}CountryCode",
+        "./{*}CollectionInfo/{*}Parameter",
+        "./{*}ImageCreation",
+        "./{*}ImageData/{*}AmpTable",
+        "./{*}ImageData/{*}ValidData",
+        "./{*}GeoData/{*}ValidData",
+        "./{*}GeoData/{*}GeoInfo",
+        "./{*}Grid/{*}Row/{*}DeltaKCOAPoly",
+        "./{*}Grid/{*}Row/{*}WgtType",
+        "./{*}Grid/{*}Row/{*}WgtFunct",
+        "./{*}Grid/{*}Col/{*}DeltaKCOAPoly",
+        "./{*}Grid/{*}Col/{*}WgtType",
+        "./{*}Grid/{*}Col/{*}WgtFunct",
+        "./{*}Timeline/{*}IPP",
+        "./{*}Position/{*}GRPPoly",
+        "./{*}Position/{*}TxAPCPoly",
+        "./{*}Position/{*}RcvAPC",
+        "./{*}RadarCollection/{*}RefFreqIndex",
+        "./{*}RadarCollection/{*}Waveform",
+        "./{*}RadarCollection/{*}TxSequence",
+        "./{*}RadarCollection/{*}RcvChannels/{*}ChanParameters/{*}RcvAPCIndex",
+        "./{*}RadarCollection/{*}Area",
+        "./{*}RadarCollection/{*}Parameter",
+        "./{*}ImageFormation/{*}RcvChanProc/{*}PRFScaleFactor",
+        "./{*}ImageFormation/{*}SegmentIdentifier",
+        "./{*}ImageFormation/{*}Processing",
+        "./{*}ImageFormation/{*}PolarizationCalibration",
+        "./{*}Radiometric",
+        "./{*}Antenna",
+        "./{*}ErrorStatistics",
+        "./{*}MatchInfo",
+    ]
+    for path in optional:
+        for node in xmltree.findall(path):
+            node.getparent().remove(node)
+
+    sicdcon = SicdConsistency.from_parts(xmltree)
+    sicdcon.check()
+    assert len(sicdcon.failures()) == 0
+
+
 @pytest.mark.parametrize(
     "file",
     [
@@ -71,7 +122,9 @@ def test_main(file):
     assert not main([str(file), "-vv"])
 
 
-@pytest.mark.parametrize("xml_file", (DATAPATH / "syntax_only/sicd").glob("*.xml"))
+@pytest.mark.parametrize(
+    "xml_file", list((DATAPATH / "syntax_only/sicd").glob("*.xml"))
+)
 def test_smoketest(xml_file):
     main([str(xml_file)])
 
@@ -152,7 +205,7 @@ def test_check_des_subheader_desid(example_sicd_file):
 def test_check_des_subheader_desshft(example_sicd_file):
     sicdcon = SicdConsistency.from_file(example_sicd_file)
     des_header = sicdcon.ntf["DataExtensionSegments"][0]["subheader"]
-    des_header["DESSHF"]["DESSHFT"].value = "LXM"
+    des_header["DESSHFT"].value = "LXM"
 
     sicdcon.check("check_des_subheader")
     testing.assert_failures(sicdcon, "DESSHFT == XML")
@@ -161,7 +214,7 @@ def test_check_des_subheader_desshft(example_sicd_file):
 def test_check_des_subheader_desshsi(example_sicd_file):
     sicdcon = SicdConsistency.from_file(example_sicd_file)
     des_header = sicdcon.ntf["DataExtensionSegments"][0]["subheader"]
-    des_header["DESSHF"]["DESSHSI"].value = "SICD Volume 20"
+    des_header["DESSHSI"].value = "SICD Volume 20"
 
     sicdcon.check("check_des_subheader")
     testing.assert_failures(sicdcon, "DESSHSI == SICD Volume 1...")
@@ -170,7 +223,7 @@ def test_check_des_subheader_desshsi(example_sicd_file):
 def test_check_des_subheader_desshtn(example_sicd_file):
     sicdcon = SicdConsistency.from_file(example_sicd_file)
     des_header = sicdcon.ntf["DataExtensionSegments"][0]["subheader"]
-    des_header["DESSHF"]["DESSHTN"].value = "urn:SICD:10.20.10"
+    des_header["DESSHTN"].value = "urn:SICD:10.20.10"
 
     sicdcon.check("check_des_subheader")
     testing.assert_failures(sicdcon, "Consistent namespace")
@@ -179,7 +232,7 @@ def test_check_des_subheader_desshtn(example_sicd_file):
 def test_check_des_subheader_desshlpg(example_sicd_file):
     sicdcon = SicdConsistency.from_file(example_sicd_file)
     des_header = sicdcon.ntf["DataExtensionSegments"][0]["subheader"]
-    des_header["DESSHF"]["DESSHLPG"].value = "badcorners"
+    des_header["DESSHLPG"].value = "badcorners"
 
     sicdcon.check("check_des_subheader")
     testing.assert_failures(sicdcon, "DESSHLPG consistent with image corners")
@@ -986,14 +1039,32 @@ def test_check_match_collection_indices(sicd_con, em):
     )
 
 
-def test_check_valid_data_indices(sicd_con):
+@pytest.mark.parametrize(
+    "datanode",
+    [
+        "ImageData",
+        "GeoData",
+    ],
+)
+def test_check_valid_data_indices(datanode, sicd_con):
     sicd_con.check("check_valid_data_indices")
     assert not sicd_con.failures()
 
-    vertices = sicd_con.sicdroot.findall("./{*}ImageData/{*}ValidData/{*}Vertex")
+    vertices = sicd_con.sicdroot.findall(
+        f"./{{*}}{datanode}/{{*}}ValidData/{{*}}Vertex"
+    )
     vertices[0].set("index", "99")
     sicd_con.check("check_valid_data_indices")
-    testing.assert_failures(sicd_con, "GeoData indices equal to ImageData indices")
+    testing.assert_failures(sicd_con, "Vertex elements are present")
+
+
+def test_check_valid_data_indices_size(sicd_con):
+    ew = sksicd.ElementWrapper(sicd_con.sicdroot)
+    vertices = ew["ImageData"]["ValidData"]
+    assert len(vertices) > 0
+    ew["ImageData"]["ValidData"] = vertices[:-1]
+    sicd_con.check("check_valid_data_indices")
+    testing.assert_failures(sicd_con, "GeoData size equal to ImageData size")
 
 
 def test_check_icp_indices(sicd_con):
@@ -1930,3 +2001,113 @@ def test_smart_open_contract(example_sicd, monkeypatch):
     monkeypatch.setattr(sarkit.verification._sicdcheck, "open", mock_open)
     assert not main([str(example_sicd)])
     mock_open.assert_called_once_with(str(example_sicd), "rb")
+
+
+def test_check_bistatic_fields():
+    xmltree = lxml.etree.parse(DATAPATH / "example-sicd-1.5.xml")
+    assert xmltree.findtext(".//{*}CollectType") == "BISTATIC"
+
+    req_elem = xmltree.find("{*}CollectionInfo/{*}IlluminatorName")
+    req_elem.getparent().remove(req_elem)
+
+    ant_elem = xmltree.find("{*}Antenna")
+    ant_elem.remove(ant_elem[0])
+    ant_elem[0].tag = ant_elem[0].tag.replace("Rcv", "TwoWay")
+
+    sicd_con = SicdConsistency.from_parts(xmltree)
+    sicd_con.check("check_against_schema")
+    assert sicd_con.passes() and not sicd_con.failures()
+    sicd_con.check("check_bistatic_fields")
+    testing.assert_failures(sicd_con, "IlluminatorName required")
+    testing.assert_failures(sicd_con, "TwoWay not allowed")
+
+
+def _invalid_index(poly_elem):
+    poly_elem[0].set("index", "-24")
+
+
+def _invalid_size(poly_elem):
+    poly_elem.set("size", str(len(poly_elem) + 1))
+
+
+def _not_simple(poly_elem):
+    old_index = poly_elem[-2].get("index")
+    poly_elem[-2].set("index", poly_elem[-1].get("index"))
+    poly_elem[-1].set("index", old_index)
+
+
+def _not_clockwise(poly_elem):
+    for vertex in poly_elem:
+        vertex.set("index", str(len(poly_elem) - 1 - int(vertex.get("index"))))
+
+
+@pytest.mark.parametrize(
+    "elem_path,check",
+    [
+        (
+            "{*}RadarCollection/{*}Area/{*}Plane/{*}SegmentList/{*}Segment/{*}SegmentPolygon",
+            "check_segment_polygons",
+        ),
+        ("{*}RadarCollection/{*}Area/{*}Plane/{*}Polygon", "check_area_plane_polygon"),
+    ],
+)
+@pytest.mark.parametrize(
+    "perturb_func,fail_pattern",
+    [
+        [_invalid_index, "indices are all present"],
+        [_invalid_size, "size attribute matches"],
+        [_not_simple, "is simple"],
+        [_not_clockwise, "is clockwise"],
+    ],
+)
+def test_valid_polygons(elem_path, check, perturb_func, fail_pattern):
+    xmltree = lxml.etree.parse(DATAPATH / "example-sicd-1.5.xml")
+    perturb_func(xmltree.find(elem_path))
+    sicd_con = SicdConsistency.from_parts(xmltree)
+    sicd_con.check(check)
+    testing.assert_failures(sicd_con, fail_pattern)
+
+
+def test_check_errorstatistics_conditionals_bi():
+    xmltree = lxml.etree.parse(DATAPATH / "example-sicd-1.5.xml")
+    assert xmltree.findtext(".//{*}CollectType") == "BISTATIC"
+    sicd_ew = sksicd.ElementWrapper(xmltree.getroot())
+    sicd_ew["ErrorStatistics"]["CompositeSCP"]["Rg"] = 1.0
+    sicd_ew["ErrorStatistics"]["CompositeSCP"]["Az"] = 1.0
+    sicd_ew["ErrorStatistics"]["CompositeSCP"]["RgAz"] = 1.0
+
+    sicd_con = SicdConsistency.from_parts(xmltree)
+    sicd_con.check("check_against_schema")
+    assert sicd_con.passes() and not sicd_con.failures()
+
+    sicd_con.check("check_errorstatistics_conditionals")
+    testing.assert_failures(sicd_con, "CompositeSCP not allowed")
+
+
+def test_check_errorstatistics_conditionals_mono():
+    xmltree = lxml.etree.parse(DATAPATH / "example-sicd-1.5.xml")
+    sicd_ew = sksicd.ElementWrapper(xmltree.getroot())
+    sicd_ew["CollectionInfo"]["CollectType"] = "MONOSTATIC"
+    sicd_ew["ErrorStatistics"]["BistaticCompositeSCP"]["RAvg"] = 1.0
+    sicd_ew["ErrorStatistics"]["BistaticCompositeSCP"]["RdotAvg"] = 1.0
+    sicd_ew["ErrorStatistics"]["BistaticCompositeSCP"]["RAvgRdotAvg"] = 1.0
+
+    sicd_con = SicdConsistency.from_parts(xmltree)
+    sicd_con.check("check_against_schema")
+    assert sicd_con.passes() and not sicd_con.failures()
+
+    sicd_con.check("check_errorstatistics_conditionals")
+    testing.assert_failures(sicd_con, "BistaticCompositeSCP not allowed")
+
+
+def test_geoinfo_polygon_clockwise(sicd_con):
+    ew = sksicd.ElementWrapper(sicd_con.sicdroot)
+    vertices = [[1.0, 180.0], [-1.0, -179.0], [-1.0, 179.0]]
+    geo = ew["GeoData"].add("GeoInfo", {"@name": "goodpoly"})
+    geo.add("Polygon", vertices)
+    sicd_con.check("check_geoinfo_polygon")
+    assert sicd_con.passes()
+    geo = ew["GeoData"].add("GeoInfo", {"@name": "badpoly"})
+    geo.add("Polygon", vertices[::-1])
+    sicd_con.check("check_geoinfo_polygon")
+    testing.assert_failures(sicd_con, "GeoInfo polygon is clockwise")

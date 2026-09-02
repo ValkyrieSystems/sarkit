@@ -23,13 +23,23 @@ Data Structure & File Format
    Reader
    Writer
    read_file_header
-   get_pvp_dtype
    binary_format_string_to_dtype
    dtype_to_binary_format_string
    mask_support_array
 
+Per Vector Parameters
+
+.. autosummary::
+   :toctree: generated/
+
+   dtype_to_pvp_element
+   get_pvp_dtype
+   get_defined_pvp_dtype
+
 XML Metadata
 ============
+
+High-level classes and methods
 
 .. autosummary::
    :toctree: generated/
@@ -37,6 +47,12 @@ XML Metadata
    XmlHelper
    ElementWrapper
    XsdHelper
+
+Transcoders for defined XML parameter types
+
+.. autosummary::
+   :toctree: generated/
+
    TxtType
    EnuType
    BoolType
@@ -53,17 +69,74 @@ XML Metadata
    Poly2dType
    XyzPolyType
    PvpType
+
+Derived/convenience transcoders
+
+.. autosummary::
+   :toctree: generated/
+
    AddedPvpType
+   DefinedPvpType
    ImageAreaCornerPointsType
    ParameterType
 
-Reference Geometry Computations
-===============================
+CPHD Signal Model
+=================
+
+.. autosummary::
+   :toctree: generated/
+
+   compute_t_ref
+   compute_t_ref_from_pvps
+
+.. _skcphd_scenecoords:
+
+Scene Coordinates & Collection Geometry
+=======================================
+
+Image Reference Surface
+
+.. autosummary::
+   :toctree: generated/
+
+   planar_ecf_to_iac
+   planar_iac_to_ecf
+   hae_llh_to_iac
+   hae_iac_to_llh
+
+Convenience functions that operate on parsed XML trees:
+
+.. autosummary::
+   :toctree: generated/
+
+   ecf_to_iac
+   iac_to_ecf
+   llh_to_iac
+   iac_to_llh
+
+Image Area
+
+.. autosummary::
+   :toctree: generated/
+
+   get_channel_image_area
+   get_extended_image_area
+   get_scene_image_area
+
+Reference Geometry Parameters
 
 .. autosummary::
    :toctree: generated/
 
    compute_reference_geometry
+
+Channel & Dwell Parameters
+==========================
+
+.. autosummary::
+   :toctree: generated/
+
+   compute_dwelltimes_using_poly
 
 Constants
 =========
@@ -116,6 +189,7 @@ from ._constants import (
     SECTION_TERMINATOR,
     VERSION_INFO,
 )
+from ._dwell import compute_dwelltimes_using_poly
 from ._io import (
     FileHeaderPart,
     Metadata,
@@ -123,17 +197,39 @@ from ._io import (
     Writer,
     binary_format_string_to_dtype,
     dtype_to_binary_format_string,
-    get_pvp_dtype,
     mask_support_array,
     read_file_header,
 )
+from ._pvps import (
+    dtype_to_pvp_element,
+    get_defined_pvp_dtype,
+    get_pvp_dtype,
+)
 from ._refgeom import (
     compute_reference_geometry,
+)
+from ._scenecoords import (
+    ecf_to_iac,
+    get_channel_image_area,
+    get_extended_image_area,
+    get_scene_image_area,
+    hae_iac_to_llh,
+    hae_llh_to_iac,
+    iac_to_ecf,
+    iac_to_llh,
+    llh_to_iac,
+    planar_ecf_to_iac,
+    planar_iac_to_ecf,
+)
+from ._sigmodel import (
+    compute_t_ref,
+    compute_t_ref_from_pvps,
 )
 from ._xml import (
     AddedPvpType,
     BoolType,
     DblType,
+    DefinedPvpType,
     ElementWrapper,
     EnuType,
     HexType,
@@ -162,6 +258,7 @@ __all__ = [
     "AddedPvpType",
     "BoolType",
     "DblType",
+    "DefinedPvpType",
     "ElementWrapper",
     "EnuType",
     "FileHeaderPart",
@@ -186,9 +283,25 @@ __all__ = [
     "XyzPolyType",
     "XyzType",
     "binary_format_string_to_dtype",
+    "compute_dwelltimes_using_poly",
     "compute_reference_geometry",
+    "compute_t_ref",
+    "compute_t_ref_from_pvps",
     "dtype_to_binary_format_string",
+    "dtype_to_pvp_element",
+    "ecf_to_iac",
+    "get_channel_image_area",
+    "get_defined_pvp_dtype",
+    "get_extended_image_area",
     "get_pvp_dtype",
+    "get_scene_image_area",
+    "hae_iac_to_llh",
+    "hae_llh_to_iac",
+    "iac_to_ecf",
+    "iac_to_llh",
+    "llh_to_iac",
     "mask_support_array",
+    "planar_ecf_to_iac",
+    "planar_iac_to_ecf",
     "read_file_header",
 ]

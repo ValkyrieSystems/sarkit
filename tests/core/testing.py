@@ -1,3 +1,4 @@
+import lxml.etree
 import numpy.testing as npt
 
 
@@ -20,8 +21,8 @@ def elem_cmp(a, b, xsdhelper):
             return a_text == b_text
         return True
 
-    b_children = list(b)
-    for a_child in a:
+    b_children = list(b.iterchildren(tag=lxml.etree.Element))
+    for a_child in a.iterchildren(tag=lxml.etree.Element):
         for b_child in b_children:
             if elem_cmp(a_child, b_child, xsdhelper):
                 b_children.remove(b_child)
@@ -29,3 +30,9 @@ def elem_cmp(a, b, xsdhelper):
         else:
             return False
     return all(float(x.text) == 0 for x in b_children)
+
+
+def add_xml_comments(elem: lxml.etree.Element) -> lxml.etree.Element:
+    """Add comments before each descendant Element in an XML"""
+    for elem in elem.iterdescendants(tag=lxml.etree.Element):
+        elem.addprevious(lxml.etree.Comment("comment"))
