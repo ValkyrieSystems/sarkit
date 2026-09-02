@@ -9,7 +9,7 @@ documents that define the Sensor Independent Complex Data (SICD) format.
 Supported Versions
 ==================
 
-.. note:: As of 2025-10-09, there are no links to any version 1.0.x schema files on the NSG standards registry.
+.. note:: As of 2026-09-02, there are no links to any version 1.0.x schema files on the NSG standards registry.
 
    To get around this limitation, SARkit pulled SICD schemas from other sources.
    Consult READMEs in the `SICD schema source directory <https://github.com/ValkyrieSystems/sarkit/tree/main/sarkit/sicd/schemas>`_

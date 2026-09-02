@@ -1,5 +1,5 @@
 # Overview
-As of 2025-10-09, the XML schema files necessary to fully validate all SICD XML are not available on the NSG
+As of 2026-09-02, the XML schema files necessary to fully validate all SICD XML are not available on the NSG
 standards registry. This README describes the provenance of the SICD schemas that SARkit uses.
 
 ## `SICD_schema_V1.0.1_2013_02_25.xsd`
@@ -23,3 +23,7 @@ https://nsgreg.nga.mil/doc/view?i=5418
 ## `SICD_schema_V1.4.0_2024_05_01.xsd`
 This file was copied from:
 https://nsgreg.nga.mil/doc/view?i=5538
+
+## `NGA.STND.0024-4_1.5_Schema.xsd`
+This file was copied from:
+https://nsgreg.nga.mil/doc/view?i=5699
