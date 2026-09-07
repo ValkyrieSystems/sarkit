@@ -9,7 +9,7 @@ documents that define the Sensor Independent Complex Data (SICD) format.
 Supported Versions
 ==================
 
-.. note:: As of 2026-09-02, there are no links to any version 1.0.x schema files on the NSG standards registry.
+.. note:: As of 2026-09-07, there are no links to any version 1.0.x or 1.2.0 schema files on the NSG standards registry.
 
    To get around this limitation, SARkit pulled SICD schemas from other sources.
    Consult READMEs in the `SICD schema source directory <https://github.com/ValkyrieSystems/sarkit/tree/main/sarkit/sicd/schemas>`_
@@ -18,6 +18,7 @@ Supported Versions
 
 * `SICD 1.0`_
 * `SICD 1.1`_
+* `SICD 1.2`_
 * `SICD 1.2.1`_
 * `SICD 1.3.0`_
 * `SICD 1.4.0`_
@@ -166,6 +167,18 @@ SICD 1.1
 .. [SICD_schema_V1.1.0_2014_09_30.xsd] National Center for Geospatial Intelligence Standards,
    "Sensor Independent Complex Data (SICD) XML Schema, Version 1.1.0", 2014.
    https://nsgreg.nga.mil/doc/view?i=4251
+
+SICD 1.2
+--------
+
+.. Note:: The v1.2 revision amends volume 2 only.
+   Although a revision to the 1.1 schema with only whitespace and namespace changes was distributed, it was not
+   maintained on the NSG Standards Registry.
+
+.. [NGA.STND.0024-2_1.2] National Center for Geospatial Intelligence Standards,
+   "Sensor Independent Complex Data (SICD), Vol. 2, File Format Description Document,
+   Version 1.2", 2016.
+   https://nsgreg.nga.mil/doc/view?i=4248
 
 SICD 1.2.1
 ----------
