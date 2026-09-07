@@ -1,5 +1,4 @@
 import dataclasses
-from typing import TypeAlias
 
 import numpy as np
 import numpy.polynomial.polynomial as npp
@@ -12,8 +11,7 @@ from sarkit.sicd.projection import _params as params
 
 C = sarkit._constants.c
 
-# TODO: encouraged to migrate to type statements instead of TypeAlias in python 3.12
-SensitivityMatricesLike: TypeAlias = "SensitivityMatricesMono | SensitivityMatricesBi"
+type SensitivityMatricesLike = SensitivityMatricesMono | SensitivityMatricesBi
 
 
 @dataclasses.dataclass(kw_only=True)

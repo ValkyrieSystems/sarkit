@@ -2,7 +2,7 @@
 
 import dataclasses
 import functools
-from typing import Optional, Self, TypeAlias
+from typing import Optional, Self
 
 import lxml.etree
 import numpy as np
@@ -10,9 +10,8 @@ import numpy.polynomial.polynomial as npp
 
 import sarkit.sicd._xml as ss_xml
 
-# TODO: encouraged to migrate to type statements instead of TypeAlias in python 3.12
-CoaPosVelsLike: TypeAlias = "CoaPosVelsMono | CoaPosVelsBi"
-ProjectionSetsLike: TypeAlias = "ProjectionSetsMono | ProjectionSetsBi"
+type CoaPosVelsLike = CoaPosVelsMono | CoaPosVelsBi
+type ProjectionSetsLike = ProjectionSetsMono | ProjectionSetsBi
 
 
 def _get_rcv_poly(xmlhelp):
