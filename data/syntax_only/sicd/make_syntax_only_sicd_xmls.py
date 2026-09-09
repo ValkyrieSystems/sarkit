@@ -15,6 +15,11 @@ import sarkit.sicd as sksicd
 STUB_DIR = pathlib.Path(__file__).parent / "stubs"
 
 
+def update_1_1_0_to_1_2(etree):
+    for elem in etree.iter():
+        elem.tag = f"{{urn:SICD:1.2.0}}{lxml.etree.QName(elem).localname}"
+
+
 def update_1_1_0_to_1_2_1(etree):
     new_enums = ("V:RHC", "V:LHC", "H:RHC", "H:LHC", "RHC:V", "RHC:H", "LHC:V", "LHC:H")
     for elem, new_enum in zip(
@@ -111,6 +116,7 @@ def update_1_1_0_to_1_5(etree):
 def update_version(etree, urn):
     converter = {
         "urn:SICD:1.1.0": lambda x: x,
+        "urn:SICD:1.2.0": update_1_1_0_to_1_2,
         "urn:SICD:1.2.1": update_1_1_0_to_1_2_1,
         "urn:SICD:1.3.0": update_1_1_0_to_1_3_0,
         "urn:SICD:1.4.0": update_1_1_0_to_1_4_0,
@@ -186,7 +192,7 @@ def main(args=None):
                     set_version_ifa, urn="urn:SICD:1.1.0", ifa_label="RgAzComp"
                 ),
                 functools.partial(
-                    set_version_ifa, urn="urn:SICD:1.2.1", ifa_label="PFA"
+                    set_version_ifa, urn="urn:SICD:1.2.0", ifa_label="PFA"
                 ),
                 functools.partial(
                     set_version_ifa, urn="urn:SICD:1.3.0", ifa_label="RMA-RMAT"
