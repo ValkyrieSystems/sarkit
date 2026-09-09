@@ -34,6 +34,8 @@ jobs:
       run: pdm run nox -s data
     - name: Docs
       run: pdm run nox -s docs
+    - name: Check xsdtypes
+      run: pdm run nox -s xsdtypes
 
 
   min_env_tests:
@@ -41,7 +43,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
     - name: checkout
@@ -65,7 +67,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
     - name: checkout
