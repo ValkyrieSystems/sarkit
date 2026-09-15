@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Support for SICD v1.0 (XML namespace: `urn:SICD:1.0.1`)
+- Support for SICD v1.0 (XML namespace: `urn:SICD:1.0.1`) and SICD v1.2
 
 
 ## [1.11.0] - 2026-09-01

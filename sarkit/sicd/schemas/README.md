@@ -12,6 +12,11 @@ https://nsgreg.nga.mil/doc/view?i=4251
 
 The file was renamed from `*.xml` to `*.xsd`
 
+## `SICD_schema_V1.2.0_2016_06_30.xsd`
+This file was copied from:
+https://github.com/ngageoint/six-library/blob/448e6d659bb4b650fcc19e4b909353203c3a5195/six/modules/c%2B%2B/six.sicd/conf/schema/SICD_schema_V1.2.0_2016_06_30.xsd
+
+
 ## `SICD_schema_V1.2.1_2018_12_13.xsd`
 This file was copied from:
 https://nsgreg.nga.mil/doc/view?i=5230

@@ -1,4 +1,4 @@
-<ns1:SICD xmlns:ns1="urn:SICD:1.2.1">
+<ns1:SICD xmlns:ns1="urn:SICD:1.2.0">
     <ns1:CollectionInfo>
         <ns1:CollectorName>Synthetic</ns1:CollectorName>
         <ns1:IlluminatorName>Synthetic</ns1:IlluminatorName>
@@ -355,7 +355,7 @@
         </ns1:TxSequence>
         <ns1:RcvChannels size="1">
             <ns1:ChanParameters index="1">
-                <ns1:TxRcvPolarization>V:RHC</ns1:TxRcvPolarization>
+                <ns1:TxRcvPolarization>V:V</ns1:TxRcvPolarization>
                 <ns1:RcvAPCIndex>1</ns1:RcvAPCIndex>
             </ns1:ChanParameters>
         </ns1:RcvChannels>
@@ -440,7 +440,7 @@
             <ns1:PRFScaleFactor>1.23456</ns1:PRFScaleFactor>
             <ns1:ChanIndex>1</ns1:ChanIndex>
         </ns1:RcvChanProc>
-        <ns1:TxRcvPolarizationProc>LHC:H</ns1:TxRcvPolarizationProc>
+        <ns1:TxRcvPolarizationProc>V:V</ns1:TxRcvPolarizationProc>
         <ns1:TStartProc>0.0056816659534327432</ns1:TStartProc>
         <ns1:TEndProc>3.4611621345438324</ns1:TEndProc>
         <ns1:TxFrequencyProc>

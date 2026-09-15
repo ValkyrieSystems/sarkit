@@ -243,6 +243,10 @@ class XsdHelper(skxml.XsdHelper):
             k.replace("urn:SICD:1.0.1", "urn:SICD:1.1.0"): v
             for k, v in sicd_101.items()
         }
+        sicd_120 = {
+            k.replace("urn:SICD:1.1.0", "urn:SICD:1.2.0"): v
+            for k, v in sicd_110.items()
+        }
         sicd_121 = {
             k.replace("urn:SICD:1.1.0", "urn:SICD:1.2.1"): v
             for k, v in sicd_110.items()
@@ -287,7 +291,7 @@ class XsdHelper(skxml.XsdHelper):
                 "/{urn:SICD:1.5}Polygon"
             ): skxt.NdArrayType("Vertex", LineSampType()),
         }
-        easy = sicd_101 | sicd_110 | sicd_121 | sicd_130 | sicd_140 | sicd_15
+        easy = sicd_101 | sicd_110 | sicd_120 | sicd_121 | sicd_130 | sicd_140 | sicd_15
         if tag is not None and lxml.etree.QName(tag).localname == "CalibrationDate":
             return skxt.XdtType(force_utc=False)
         if typename.startswith("{http://www.w3.org/2001/XMLSchema}"):

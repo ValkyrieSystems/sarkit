@@ -29,6 +29,11 @@ VERSION_INFO: Final[dict[str, VersionInfoType]] = {
         "date": "2014-09-30T00:00:00Z",
         "schema": SCHEMA_DIR / "SICD_schema_V1.1.0_2014_09_30.xsd",
     },
+    "urn:SICD:1.2.0": {
+        "version": "1.2",
+        "date": "2016-06-30T00:00:00Z",
+        "schema": SCHEMA_DIR / "SICD_schema_V1.2.0_2016_06_30.xsd",
+    },
     "urn:SICD:1.2.1": {
         "version": "1.2.1",
         "date": "2018-12-13T00:00:00Z",
