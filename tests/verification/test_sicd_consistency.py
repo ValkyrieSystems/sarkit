@@ -6,11 +6,13 @@ import jbpy
 import lxml.builder
 import numpy as np
 import pytest
+import scipy.signal
 from lxml import etree
 
 import sarkit.sicd as sksicd
 import sarkit.verification._sicdcheck
 import tests.utils
+from sarkit.verification import _sicd_consistency
 from sarkit.verification._sicd_consistency import SicdConsistency
 from sarkit.verification._sicdcheck import main
 
@@ -570,6 +572,29 @@ def test_grid_uvect_orthogonal(sicd_con):
     assert sicd_con.failures()
 
 
+@pytest.fixture
+def sicd_con_with_uniform_wgts(sicd_con):
+    for rc in ("Row", "Col"):
+        sicd_con.ew["Grid"][rc]["WgtType"]["WindowName"] = "UNIFORM"
+        sicd_con.ew["Grid"][rc]["WgtFunct"] = np.ones(24)
+    sicd_con.check(
+        [
+            "check_uniform_ipr_width",
+            "check_uniform_wgtfunct",
+            "check_wgtfunct_half_power_width",
+        ],
+        allow_prefix=True,
+    )
+    assert sicd_con.passes()
+    assert not sicd_con.skips()
+    assert not sicd_con.failures()
+
+    sicd_con.check()
+    assert sicd_con.passes()
+    assert not sicd_con.failures()
+    return sicd_con
+
+
 @pytest.mark.parametrize("direction", ["Row", "Col"])
 class TestGridNode:
     def test_deltak1_mismatch_with_poly(self, direction, sicd_con):
@@ -686,6 +711,50 @@ class TestGridNode:
         testing.assert_failures(
             sicd_con, f"Grid/{direction} uniform weighted IPR width matches bandwidth"
         )
+
+    def test_check_uniform_wgtfunct_skip_no_name(
+        self, direction, sicd_con_with_uniform_wgts
+    ):
+        con = sicd_con_with_uniform_wgts
+        del con.ew["Grid"][direction]["WgtType"]
+        con.check(f"check_uniform_wgtfunct_{direction.lower()}")
+        assert con.skips() and not con.failures()
+
+    def test_check_uniform_wgtfunct_skip_wrong_name(
+        self, direction, sicd_con_with_uniform_wgts
+    ):
+        con = sicd_con_with_uniform_wgts
+        con.ew["Grid"][direction]["WgtType"]["WindowName"] = "NONUNIFORM"
+        con.check(f"check_uniform_wgtfunct_{direction.lower()}")
+        assert con.skips() and not con.failures()
+
+    def test_check_uniform_wgtfunct_badvals(
+        self, direction, sicd_con_with_uniform_wgts
+    ):
+        con = sicd_con_with_uniform_wgts
+        con.ew["Grid"][direction]["WgtFunct"] = [1.0, 2.0]
+        con.check(f"check_uniform_wgtfunct_{direction.lower()}")
+        testing.assert_failures(con, "WgtFunct/Wgts are constant")
+
+    def test_check_wgtfunct_half_power_width(self, direction, sicd_con):
+        con = sicd_con
+        sicd_con.ew["Grid"][direction]["WgtFunct"] = scipy.signal.get_window(
+            "hamming", 101
+        )
+        sicd_con.ew["Grid"][direction]["ImpRespWid"] = 1.303
+        sicd_con.ew["Grid"][direction]["ImpRespBW"] = 1.0
+        con.check(f"check_wgtfunct_half_power_width_{direction.lower()}")
+        assert con.passes() and not con.failures()
+
+        sicd_con.ew["Grid"][direction]["WgtFunct"] = scipy.signal.get_window(
+            "hann", 101
+        )
+        con.check(f"check_wgtfunct_half_power_width_{direction.lower()}")
+        testing.assert_failures(con, "Half-power bandwidth of WgtFunct/Wgts consistent")
+
+        del sicd_con.ew["Grid"][direction]["WgtFunct"]
+        con.check(f"check_wgtfunct_half_power_width_{direction.lower()}")
+        assert con.skips() and not con.failures()
 
 
 @pytest.mark.parametrize("antenna", ["Tx", "Rcv", "TwoWay"])
@@ -2111,3 +2180,19 @@ def test_geoinfo_polygon_clockwise(sicd_con):
     geo.add("Polygon", vertices[::-1])
     sicd_con.check("check_geoinfo_polygon")
     testing.assert_failures(sicd_con, "GeoInfo polygon is clockwise")
+
+
+# from Doerry, Armin W. (2017). Catalog of Window Taper Functions for Sidelobe Control. https://doi.org/10.2172/1365510
+@pytest.mark.parametrize(
+    "w,expected_hpbw",
+    [
+        (scipy.signal.get_window("rect", 256), 0.88588),
+        (scipy.signal.get_window("bartlett", 256), 1.2757),
+        (scipy.signal.get_window("hamming", 256), 1.303),
+        (scipy.signal.get_window("hann", 256), 1.4405),
+        (scipy.signal.get_window(("taylor", 4, 35), 256), 1.1841),
+    ],
+)
+def test_compute_half_power_width(w, expected_hpbw):
+    actual_hpbw = _sicd_consistency.compute_half_power_width(w)
+    assert actual_hpbw == pytest.approx(expected_hpbw, rel=1 / 32)
