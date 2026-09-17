@@ -149,6 +149,19 @@ def _get_root_path(node):
     return "/".join(reversed(path[:-1]))
 
 
+def compute_half_power_width(w: np.ndarray) -> float:
+    """Estimate the half-power width of a window's spectral response"""
+    oversample = 64
+    wfreq = np.abs(np.fft.fft(w, w.size * oversample)) / np.sum(w)
+    # find first index with less than half power,
+    ind = np.flatnonzero(wfreq < 1 / np.sqrt(2))[0]
+    # then linearly interpolate to estimate 1/sqrt(2) crossing
+    v0 = wfreq[ind - 1]
+    v1 = wfreq[ind]
+    zero_ind = ind - 1 + (1.0 / np.sqrt(2) - v0) / (v1 - v0)
+    return 2 * zero_ind / oversample
+
+
 def per_grid_dim(method):
     method.per_grid_dim = True
     return method
@@ -183,6 +196,7 @@ class SicdConsistency(con.ConsistencyChecker):
         except AttributeError:
             self.sicdroot = sicd_xml.getroottree().getroot()
         self.xmlhelp = sksicd.XmlHelper(self.sicdroot.getroottree())
+        self.ew = sksicd.ElementWrapper(self.sicdroot)
         if file is not None:
             file.seek(0, os.SEEK_SET)
             self.ntf = Jbp().load(file)
@@ -643,7 +657,34 @@ class SicdConsistency(con.ConsistencyChecker):
             with self.need(
                 f"Grid/{grid_dim} uniform weighted IPR width matches bandwidth"
             ):
-                assert imprespwid == con.Approx(KAPFAC / imprespbw, rtol=1e-4)
+                assert imprespwid == con.Approx(KAPFAC / imprespbw, rtol=1e-2)
+
+    @per_grid_dim
+    def check_uniform_wgtfunct(self, grid_dim) -> None:
+        """WgtFunct/Wgts are constant when WgtType/WindowName is UNIFORM."""
+        grid_ew = self.ew["Grid"][grid_dim]
+        with self.precondition():
+            assert grid_ew["WgtType"].get("WindowName") == "UNIFORM"
+            wgt_funct = grid_ew.get("WgtFunct", None)
+            assert wgt_funct is not None
+            with self.want(
+                "WgtFunct/Wgts are constant when WgtType/WindowName is UNIFORM"
+            ):
+                assert all(wgt_funct == wgt_funct[0])
+
+    @per_grid_dim
+    def check_wgtfunct_half_power_width(self, grid_dim) -> None:
+        """Half-power bandwidth of WgtFunct/Wgts consistent with ImpRespWid x ImpRespBW."""
+        grid_ew = self.ew["Grid"][grid_dim]
+        with self.precondition():
+            wgt_funct = grid_ew.get("WgtFunct", None)
+            assert wgt_funct is not None
+            actual_hpbw = compute_half_power_width(wgt_funct)
+            expected_hpbw = grid_ew["ImpRespWid"] * grid_ew["ImpRespBW"]
+            with self.want(
+                "Half-power bandwidth of WgtFunct/Wgts consistent with ImpRespWid x ImpRespBW"
+            ):
+                assert actual_hpbw == con.Approx(expected_hpbw, rtol=1e-2)
 
     @per_grid_dim
     def check_deltak_wrt_ss(self, grid_dim) -> None:

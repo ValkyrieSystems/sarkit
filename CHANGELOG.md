@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Support for SICD v1.0 (XML namespace: `urn:SICD:1.0.1`) and SICD v1.2
+- `check_uniform_wgtfunct` and `check_wgtfunct_half_power_width` to `sarkit.verification.SicdConsistency`
+
+### Fixed
+- Relaxed tolerance in `sarkit.verification.SicdConsistency.check_uniform_ipr_width`
 
 
 ## [1.11.0] - 2026-09-01
