@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+## [1.12.0] - 2026-09-17
+
 ### Added
 - Support for SICD v1.0 (XML namespace: `urn:SICD:1.0.1`) and SICD v1.2
 - `check_uniform_wgtfunct` and `check_wgtfunct_half_power_width` to `sarkit.verification.SicdConsistency`
@@ -325,7 +328,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Limited SICD Reading and Writing
 - Limited SIDD NITF Reading and Writing
 
-[unreleased]: https://github.com/ValkyrieSystems/sarkit/compare/v1.11.0...HEAD
+[unreleased]: https://github.com/ValkyrieSystems/sarkit/compare/v1.12.0...HEAD
+[1.12.0]: https://github.com/ValkyrieSystems/sarkit/compare/v1.11.0...v1.12.0
 [1.11.0]: https://github.com/ValkyrieSystems/sarkit/compare/v1.10.1...v1.11.0
 [1.10.1]: https://github.com/ValkyrieSystems/sarkit/compare/v1.10.0...v1.10.1
 [1.10.0]: https://github.com/ValkyrieSystems/sarkit/compare/v1.9.0...v1.10.0
