@@ -514,27 +514,7 @@ class CphdConsistency(con.ConsistencyChecker):
             self.cphdroot.getroottree(), channel_id
         )
         image_area_polygon = shapely.Polygon(ia_vertices)
-
-        def _get_points_in_polygon(polygon, grid_size=25):
-            bounds = np.asarray(polygon.bounds).reshape(
-                2, 2
-            )  # [[xmin, ymin], [xmax, ymax]]
-            mesh = np.stack(
-                np.meshgrid(
-                    np.linspace(bounds[0, 0], bounds[1, 0], grid_size),
-                    np.linspace(bounds[0, 1], bounds[1, 1], grid_size),
-                ),
-                axis=-1,
-            )
-            coords = shapely.MultiPoint(
-                np.concatenate(
-                    [mesh.reshape(-1, 2), np.asarray(polygon.exterior.coords)[:-1, :]],
-                    axis=0,
-                )
-            )
-            return np.asarray([pt.coords for pt in polygon.intersection(coords).geoms])
-
-        sampled_iacs = _get_points_in_polygon(image_area_polygon).T
+        sampled_iacs = con.get_samples_in_poly(image_area_polygon, grid_size=25).T
         sampled_cods = npp.polyval2d(*sampled_iacs, codtime_poly)
         sampled_dwells = npp.polyval2d(*sampled_iacs, dwelltime_poly)
         with self.need("/Dwell/DwellTime/DwellTimePoly is nonnegative in image area"):

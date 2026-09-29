@@ -12,6 +12,7 @@ from typing import Any, Optional
 import numpy as np
 import numpy.linalg as npl
 import numpy.polynomial.polynomial as npp
+import shapely
 import shapely.geometry as shg
 from jbpy import Jbp
 from lxml import etree
@@ -82,27 +83,60 @@ def _get_valid_data_vertices(xmlhelp):
     return np.asarray(vertices)
 
 
-def _sample_valid_pixels(xmlhelp, shape=(5, 7)):
+def _sample_valid_pixels(xmlhelp):
     """Returns a number of row-column pairs that are inside ValidData."""
     validdata = _get_valid_data_vertices(xmlhelp)
-    min_index = validdata.min(axis=0)
-    max_index = validdata.max(axis=0)
-    grid = np.stack(
-        np.meshgrid(
-            *[
-                np.linspace(min_index[dim], max_index[dim], shape[dim])
-                for dim in range(2)
-            ],
-            indexing="ij",
-        ),
-        axis=-1,
-    ).reshape(-1, 2)
-    grid = np.concatenate([grid, validdata], axis=0)
-    points = shg.MultiPoint(grid)
-    intersecting_points = shg.polygon.orient(shg.Polygon(validdata)).intersection(
-        points
-    )
-    return np.array([point.coords[0] for point in intersecting_points.geoms])
+    return con.get_samples_in_poly(shapely.Polygon(validdata))
+
+
+def _estimate_deltak(ew: sksicd.ElementWrapper, grid_dim: str) -> tuple[float, float]:
+    """Compute expected DeltaK1/DeltaK2 in a given dimension.
+
+    Adapted from sarkit-processing
+    """
+    assert ew.elem is not None  # placate mypy
+    if ew.elem.find("{*}Grid/*/{*}DeltaKCOAPoly") is not None:
+        nrows = ew["ImageData"]["NumRows"]
+        ncols = ew["ImageData"]["NumCols"]
+        r0 = ew["ImageData"]["FirstRow"]
+        c0 = ew["ImageData"]["FirstCol"]
+        nrows_fi = ew["ImageData"]["FullImage"]["NumRows"]
+        ncols_fi = ew["ImageData"]["FullImage"]["NumCols"]
+
+        polygons_rowcol = [
+            shapely.box(-0.5, -0.5, nrows_fi - 0.5, ncols_fi - 0.5),
+            shapely.box(r0 - 0.5, c0 - 0.5, r0 + nrows - 0.5, c0 + ncols - 0.5),
+        ]
+        validdata = ew["ImageData"].get("ValidData", None)
+        if validdata is not None:
+            polygons_rowcol.append(shapely.Polygon(validdata).buffer(0.5))
+        polygons_xrowycol = [
+            shapely.transform(
+                p, functools.partial(sksicd.rowcol_to_xrowycol, ew.elem.getroottree())
+            )
+            for p in polygons_rowcol
+        ]
+        polygon_to_sample = shapely.intersection_all(polygons_xrowycol)
+        pts_xrowycol = con.get_samples_in_poly(polygon_to_sample)
+
+    griddir = ew["Grid"][grid_dim]
+    dkcoapoly = griddir.get("DeltaKCOAPoly", None)
+    if dkcoapoly is not None:
+        dkcoa = npp.polyval2d(pts_xrowycol[:, 0], pts_xrowycol[:, 1], dkcoapoly)
+        dkcoa_min = dkcoa.min()
+        dkcoa_max = dkcoa.max()
+    else:
+        dkcoa_min = 0.0
+        dkcoa_max = 0.0
+    dk1 = dkcoa_min - (griddir["ImpRespBW"] / 2.0)
+    dk2 = dkcoa_max + (griddir["ImpRespBW"] / 2.0)
+
+    # saturate aliased spectrum
+    dk_nyq = 0.5 / griddir["SS"]
+    if (dk1 < -dk_nyq) or (dk2 > dk_nyq):
+        dk1 = -dk_nyq
+        dk2 = dk_nyq
+    return dk1, dk2
 
 
 def _create_rectangle(x0, y0, num_x, num_y):
@@ -728,49 +762,21 @@ class SicdConsistency(con.ConsistencyChecker):
         with self.want(f"{grid_dim} OSR >= 1.1"):
             assert osr >= con.Approx(1.1)
 
-    def _compute_deltaks_from_poly(self, direction, vertices):
-        """Computes DeltaK1 and DeltaK2 from other Grid information."""
-        ipr_bw = self.xmlhelp.load(f"./{{*}}Grid/{{*}}{direction}/{{*}}ImpRespBW")
-        dir_spacing = self.xmlhelp.load(f"./{{*}}Grid/{{*}}{direction}/{{*}}SS")
-
-        dkcoapoly = self.xmlhelp.load(
-            f"./{{*}}Grid/{{*}}{direction}/{{*}}DeltaKCOAPoly"
-        )
-        if dkcoapoly is not None:
-            points = sksicd.rowcol_to_xrowycol(self.sicdroot.getroottree(), vertices)
-
-            deltaks = npp.polyval2d(points[:, 0], points[:, 1], dkcoapoly)
-            min_dk = deltaks.min()
-            max_dk = deltaks.max()
-        else:
-            min_dk = 0
-            max_dk = 0
-
-        dk1_comp = min_dk - (ipr_bw / 2.0)
-        dk2_comp = max_dk + (ipr_bw / 2.0)
-
-        # Handle Wrapped spectrum
-        if dk1_comp < -0.5 / dir_spacing or dk2_comp > 0.5 / dir_spacing:
-            dk1_comp = -0.5 / dir_spacing
-            dk2_comp = -dk1_comp
-
-        return dk1_comp, dk2_comp
-
     @per_grid_dim
     def check_deltakpoly(self, grid_dim) -> None:
-        """DeltaKPoly matches DeltaK1."""
-        vertices = _get_valid_data_vertices(self.xmlhelp)
-        dk1_comp, dk2_comp = self._compute_deltaks_from_poly(grid_dim, vertices)
+        """DeltaK1 and DeltaK2 agree with DeltaKCOAPoly evaluated over valid image extent."""
+        dk1_comp, dk2_comp = _estimate_deltak(self.ew, grid_dim)
 
         tolerance = 1e-2
-        with self.need(f"{grid_dim} DeltaK1 matches computed value from the poly"):
-            assert self.xmlhelp.load(
-                f"./{{*}}Grid/{{*}}{grid_dim}/{{*}}DeltaK1"
-            ) == con.Approx(dk1_comp, atol=tolerance)
-        with self.need(f"{grid_dim} DeltaK2 matches computed value from the poly"):
-            assert self.xmlhelp.load(
-                f"./{{*}}Grid/{{*}}{grid_dim}/{{*}}DeltaK2"
-            ) == con.Approx(dk2_comp, atol=tolerance)
+        grid_ew = self.ew["Grid"][grid_dim]
+        with self.want(
+            f"{grid_dim} DeltaK1 agrees with DeltaKCOAPoly evaluated over valid image extent"
+        ):
+            assert grid_ew["DeltaK1"] == con.Approx(dk1_comp, atol=tolerance)
+        with self.want(
+            f"{grid_dim} DeltaK2 agrees with DeltaKCOAPoly evaluated over valid image extent"
+        ):
+            assert grid_ew["DeltaK2"] == con.Approx(dk2_comp, atol=tolerance)
 
     def _compare_size_and_index(self, path_to_parent, rel_path_to_child):
         """Helper method for making sure nodes with ``'index'`` attributes

@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Improved estimation of expected values in `sarkit.verification.SicdConsistency.check_deltakpoly`
+
 
 ## [1.12.0] - 2026-09-17
 

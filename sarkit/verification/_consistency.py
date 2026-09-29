@@ -733,3 +733,21 @@ def is_geo_polygon_cw(geo_vertices: np.ndarray) -> bool:
     if not plane_polygon.exterior.is_valid:
         raise ValueError("Vertices in plane do not form a valid polygon")
     return not plane_polygon.exterior.is_ccw
+
+
+def get_samples_in_poly(poly: shapely.Polygon, grid_size: int = 11) -> np.ndarray:
+    """Return samples that intersect a polygon (including polygon vertices)."""
+    bounds = np.asarray(poly.bounds).reshape(2, 2)  # [[xmin, ymin], [xmax, ymax]]
+    mesh = np.stack(
+        np.meshgrid(
+            np.linspace(bounds[0, 0], bounds[1, 0], grid_size),
+            np.linspace(bounds[0, 1], bounds[1, 1], grid_size),
+        ),
+        axis=-1,
+    )
+    inner_mesh = shapely.get_coordinates(poly.intersection(shapely.multipoints(mesh)))
+    poly_vertices = shapely.get_coordinates(poly.exterior)[:-1]
+    return np.concatenate(
+        [inner_mesh, poly_vertices],
+        axis=0,
+    )
