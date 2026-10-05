@@ -602,14 +602,14 @@ class TestGridNode:
             sicd_con.sicdroot, f"./{{*}}Grid/{{*}}{direction}/{{*}}DeltaK1", 10000
         )
         sicd_con.check(f"check_deltakpoly_{direction.lower()}")
-        assert sicd_con.failures()
+        testing.assert_failures(sicd_con, "DeltaK1 agrees with DeltaKCOAPoly")
 
     def test_deltak2_mismatch_with_poly(self, direction, sicd_con):
         _change_node(
             sicd_con.sicdroot, f"./{{*}}Grid/{{*}}{direction}/{{*}}DeltaK2", 10000
         )
         sicd_con.check(f"check_deltakpoly_{direction.lower()}")
-        assert sicd_con.failures()
+        testing.assert_failures(sicd_con, "DeltaK2 agrees with DeltaKCOAPoly")
 
     def test_deltak1_mismatch_with_ss(self, direction, sicd_con):
         dk1 = sicd_con.xmlhelp.load(f"./{{*}}Grid/{{*}}{direction}/{{*}}DeltaK1")
