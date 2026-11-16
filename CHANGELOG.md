@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Extended `jbpy` version compatibility
+
 ### Fixed
 - Improved estimation of expected values in `sarkit.verification.SicdConsistency.check_deltakpoly`
 
